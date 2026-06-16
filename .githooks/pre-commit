@@ -1,0 +1,53 @@
+#!/bin/sh
+# Pre-commit hook: format staged files with prettier, then run all project tests.
+# Aborts commit if formatting or any test suite fails.
+#
+# Setup: git config core.hooksPath .githooks
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# ── Step 1: Format staged files ──
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E '\.(js|css|html|json|md)$' || true)
+
+if [ -n "$STAGED_FILES" ]; then
+  echo "[pre-commit] Formatting staged files with prettier..."
+  cd "$ROOT"
+  npx --yes prettier --write $STAGED_FILES
+  git add $STAGED_FILES
+fi
+
+# ── Step 2: Run tests for all projects that have them ──
+
+PROJECTS_DIR="$ROOT/projects"
+FAILED=0
+
+for pkg in "$PROJECTS_DIR"/*/package.json; do
+  [ -f "$pkg" ] || continue
+  PROJECT="$(basename "$(dirname "$pkg")")"
+
+  # Check if it has a test script
+  TEST_CMD=$(node -e "
+    const p = require('$pkg');
+    console.log(p.scripts && p.scripts.test ? p.scripts.test : '');
+  ")
+  [ -z "$TEST_CMD" ] && continue
+
+  echo "[pre-commit] Running tests for $PROJECT..."
+  cd "$PROJECTS_DIR/$PROJECT"
+  if ! node --test tests/*.test.js; then
+    echo "[pre-commit] FAILED: $PROJECT tests"
+    FAILED=1
+  fi
+done
+
+if [ "$FAILED" -eq 1 ]; then
+  echo "[pre-commit] Aborting commit: some tests failed."
+  exit 1
+fi
+
+echo "[pre-commit] All checks passed."
+exit 0

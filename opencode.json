@@ -1,0 +1,48 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-v4-flash-free",
+  "small_model": "deepseek/deepseek-v4-flash-free",
+  "default_agent": "coder",
+  "instructions": ["AGENTS.md"],
+  "command": {
+    "review": {
+      "description": "Review staged changes with @reviewer",
+      "template": "Run @reviewer on the current staged changes in git. Report all issues.",
+      "agent": "reviewer"
+    },
+    "clean": {
+      "description": "Refactor code to eliminate duplication",
+      "template": "Run @refactor on the codebase to find and eliminate duplicate code patterns.",
+      "agent": "refactor"
+    },
+    "project": {
+      "description": "Switch active project or list projects",
+      "template": "Read .active-project to see the current project. List all directories in projects/ folder. Ask the user which project to switch to, then set .active-project accordingly."
+    }
+  },
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "*": "allow",
+      "rm *": "ask",
+      "del *": "ask",
+      "Remove-Item *": "ask",
+      "git *": "deny",
+      "git log": "allow",
+      "git show *": "allow",
+      "git diff *": "allow",
+      "git status": "allow"
+    }
+  },
+  "tool_output": {
+    "max_lines": 500,
+    "max_bytes": 10000
+  },
+  "compaction": {
+    "auto": true,
+    "tail_turns": 8
+  }
+}

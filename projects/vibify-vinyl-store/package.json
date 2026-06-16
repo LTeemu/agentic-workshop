@@ -1,0 +1,19 @@
+{
+  "name": "vibify-vinyl-store",
+  "private": true,
+  "workspaces": [
+    "shell",
+    "mf-catalog",
+    "mf-player",
+    "mf-checkout"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
+  },
+  "scripts": {
+    "dev": "npm run build -w mf-catalog && npm run build -w mf-player && npm run build -w mf-checkout && concurrently -n catalog,player,checkout,shell -c cyan,green,yellow,blue \"npm run preview -w mf-catalog\" \"npm run preview -w mf-player\" \"npm run preview -w mf-checkout\" \"wait-on http://localhost:40071/assets/remoteEntry.js http://localhost:40072/assets/remoteEntry.js http://localhost:40073/assets/remoteEntry.js && npm run dev -w shell\"",
+    "build": "npm run build -w mf-catalog && npm run build -w mf-player && npm run build -w mf-checkout && npm run build -w shell",
+    "preview": "npm run preview -w mf-catalog && npm run preview -w mf-player && npm run preview -w mf-checkout && npm run preview -w shell"
+  }
+}

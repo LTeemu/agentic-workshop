@@ -1,0 +1,200 @@
+/* ===== Grim Dungeon — Design System ===== */
+:root {
+  --bg: #050508;
+  --bg-surface: #0e0e14;
+  --bg-elevated: #181820;
+  --text: #d4d4d8;
+  --text-muted: #6b6b78;
+  --text-dim: #3a3a44;
+  --border: #22222c;
+  --border-light: #2a2a36;
+  --accent: #eab308;
+  --accent-glow: rgba(234, 179, 8, 0.12);
+  --health: #22c55e;
+  --danger: #ef4444;
+  --atk: #fb923c;
+  --def: #4ade80;
+  --depth: #fbbf24;
+  --level: #38bdf8;
+
+  --font-ui: 'Courier New', 'Consolas', monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Grain Overlay ===== */
+#grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ===== Game Container ===== */
+#game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Canvas ===== */
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 40px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(0, 0, 0, 0.3),
+    inset 0 0 60px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== HUD ===== */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(180deg, rgba(5, 5, 8, 0.95) 0%, rgba(5, 5, 8, 0.7) 100%);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.hud-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+}
+
+.hud-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.hud-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hud-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-light);
+  flex-shrink: 0;
+}
+
+.hud-spacer {
+  flex: 1;
+}
+
+#hud-controls {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+#hud-hp {
+  color: var(--health);
+}
+#hud-atk {
+  color: var(--atk);
+}
+#hud-def {
+  color: var(--def);
+}
+#hud-depth {
+  color: var(--depth);
+}
+#hud-level {
+  color: var(--level);
+}
+
+/* ===== Controls Hint ===== */
+#controls-hint {
+  position: absolute;
+  bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 11px;
+  color: var(--text-dim);
+  user-select: none;
+  z-index: 10;
+  padding: var(--space-1) var(--space-3);
+  background: rgba(5, 5, 8, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  border-bottom-width: 2px;
+}
+
+.hint-sep {
+  color: var(--text-dim);
+  opacity: 0.4;
+}
+
+/* ===== Scrollbar (just in case) ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}

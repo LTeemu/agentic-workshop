@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SensorStream — Live IoT Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="screen-flash" id="screenFlash"></div>
+
+    <header class="dashboard-header">
+      <h1>SensorStream</h1>
+      <span class="subtitle">Real-Time IoT Data Pipeline</span>
+      <div class="connection-indicator" id="connectionIndicator">
+        <span class="dot" id="connectionDot"></span>
+        <span id="connectionLabel">Connecting...</span>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="card chart-card" aria-label="Real-time sensor charts">
+        <div class="chart-header">
+          <h2>Live Readings</h2>
+          <span class="window-indicator" id="windowIndicator">Showing last 30m</span>
+          <div class="time-range-group" id="timeRangeGroup">
+            <button class="time-btn" data-window="60">1m</button>
+            <button class="time-btn" data-window="300">5m</button>
+            <button class="time-btn active" data-window="1800">30m</button>
+            <button class="time-btn" data-window="7200">2h</button>
+          </div>
+        </div>
+        <div id="chartPanels" class="chart-panels"></div>
+      </section>
+
+      <section class="card stats-card" aria-label="Sensor statistics">
+        <h2>Sensor Gauges</h2>
+        <div id="statsContainer" class="stats-grid">
+          <div class="stat-placeholder">Waiting for data...</div>
+        </div>
+      </section>
+
+      <section class="card readings-card" aria-label="Latest sensor readings">
+        <h2>Latest Readings</h2>
+        <div class="table-wrapper">
+          <table id="readingsTable" role="table">
+            <thead>
+              <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Value</th>
+                <th scope="col">Status</th>
+                <th scope="col">Time</th>
+              </tr>
+            </thead>
+            <tbody id="readingsBody">
+              <tr>
+                <td colspan="4" class="empty-state">Waiting for data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="sensor-detail-panel" id="sensorDetailPanel">
+          <div class="detail-grid" id="detailGrid"></div>
+        </div>
+      </section>
+
+      <section class="card alerts-card" aria-label="Anomaly alerts">
+        <h2>Anomaly Alerts</h2>
+        <div id="alertsContainer" class="alerts-list">
+          <div class="empty-state">No anomalies detected</div>
+        </div>
+        <div class="episode-timeline" id="episodeTimeline">
+          <h3>Episode Timeline</h3>
+          <div class="episode-bar" id="episodeBar"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="dashboard-footer">
+      <span id="readingCounter">Readings: 0</span>
+      <span id="anomalyCounter">Anomalies: 0</span>
+      <span id="uptime">Uptime: --</span>
+      <span id="latencyIndicator">Latency: --</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

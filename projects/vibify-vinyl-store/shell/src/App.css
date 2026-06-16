@@ -1,0 +1,109 @@
+/* ----- Global reset & design tokens (ported from vibify) ----- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #000;
+  --text: #ccc;
+  --text-heading: #fff;
+  --yellow: #daff00;
+  --charcoal: #1e1e1e;
+  --font-mono: 'Courier New', monospace;
+  --font-serif: 'Georgia', serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--bg);
+}
+
+/* ----- Shell layout ----- */
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----- Nav (ported from vibify) ----- */
+.shell-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--charcoal);
+}
+
+.shell-logo {
+  font-size: 0.875rem;
+  color: var(--yellow);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+}
+
+.shell-tabs {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.shell-tab {
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.3s;
+  padding: 0;
+}
+
+.shell-tab:hover,
+.shell-tab.active {
+  color: var(--yellow);
+}
+
+/* ----- Main content ----- */
+.shell-main {
+  flex: 1;
+}
+
+/* ----- MF container ----- */
+.mf-container {
+  width: 100%;
+}
+
+/* ----- Loading state ----- */
+.mf-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.25rem;
+}
+
+.mf-loading p {
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

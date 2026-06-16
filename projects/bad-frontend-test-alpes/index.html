@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ALPES STUDIO — Digital Craft</title>
+    <meta
+      name="description"
+      content="We shape digital experiences that stand tall. Web development, 3D design, and creative technology."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://alpestudio.com/" />
+
+    <meta property="og:title" content="ALPES STUDIO — Digital Craft" />
+    <meta
+      property="og:description"
+      content="We shape digital experiences that stand tall. Web development, 3D design, and creative technology."
+    />
+    <meta property="og:url" content="https://alpestudio.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ALPES STUDIO" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ALPES STUDIO — Digital Craft" />
+    <meta
+      name="twitter:description"
+      content="We shape digital experiences that stand tall. Web development, 3D design, and creative technology."
+    />
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ALPES STUDIO",
+        "url": "https://alpestudio.com",
+        "description": "Web development, 3D design & creative technology — crafted in the Alps, delivered worldwide.",
+        "foundingDate": "2024",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "hello@alpestudio.com",
+          "contactType": "customer service"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How long does a typical project take?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Timelines vary by scope. A standard website ships in 4\u20138 weeks, while complex web applications or 3D experiences may take 2\u20134 months."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What technologies do you use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We work with modern stacks: React, Next.js, Three.js, GSAP, Node.js, and a range of cloud services tailored to each project."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do you work with international clients?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Absolutely. While our studio is based in the Alps, we collaborate with clients worldwide through weekly calls, async updates, and transparent project management."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What makes your approach different?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We treat every project as a craft, not a commodity. From first sketch to final deployment, we focus on detail, performance, and a distinctive aesthetic."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <div class="grain-overlay"></div>
+    <div id="cursor" class="cursor"></div>
+    <canvas id="three-canvas"></canvas>
+
+    <nav class="navbar">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">▲ ALPES</a>
+        <div class="nav-links">
+          <a href="#work" class="nav-link">Work</a>
+          <a href="#services" class="nav-link">Services</a>
+          <a href="#faq" class="nav-link">FAQ</a>
+          <a href="#contact" class="nav-link">Contact</a>
+        </div>
+        <button class="nav-cta">Start a Project</button>
+      </div>
+    </nav>
+
+    <main id="main-content">
+      <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <span class="hero-badge reveal">Est. 2024 · Alpine Studio</span>
+          <h1 class="hero-title reveal">
+            <span class="hero-line">We Build</span>
+            <span class="hero-line hero-line-accent">Digital Peaks</span>
+          </h1>
+          <p class="hero-sub reveal">
+            Web development, 3D design & creative technology — crafted in the Alps, delivered
+            worldwide.
+          </p>
+          <div class="hero-actions reveal">
+            <button class="btn-primary magnetic-btn">View Our Work</button>
+            <a href="#contact" class="btn-ghost">Get in Touch →</a>
+          </div>
+          <div class="hero-metrics reveal">
+            <div class="metric">
+              <span class="metric-num" data-target="8">0</span
+              ><span class="metric-label">Years</span>
+            </div>
+            <div class="metric">
+              <span class="metric-num" data-target="120">0</span
+              ><span class="metric-label">Projects</span>
+            </div>
+            <div class="metric">
+              <span class="metric-num" data-target="8">0</span
+              ><span class="metric-label">Awards</span>
+            </div>
+          </div>
+        </div>
+        <div class="scroll-indicator">
+          <span>Scroll</span>
+          <div class="scroll-line"></div>
+        </div>
+      </section>
+
+      <section id="work" class="work-section">
+        <div class="section-label reveal">Selected Work</div>
+        <h2 class="section-title reveal">
+          Projects That <span class="gradient-text">Stand Tall</span>
+        </h2>
+        <div class="work-grid">
+          <div class="work-card reveal" style="--idx: 0">
+            <div
+              class="work-visual"
+              style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+            >
+              <div class="work-visual-content">◆</div>
+            </div>
+            <div class="work-info">
+              <span class="work-tag">3D Experience</span>
+              <h3>Summit Portfolio</h3>
+              <p>Immersive 3D portfolio with WebGL mountain rendering.</p>
+            </div>
+          </div>
+          <div class="work-card reveal" style="--idx: 1">
+            <div
+              class="work-visual"
+              style="background: linear-gradient(135deg, #0f3460 0%, #533483 100%)"
+            >
+              <div class="work-visual-content">✦</div>
+            </div>
+            <div class="work-info">
+              <span class="work-tag">Web App</span>
+              <h3>Peak Analytics</h3>
+              <p>Real-time dashboard for mountain weather & trail data.</p>
+            </div>
+          </div>
+          <div class="work-card reveal" style="--idx: 2">
+            <div
+              class="work-visual"
+              style="background: linear-gradient(135deg, #1b1b2f 0%, #1a1a40 100%)"
+            >
+              <div class="work-visual-content">▲</div>
+            </div>
+            <div class="work-info">
+              <span class="work-tag">Brand Design</span>
+              <h3>Alpine Retreat</h3>
+              <p>Luxury lodge brand identity & web presence.</p>
+            </div>
+          </div>
+          <div class="work-card reveal" style="--idx: 3">
+            <div
+              class="work-visual"
+              style="background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 100%)"
+            >
+              <div class="work-visual-content">⬡</div>
+            </div>
+            <div class="work-info">
+              <span class="work-tag">SaaS</span>
+              <h3>RoutePilot</h3>
+              <p>AI-powered route planning for alpine expeditions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="services" class="services-section">
+        <div class="section-label reveal">What We Do</div>
+        <h2 class="section-title reveal">Expedition <span class="gradient-text">Packages</span></h2>
+        <div class="services-grid">
+          <div class="service-card reveal" style="--idx: 0">
+            <div class="service-icon">▲</div>
+            <h3>Web Development</h3>
+            <p>
+              High-performance sites & applications built with modern stacks. Fast, scalable, and
+              built to last.
+            </p>
+          </div>
+          <div class="service-card reveal" style="--idx: 1">
+            <div class="service-icon">◆</div>
+            <h3>3D & WebGL</h3>
+            <p>
+              Interactive 3D experiences using Three.js and WebGL. Product configurators, data
+              visualizations, immersive storytelling.
+            </p>
+          </div>
+          <div class="service-card reveal" style="--idx: 2">
+            <div class="service-icon">⬡</div>
+            <h3>UI/UX Design</h3>
+            <p>
+              Interface design that puts users first. Research-driven, aesthetically refined, and
+              accessibility-minded.
+            </p>
+          </div>
+          <div class="service-card reveal" style="--idx: 3">
+            <div class="service-icon">✦</div>
+            <h3>Creative Tech</h3>
+            <p>
+              Interactive installations, generative art, experimental web projects that push the
+              boundaries.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="faq-section">
+        <div class="section-label reveal">FAQ</div>
+        <h2 class="section-title reveal">Common <span class="gradient-text">Questions</span></h2>
+        <div class="faq-list reveal">
+          <div class="faq-item">
+            <button
+              class="faq-question"
+              aria-expanded="false"
+              aria-controls="faq1-answer"
+              id="faq1-btn"
+            >
+              <span>How long does a typical project take?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div id="faq1-answer" class="faq-answer" role="region" aria-labelledby="faq1-btn">
+              <p>
+                Timelines vary by scope. A standard website ships in 4–8 weeks, while complex web
+                applications or 3D experiences may take 2–4 months.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button
+              class="faq-question"
+              aria-expanded="false"
+              aria-controls="faq2-answer"
+              id="faq2-btn"
+            >
+              <span>What technologies do you use?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div id="faq2-answer" class="faq-answer" role="region" aria-labelledby="faq2-btn">
+              <p>
+                We work with modern stacks: React, Next.js, Three.js, GSAP, Node.js, and a range of
+                cloud services. We choose the right tool for each project rather than force-fitting
+                a one-size-fits-all approach.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button
+              class="faq-question"
+              aria-expanded="false"
+              aria-controls="faq3-answer"
+              id="faq3-btn"
+            >
+              <span>Do you work with international clients?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div id="faq3-answer" class="faq-answer" role="region" aria-labelledby="faq3-btn">
+              <p>
+                Absolutely. While our studio is based in the Alps, we collaborate with clients
+                worldwide through weekly calls, async updates, and transparent project management.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button
+              class="faq-question"
+              aria-expanded="false"
+              aria-controls="faq4-answer"
+              id="faq4-btn"
+            >
+              <span>What makes your approach different?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div id="faq4-answer" class="faq-answer" role="region" aria-labelledby="faq4-btn">
+              <p>
+                We treat every project as a craft, not a commodity. From the first sketch to the
+                final deployment, we focus on detail, performance, and a distinctive aesthetic.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="contact-section">
+        <div class="contact-bg"></div>
+        <div class="section-label reveal">Contact</div>
+        <h2 class="section-title reveal">Start Your <span class="gradient-text">Ascent</span></h2>
+        <p class="contact-sub reveal">
+          Ready to build something remarkable? Tell us about your project.
+        </p>
+        <form class="contact-form reveal" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-name">Your Name</label>
+              <input
+                id="form-name"
+                name="name"
+                type="text"
+                required
+                autocomplete="name"
+                aria-describedby="name-error"
+              />
+              <span id="name-error" class="form-error" role="alert"></span>
+            </div>
+            <div class="form-group">
+              <label for="form-email">Your Email</label>
+              <input
+                id="form-email"
+                name="email"
+                type="email"
+                required
+                autocomplete="email"
+                aria-describedby="email-error"
+              />
+              <span id="email-error" class="form-error" role="alert"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="form-type">Project Type</label>
+            <input id="form-type" name="type" type="text" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="form-message">Tell us about your project</label>
+            <textarea
+              id="form-message"
+              name="message"
+              rows="4"
+              required
+              autocomplete="off"
+              aria-describedby="message-error"
+            ></textarea>
+            <span id="message-error" class="form-error" role="alert"></span>
+          </div>
+          <button type="submit" class="btn-primary magnetic-btn">Send Message</button>
+          <div id="form-feedback" class="form-feedback" role="status"></div>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="footer-logo">▲ ALPES STUDIO</span>
+          <p>Crafted in the Alps. Delivered worldwide.</p>
+        </div>
+        <div class="footer-links">
+          <a href="">Twitter</a>
+          <a href="">GitHub</a>
+          <a href="">Dribbble</a>
+          <a href="">Email</a>
+        </div>
+        <p class="footer-copy">© 2026 Alpes Studio. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="app.js"></script>
+  </body>
+</html>

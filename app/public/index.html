@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workshop</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <h1>Workshop</h1>
+        <div id="project-list"></div>
+        <div id="sidebar-actions">
+          <input type="text" id="new-project-name" placeholder="project-name" />
+          <button id="add-project">+ Add</button>
+        </div>
+      </aside>
+      <main id="main">
+        <div id="placeholder">
+          <h2>Select a project</h2>
+          <p>Choose a project from the sidebar to preview it.</p>
+        </div>
+        <div id="preview" class="hidden">
+          <div id="preview-header">
+            <span id="project-name"></span>
+            <span id="project-type" class="run-type-badge"></span>
+            <span id="project-status"></span>
+            <span id="project-url"></span>
+            <button id="open-tab">Open in Tab</button>
+          </div>
+          <div id="preview-frame-container">
+            <iframe
+              id="preview-frame"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            ></iframe>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
