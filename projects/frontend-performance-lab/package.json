@@ -1,0 +1,27 @@
+{
+  "name": "frontend-performance-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"node server/server.js\" \"vite\"",
+    "build": "vite build",
+    "start": "node server/server.js",
+    "preview": "vite preview",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@axe-core/puppeteer": "^4.11.3",
+    "cheerio": "^1.0.0",
+    "compression": "^1.8.1",
+    "express": "^4.21.0",
+    "lighthouse": "^12.2.0",
+    "puppeteer-core": "^25.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "lit": "^3.2.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}

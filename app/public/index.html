@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Project sandbox workspace — run and preview web projects" />
     <title>Workshop</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
@@ -24,7 +25,7 @@
         <div id="preview" class="hidden">
           <div id="preview-header">
             <span id="project-name"></span>
-            <span id="project-type" class="run-type-badge"></span>
+            <span id="project-type"></span>
             <span id="project-status"></span>
             <span id="project-url"></span>
             <button id="open-tab">Open in Tab</button>
@@ -32,6 +33,7 @@
           <div id="preview-frame-container">
             <iframe
               id="preview-frame"
+              title="Project preview"
               sandbox="allow-scripts allow-same-origin allow-forms"
             ></iframe>
           </div>

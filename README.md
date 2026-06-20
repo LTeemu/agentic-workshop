@@ -37,7 +37,3 @@ Then open `http://localhost:3000`.
 ## API
 
 The dashboard exposes a JSON API under `/api/` — endpoints for listing, creating, selecting, stopping, and building projects. See `app/server.js` for details.
-
-## Why
-
-This is a companion tool for [opencode](https://opencode.ai), an AI coding assistant. The workshop gives it a place to create, run, and preview projects without leaving the editor.

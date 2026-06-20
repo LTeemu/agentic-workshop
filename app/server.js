@@ -114,6 +114,28 @@ function getProjects() {
   }
 }
 
+// Deterministic port for a project — stable across project add/remove.
+// Port range: 4001–4999.
+// Pin to a specific port by placing a `.port` file containing the port number
+// in the project directory (e.g. `projects/vibify/.port` with content `4007`).
+function projectPort(name) {
+  const portFile = path.join(PROJECTS_DIR, name, '.port');
+  try {
+    const pinned = parseInt(fs.readFileSync(portFile, 'utf-8').trim(), 10);
+    if (pinned >= 4001 && pinned <= 4999) return pinned;
+  } catch {
+    /* no .port file or invalid — fall through */
+  }
+
+  // DJB2 hash of the project name → stable port 4001–4999
+  let hash = 5381;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) + hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  return 4000 + (Math.abs(hash) % 998) + 1;
+}
+
 function getTemplates() {
   try {
     return fs
@@ -392,10 +414,7 @@ async function startProject(name) {
     const projectPath = path.join(PROJECTS_DIR, name);
     if (!fs.existsSync(projectPath)) return { error: 'not found' };
 
-    const projects = getProjects();
-    const idx = projects.indexOf(name);
-    if (idx === -1) return { error: 'not found' };
-    const port = PROJECTS_BASE + idx + 1;
+    const port = projectPort(name);
 
     const prevName = active ? active.name : null;
     await stopActive();
