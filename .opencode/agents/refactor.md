@@ -9,10 +9,7 @@ Specialist in removing duplication without changing behavior.
 
 ## Active Project
 
-- Read `.active-project` at the workspace root.
-- If the request is about **Workshop infrastructure** (server.js, dashboard, config, agents, AGENTS.md), work from the workspace root — ignore `.active-project`.
-- Otherwise, `.active-project` contains the path (e.g., `projects/project-name`) — scope all refactoring to that directory.
-- If missing, ask the user which project to refactor.
+Follow `.opencode/rules/active-project.md` for scope.
 
 ## Process
 

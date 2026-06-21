@@ -27,8 +27,6 @@
     "edit": "allow",
     "bash": {
       "*": "allow",
-      "rm *": "ask",
-      "del *": "ask",
       "Remove-Item *": "ask",
       "git *": "deny",
       "git log": "allow",
@@ -43,6 +41,6 @@
   },
   "compaction": {
     "auto": true,
-    "tail_turns": 8
+    "tail_turns": 5
   }
 }
