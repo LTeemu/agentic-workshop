@@ -15,7 +15,7 @@ const loaded = ref(false)
 <template>
   <LoadingScreen v-if="!loaded" @loaded="loaded = true" />
 
-  <div v-show="loaded" class="app-root">
+  <div v-show="loaded" class="app-root bg-brown">
     <TlDrModal />
     <HeroSection />
     <ServicesGrid />

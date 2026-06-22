@@ -129,20 +129,61 @@ const sections = [
 .tldr-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(13, 10, 8, 0.95);
+  background-color: rgba(13, 10, 8, 0.95);
+  background-image:
+    /* Warm organic grain */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.12) 1px,
+      rgba(139, 107, 74, 0.12) 2px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.08) 1px,
+      rgba(139, 107, 74, 0.08) 2px
+    );
+  background-size: 3px 3px, 3px 3px;
   z-index: 1000;
   display: grid;
   place-items: center;
+  max-height: 100dvh;
+  overscroll-behavior: contain;
 }
 
 .tldr-grid-bg {
   position: absolute;
   inset: 0;
   background-image:
+    /* Warm organic grain */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.06) 1px,
+      rgba(139, 107, 74, 0.06) 2px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.04) 1px,
+      rgba(139, 107, 74, 0.04) 2px
+    ),
+    /* Cyan grid lines */
     linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
+  background-size: 3px 3px, 3px 3px, 60px 60px, 60px 60px;
   pointer-events: none;
+  animation: grid-drift 8s linear infinite;
+}
+
+@keyframes grid-drift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: -3px -3px, -3px -3px, -60px -60px, -60px -60px; }
 }
 
 .tldr-modal {
@@ -150,6 +191,20 @@ const sections = [
   z-index: 1;
   text-align: center;
   padding: var(--space-8);
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-cave-wall-light) transparent;
+}
+
+.tldr-modal::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tldr-modal::-webkit-scrollbar-thumb {
+  background: var(--color-cave-wall-light);
+  border-radius: 2px;
 }
 
 .tldr-header {
@@ -191,6 +246,7 @@ const sections = [
   font-size: var(--text-xl);
   text-align: left;
   transition: all var(--duration-fast) var(--ease-out-expo);
+  will-change: transform;
   opacity: 0;
   animation: fade-up 0.4s var(--ease-out-expo) forwards;
   animation-delay: calc(var(--idx) * 0.08s);
@@ -203,7 +259,7 @@ const sections = [
 
 .tldr-link:hover {
   color: var(--color-cyber);
-  padding-left: calc(var(--space-8) + var(--space-2));
+  transform: translateX(var(--space-2));
 }
 
 .tldr-num {

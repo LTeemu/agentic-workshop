@@ -4,15 +4,13 @@ import * as THREE from 'three'
 
 const canvas = ref(null)
 let scene, camera, renderer, material, mesh
-let mouseX = 0.5
-let mouseY = 0.5
 
 // ─── Shader ──────────────────────────────────────────
 const vertexShader = `
   varying vec2 vUv;
   void main() {
     vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = vec4(position, 1.0);
   }
 `
 
@@ -20,140 +18,147 @@ const fragmentShader = `
   precision highp float;
   varying vec2 vUv;
   uniform float uTime;
-  uniform vec2 uMouse;
-  uniform vec2 uResolution;
+  uniform float uAspect;
 
-  // Simple 2D value noise
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-  }
-
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
-      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
-      f.y
-    );
-  }
-
-  // Fractal Brownian Motion for rock texture
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      v += a * noise(p);
-      p *= 2.0;
-      a *= 0.5;
-    }
-    return v;
+  // Corrected distance where x is adjusted for pixel aspect ratio
+  float sd(vec2 a, vec2 b) {
+    vec2 d = a - b;
+    d.x *= uAspect;
+    return length(d);
   }
 
   void main() {
     vec2 uv = vUv;
-    vec2 pos = (gl_FragCoord.xy - 0.5 * uResolution) / min(uResolution.x, uResolution.y);
+    vec3 color = vec3(0.003, 0.01, 0.025);
+    float gridSz = 0.04; // 25 cells across — bigger grid
 
-    // ── Cave darkness base ──
-    vec3 caveDark = vec3(0.018, 0.012, 0.008);
-    vec3 color = caveDark;
+    // Rotated UV for 45° diamond grid
+    const float rt = 0.7071; // cos(45°) = sin(45°)
+    vec2 gridUv = vec2(
+        (uv.x - 0.5) * rt - (uv.y - 0.5) * rt,
+        (uv.x - 0.5) * rt + (uv.y - 0.5) * rt
+    ) + 0.5;
 
-    // ── Cave wall texture ──
-    float rock = fbm(uv * 6.0 + 1.7);
-    float rockDetail = fbm(uv * 14.0 + 3.2);
-    float rockMix = rock * 0.7 + rockDetail * 0.3;
-
-    // Rock formations — ridges and veins
-    float ridge = abs(sin(uv.x * 12.0 + fbm(uv * 4.0) * 3.0)) * 0.06;
-    float wall = smoothstep(0.35, 0.5, rockMix + ridge);
-
-    vec3 rockColor = mix(
-      vec3(0.035, 0.025, 0.018),  // dark brown rock
-      vec3(0.06, 0.04, 0.03),     // lighter rock
-      wall * 0.5
-    );
-
-    // Add subtle horizontal strata (cave formations)
-    float strata = sin(uv.y * 50.0 + fbm(uv * 3.0) * 5.0) * 0.5 + 0.5;
-    rockColor += vec3(0.01, 0.008, 0.005) * strata * 0.3;
-
-    color = mix(color, rockColor, 0.6);
-
-    // ── Bioluminescent glow spots ──
-    // 12 glow worms / luminous fungi at fixed pseudo-random positions
-    vec3 glowColor = vec3(0.0, 0.0, 0.0);
-
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 3; i++) {
       float fi = float(i);
-      vec2 seed = vec2(fi * 7.17, fi * 13.31 + 3.7);
 
-      // Position in UV space, biased toward upper/mid (cave ceiling)
-      vec2 gp = vec2(
-        hash(seed + 1.0),
-        0.15 + hash(seed + 2.0) * 0.6
-      );
+      float hue = fract(fi * 0.3456 + 0.7890);
+      float period = 3.5 + fract(fi * 0.2345 + 0.5678) * 2.5;
+      float maxSize = 0.05 + fract(fi * 0.6789 + 0.1234) * 0.07;
 
-      // Size variation
-      float size = 0.03 + hash(seed + 3.0) * 0.06;
+      vec3 starColor = mix(vec3(0.15, 0.7, 1.0), vec3(0.6, 0.3, 1.0), hue);
 
-      // Pulse — each glows at its own rhythm
-      float phase = hash(seed + 4.0) * 6.28;
-      float speed = 0.4 + hash(seed + 5.0) * 0.6;
-      float pulse = 0.5 + 0.5 * sin(uTime * speed + phase);
+      // New random position each cycle
+      float cycle = floor(uTime / period);
+      float sx = fract(cycle * 0.7123 + fi * 0.3631);
+      float sy = fract(cycle * 0.5637 + fi * 0.3179);
 
-      // Distance from fragment to glow point
-      vec2 dPos = (uv - gp) / vec2(1.0, 0.7);
-      float dist = length(dPos);
+      float t = fract(uTime / period);
+      float grow = t * t;
+      float size = 0.005 + grow * maxSize;
 
-      // Gaussian glow falloff
-      float glow = exp(-dist * dist * 3.0 / (size * size));
-      glow *= pulse;
+      // Wobble
+      float ws = 0.001 + t * 0.025;
+      float wx = sin(t * 8.0 + fi * 4.1) * ws;
+      float wy = cos(t * 6.0 + fi * 6.3) * ws;
+      vec2 pos = vec2(sx + wx, sy + wy);
 
-      // Color — cyan to teal with slight variation
-      float hueShift = hash(seed + 6.0) * 0.2;
-      vec3 gCol = mix(
-        vec3(0.0, 0.5, 0.8),  // teal
-        vec3(0.0, 0.9, 1.0),  // bright cyan
-        hash(seed + 7.0)
-      );
+      float d = sd(uv, pos);
+      float core = exp(-d * d / (size * size));
+      float glow = exp(-d * d / (size * size * 8.0)) * 0.5;
+      float halo = exp(-d * d / (size * size * 20.0)) * 0.12;
 
-      // Inner bright core
-      float core = exp(-dist * dist * 12.0 / (size * size));
-      glowColor += gCol * glow * 0.25;
-      glowColor += vec3(0.0, 0.8, 1.0) * core * pulse * 0.12;
+      // ── Explosion (blends in as t→1) ──
+      float explode = smoothstep(0.6, 1.0, t);
+      float e = 1.0 - t;
+
+      // Direction from star to current pixel
+      vec2 dirToPixel = uv - pos;
+      float pixelAngle = atan(dirToPixel.y, dirToPixel.x);
+
+      // Wavy expanding ring
+      float wave = sin(pixelAngle * 3.0 + fi * 2.0 + e * 2.0) * 0.025;
+      float ringR = abs(d - (e * 0.2 + wave));
+      float ring = exp(-ringR * ringR * 300.0) * explode * 0.35;
+
+      // Central flash
+      float flash = exp(-d * d / (size * size * 2.0)) * exp(-e * 8.0) * 0.5;
+
+      // 4 debris particles — curved trajectories
+      float debris = 0.0;
+      for (int j = 0; j < 4; j++) {
+        float fj = float(j);
+        float angle = fj * 1.5708 + fi;
+        vec2 dir = vec2(cos(angle), sin(angle));
+        vec2 perp = vec2(-dir.y, dir.x);
+        float arc = (fj - 1.5) * 0.12;
+        vec2 dp = pos + dir * e * 0.25 + perp * arc * e * e * 0.25;
+        float dd = sd(uv, dp);
+        debris += exp(-dd * dd * 500.0);
+      }
+      debris *= explode * 0.2;
+
+      // ── 2.5D Crater dent ──
+      float craterActive = explode * (1.0 - e * 0.5);
+      float craterSize = e * 0.25 + 0.02;
+      float cd = d / craterSize;
+
+      float craterDark = exp(-cd * cd * 2.0) * 0.2;
+
+      vec2 lightOffset = vec2(0.08, 0.04);
+      float rimD = sd(uv, pos + lightOffset * craterSize) / craterSize;
+      float craterLight = exp(-(rimD - 1.0) * (rimD - 1.0) * 150.0) * 0.12;
+
+      vec3 crater = (vec3(0.1, 0.12, 0.16) * craterLight - vec3(craterDark)) * craterActive;
+
+      // ── Grid cell paint + shockwave — lit cells around the hit ──
+      float prevCycle = floor(uTime / period) - 1.0;
+      float pSx = fract(prevCycle * 0.7123 + fi * 0.3631);
+      float pSy = fract(prevCycle * 0.5637 + fi * 0.3179);
+      float pWx = sin(1.0 * 8.0 + fi * 4.1) * 0.026;
+      float pWy = cos(1.0 * 6.0 + fi * 6.3) * 0.026;
+      vec2 hitPos = vec2(pSx + pWx, pSy + pWy);
+      vec2 hitGridPos = vec2(
+          (hitPos.x - 0.5) * rt - (hitPos.y - 0.5) * rt,
+          (hitPos.x - 0.5) * rt + (hitPos.y - 0.5) * rt
+      ) + 0.5;
+
+      float paintAge = exp(-t * 3.0); // fades over ~1s
+      vec2 hitCell = floor(hitGridPos / gridSz);
+      vec2 myCell = floor(gridUv / gridSz);
+      vec2 cellDist = abs(hitCell - myCell);
+      float gridDist = length(cellDist); // Euclidean — round rings
+
+      // Expanding shockwave ring in grid space
+      float ringRadius = t * 5.0; // expands from 0 to 5 cells outward
+      float ringWidth = 0.6;
+      float shockRing = exp(-(gridDist - ringRadius) * (gridDist - ringRadius) / (ringWidth * ringWidth));
+      shockRing *= paintAge * 1.5;
+
+      // Center hot cell
+      float centerGlow = paintAge * 2.0 * (1.0 - step(0.5, gridDist));
+
+      // Fill area inside the ring with a dimmer glow
+      float innerGlow = paintAge * 0.4 * (1.0 - step(ringRadius, gridDist)) * exp(-gridDist * 0.5);
+
+      float fade = 1.0 - smoothstep(0.92, 1.0, t);
+
+      color += starColor * ((core * 1.5 + glow + halo) * fade + flash + ring + debris) +
+               crater +
+               starColor * (centerGlow + shockRing + innerGlow);
     }
 
-    // ── Ambient glow — distant bioluminescent haze near bottom ──
-    float ambientGlow = smoothstep(1.0, 0.2, uv.y) * 0.015;
-    ambientGlow *= 0.6 + 0.4 * sin(uTime * 0.2 + uv.x * 5.0);
-    glowColor += vec3(0.0, 0.3, 0.5) * ambientGlow;
+    // ── Ambient ──
+    color += vec3(0.0, 0.3, 0.6) * exp(-sd(uv, vec2(0.5, 0.5)) * sd(uv, vec2(0.5, 0.5)) * 3.0) * 0.015;
 
-    // ── Mouse interaction — gentle light reveal ──
-    vec2 mouseUv = uMouse;
-    float mouseDist = length(uv - mouseUv);
-    float mouseLight = exp(-mouseDist * 6.0) * 0.15;
-    mouseLight += exp(-mouseDist * 20.0) * 0.1;
-
-    // Reveal rock color under mouse
-    color += rockColor * mouseLight * 0.5;
-    // Reveal bioluminescence under mouse
-    glowColor *= 1.0 + mouseLight * 0.8;
-
-    // ── Atmospheric fog (bottom is darker) ──
-    float fog = smoothstep(0.0, 1.0, uv.y) * 0.15;
-    color *= 1.0 - fog;
-
-    // ── Combine ──
-    color += glowColor;
+    // ── Pixel glass grid ──
+    vec2 gf = fract(gridUv / gridSz);
+    float gridLine = 1.0 - smoothstep(0.0, 0.35, min(gf.x, gf.y));
+    color += vec3(0.015, 0.03, 0.05) * gridLine;
 
     // ── Vignette ──
-    float vig = 1.0 - length(uv - 0.5) * 0.7;
+    float vig = 1.0 - length(uv - 0.5) * 0.65;
     color *= vig;
-
-    // ── Subtle film grain (reduces banding) ──
-    float grain = hash(uv + uTime * 0.01) * 0.02;
-    color += grain;
 
     gl_FragColor = vec4(color, 1.0);
   }
@@ -161,24 +166,48 @@ const fragmentShader = `
 
 const uniforms = {
   uTime: { value: 0 },
-  uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-  uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  uAspect: { value: 1 },
 }
 
 // ─── Scene setup ────────────────────────────────────
-function initScene() {
+let observer = null
+
+function syncSize() {
+  if (!renderer || !canvas.value) return
+  const parent = canvas.value.parentElement
+  if (!parent) return
+  const rect = parent.getBoundingClientRect()
+  const w = rect.width
+  const h = rect.height
+  renderer.setSize(w, h, false)
+  if (material && h > 0) {
+    uniforms.uAspect.value = w / h
+  }
+}
+
+let animId = null
+
+function animate() {
+  if (material) {
+    uniforms.uTime.value += 0.01
+  }
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera)
+  }
+  animId = requestAnimationFrame(animate)
+}
+
+onMounted(() => {
   if (!canvas.value) return
 
   scene = new THREE.Scene()
-  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
-  camera.position.z = 1
+  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
   renderer = new THREE.WebGLRenderer({
     canvas: canvas.value,
     alpha: false,
     antialias: true,
   })
-  renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
   material = new THREE.ShaderMaterial({
@@ -187,47 +216,30 @@ function initScene() {
     uniforms,
   })
 
-  const geometry = new THREE.PlaneGeometry(2, 2)
-  mesh = new THREE.Mesh(geometry, material)
+  // Full-screen quad
+  const geo = new THREE.BufferGeometry()
+  const verts = new Float32Array([-1, -1, 0,  1, -1, 0,  -1, 1, 0,  1, 1, 0])
+  const uvs = new Float32Array([0, 0,  1, 0,  0, 1,  1, 1])
+  geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+  geo.setIndex([0, 1, 2, 2, 1, 3])
+  mesh = new THREE.Mesh(geo, material)
   scene.add(mesh)
-}
 
-function resize() {
-  if (!renderer) return
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  uniforms.uResolution.value.set(window.innerWidth, window.innerHeight)
-}
+  requestAnimationFrame(() => syncSize())
 
-let animId = null
-
-function animate() {
-  if (material) {
-    uniforms.uTime.value += 0.01
-    uniforms.uMouse.value.x += (mouseX - uniforms.uMouse.value.x) * 0.05
-    uniforms.uMouse.value.y += (mouseY - uniforms.uMouse.value.y) * 0.05
+  const parent = canvas.value.parentElement
+  if (parent) {
+    observer = new ResizeObserver(() => syncSize())
+    observer.observe(parent)
   }
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera)
-  }
-  animId = requestAnimationFrame(animate)
-}
 
-function onMouseMove(e) {
-  mouseX = e.clientX / window.innerWidth
-  mouseY = 1.0 - e.clientY / window.innerHeight
-}
-
-onMounted(() => {
-  initScene()
   animate()
-  window.addEventListener('resize', resize)
-  window.addEventListener('mousemove', onMouseMove)
 })
 
 onBeforeUnmount(() => {
   if (animId) cancelAnimationFrame(animId)
-  window.removeEventListener('resize', resize)
-  window.removeEventListener('mousemove', onMouseMove)
+  if (observer) observer.disconnect()
   if (renderer) renderer.dispose()
 })
 </script>

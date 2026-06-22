@@ -54,19 +54,17 @@ import AppearTransition from './AppearTransition.vue'
       </div>
     </AppearTransition>
 
-    <AppearTransition :idx="3">
-      <footer class="site-footer">
-        <div class="footer-inner">
-          <span class="footer-mark">M</span>
-          <div class="footer-links">
-            <a href="#hero" class="footer-link">Back to top</a>
-            <a href="#" class="footer-link">Instagram</a>
-            <a href="#" class="footer-link">LinkedIn</a>
-          </div>
-          <span class="footer-copy">© 2026 Mantle</span>
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span class="footer-mark">M</span>
+        <div class="footer-links">
+          <a href="#hero" class="footer-link">Back to top</a>
+          <a href="#" class="footer-link">Instagram</a>
+          <a href="#" class="footer-link">LinkedIn</a>
         </div>
-      </footer>
-    </AppearTransition>
+        <span class="footer-copy">© 2026 Mantle</span>
+      </div>
+    </footer>
   </section>
 </template>
 

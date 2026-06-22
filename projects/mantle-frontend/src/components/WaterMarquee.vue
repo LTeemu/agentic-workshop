@@ -3,9 +3,15 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
 
 const waterCanvas = ref(null)
+const rippleCanvas = ref(null)
 let scene, camera, renderer, material, mesh
 let animId = null
 let texture = null
+let resizeObserver = null
+let rippleCtx = null
+let ripples = []
+let rippleW = 0
+let rippleH = 0
 
 const BG_IMAGE = '/images/water-bg.jpg'
 
@@ -41,6 +47,9 @@ const fragmentShader = `
   varying vec2 vUv;
   uniform sampler2D uTexture;
   uniform float uTime;
+  uniform vec2 uRipplePos[15];
+  uniform float uRippleAge[15];
+  uniform float uRippleCount;
 
   void main() {
     vec2 uv = vUv;
@@ -59,11 +68,26 @@ const fragmentShader = `
     float w3 = sin(uv.y * 22.0 - uv.x * 4.0 + uTime * 1.1) * 0.002;
     float w4 = sin((uv.x + uv.y) * 9.0 + uTime * 0.35) * 0.0015;
 
-    // Horizontal flow emphasis (right to left drift)
-    float drift = uTime * 0.0015;
+    // Gentle oscillating sway — breathes left-right, never drifts off
+    float sway = sin(uTime * 0.15) * 0.008;
 
-    uv.x += w1 + w2 + drift;
+    uv.x += w1 + w2 + sway;
     uv.y += w3 + w4;
+
+    // ── Ripple UV displacement — distorts texture at each ripple center ──
+    vec2 disp = vec2(0.0);
+    for (int i = 0; i < 15; i++) {
+      if (float(i) >= uRippleCount) break;
+      vec2 rp = uRipplePos[i];
+      float age = uRippleAge[i];
+      vec2 delta = uv - rp;
+      float d = length(delta);
+      vec2 dir = d > 0.001 ? normalize(delta) : vec2(0.0);
+      // Radial ring wave — expands outward, fades with distance and age
+      float wave = sin((d - age * 0.04) * 30.0 - age * 2.0) * exp(-d * 8.0) * exp(-age * 1.5);
+      disp += dir * wave * 0.003;
+    }
+    uv += disp;
 
     // Sample distorted texture
     vec4 tex = texture2D(uTexture, uv);
@@ -120,6 +144,9 @@ const fragmentShader = `
 const uniforms = {
   uTexture: { value: null },
   uTime: { value: 0 },
+  uRipplePos: { value: Array.from({ length: 15 }, () => new THREE.Vector2(-1, -1)) },
+  uRippleAge: { value: new Array(15).fill(0) },
+  uRippleCount: { value: 0 },
 }
 
 async function initWater() {
@@ -134,7 +161,7 @@ async function initWater() {
     alpha: false,
     antialias: true,
   })
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  syncWaterSize()
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
   try {
@@ -171,10 +198,10 @@ let time = 0
 
 // ─── Wave displacement (same math as the shader's distortion, no texture drift) ──
 function waveDisp(x, y, t) {
-  const w1 = Math.sin(y * 14.0 + t * 0.7) * 0.0035
-  const w2 = Math.sin(y * 7.0 + x * 5.0 + t * 0.5) * 0.0025
-  const w3 = Math.sin(y * 22.0 - x * 4.0 + t * 1.1) * 0.002
-  const w4 = Math.sin((x + y) * 9.0 + t * 0.35) * 0.0015
+  const w1 = Math.sin(y * 14.0 + t * 0.7) * 0.014
+  const w2 = Math.sin(y * 7.0 + x * 5.0 + t * 0.5) * 0.01
+  const w3 = Math.sin(y * 22.0 - x * 4.0 + t * 1.1) * 0.008
+  const w4 = Math.sin((x + y) * 9.0 + t * 0.35) * 0.006
   return { dx: (w1 + w2) * 1.2, dy: (w3 + w4) * 1.2 }
 }
 
@@ -182,10 +209,10 @@ function waveDisp(x, y, t) {
 const sectionRef = ref(null)
 const sectionHovered = ref(false)
 const selectedWork = ref(null)
-const CARD_W = 280
-const GAP = 50
+const CARD_W = 300
+const GAP = 80
 const POOL_SIZE = 8
-const Y_RANGE = 30 // ±px from center
+const Y_RANGE = 120 // ±px from center
 
 const works = [
   { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/1a1410/00b4d8?text=Lumina', client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
@@ -196,6 +223,8 @@ const works = [
   { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: 'https://placehold.co/600x450/1a1408/00b4d8?text=Cipher', client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
   { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: 'https://placehold.co/600x450/0a1218/00b4d8?text=Aether', client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
   { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: 'https://placehold.co/600x450/150a10/00b4d8?text=Drift', client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
+  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/1a0e08/00b4d8?text=Ember', client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
+  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: 'https://placehold.co/600x450/081a1e/00b4d8?text=Tide', client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
 ]
 
 const colors = [
@@ -207,6 +236,8 @@ const colors = [
   ['#2a2010', '#1a1408'],
   ['#1a202a', '#0a1218'],
   ['#2a1a20', '#150a10'],
+  ['#2a0e08', '#1a0804'],
+  ['#081a20', '#040e12'],
 ]
 
 let nextWorkIndex = 0
@@ -214,13 +245,9 @@ let nextWorkIndex = 0
 function randY() { return (Math.random() * 2 - 1) * Y_RANGE }
 function randFlag() { return Math.floor(Math.random() * 6) }
 
-// Shared sinusoidal speed profile: based on viewport width, slow drift
-function getScrollSpeed(t, vw) {
-  const cycle = 10.0
-  const base = vw * 0.025 // 2.5% of viewport per second
-  const amp = vw * 0.01   // ±1% pulse
-  const phase = (t % cycle) / cycle
-  return base + amp * (1 - Math.cos(2 * Math.PI * phase)) / 2
+// Linear constant speed based on viewport width
+function getScrollSpeed(_t, vw) {
+  return vw * 0.03 // 3% of viewport per second
 }
 
 const cards = ref(
@@ -228,7 +255,7 @@ const cards = ref(
     id: i,
     workIndex: nextWorkIndex++ % works.length,
     flagIndex: randFlag(),
-    x: -50 + i * (CARD_W + GAP),
+    x: -0 + i * (CARD_W + GAP),
     y: randY(),
   }))
 )
@@ -269,42 +296,158 @@ function animate() {
     // Apply position + wave displacement + flag clip-path
     const el = cardMap.get(card.id)
     if (el) {
-      const cx = (card.x + CARD_W / 2) / w
       const cy = (card.y + Y_RANGE) / h + 0.4
-      const { dx, dy } = waveDisp(cx, cy, time)
-      el.style.transform = `translate(${card.x + dx * w}px, ${card.y + dy * h}px)`
+      const { dy } = waveDisp(0.5, cy, time)
+      el.style.transform = `translate(${card.x}px, ${card.y + dy * h}px)`
 
       const visual = el.querySelector('.marquee-item-visual')
       if (visual) visual.style.clipPath = `url(#flag-${card.flagIndex})`
     }
   }
 
+  // ── Update & draw 2D ripple overlay ──
+  syncRippleUniforms()
+  drawRipples()
+
   animId = requestAnimationFrame(animate)
 }
 
-function resize() {
-  if (renderer) renderer.setSize(window.innerWidth, window.innerHeight)
+function syncWaterSize() {
+  if (!renderer || !waterCanvas.value) return
+  const parent = waterCanvas.value.parentElement
+  if (!parent) return
+  const rect = parent.getBoundingClientRect()
+  renderer.setSize(rect.width, rect.height, false)
 }
 
 function closeModal() {
   selectedWork.value = null
 }
 
+// ─── 2D Ripple overlay — expanding stroke circles (like CodePen) ───
+const RIPPLE_SPEED = 2
+const RIPPLE_MAX = 50
+const RIPPLE_COLOR = [46, 46, 46]
+
+class Ripple {
+  constructor(x, y, startSize) {
+    this.x = x
+    this.y = y
+    this.size = startSize
+    this.opacity = 1
+    this.born = performance.now()
+    this.opacityStep = (RIPPLE_SPEED / (RIPPLE_MAX - startSize)) / 2
+  }
+  update() {
+    this.size += RIPPLE_SPEED
+    this.opacity -= this.opacityStep
+  }
+  draw(ctx) {
+    if (this.opacity <= 0) return
+    ctx.beginPath()
+    ctx.strokeStyle = `rgba(${RIPPLE_COLOR[0]}, ${RIPPLE_COLOR[1]}, ${RIPPLE_COLOR[2]}, ${this.opacity})`
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+}
+
+function initRippleCanvas() {
+  if (!rippleCanvas.value) return
+  rippleCtx = rippleCanvas.value.getContext('2d')
+  syncRippleSize()
+}
+
+function syncRippleSize() {
+  if (!rippleCanvas.value || !sectionRef.value) return
+  const rect = sectionRef.value.getBoundingClientRect()
+  rippleW = rect.width
+  rippleH = rect.height
+  const dpr = Math.min(window.devicePixelRatio, 2)
+  rippleCanvas.value.width = rippleW * dpr
+  rippleCanvas.value.height = rippleH * dpr
+  if (rippleCtx) {
+    rippleCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  }
+}
+
+function drawRipples() {
+  if (!rippleCtx) return
+  rippleCtx.clearRect(0, 0, rippleW, rippleH)
+
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i]
+    r.update()
+    r.draw(rippleCtx)
+    if (r.opacity <= 0) {
+      ripples.splice(i, 1)
+    }
+  }
+}
+
+// Sync current ripple positions/ages to shader uniforms for UV displacement
+function syncRippleUniforms() {
+  if (rippleW === 0 || rippleH === 0) return
+  const count = Math.min(ripples.length, 15)
+  uniforms.uRippleCount.value = count
+  const now = performance.now()
+  for (let i = 0; i < count; i++) {
+    const r = ripples[i]
+    uniforms.uRipplePos.value[i].set(r.x / rippleW, 1.0 - r.y / rippleH)
+    uniforms.uRippleAge.value[i] = (now - r.born) / 1000
+  }
+}
+
 function onKeydown(e) {
   if (e.key === 'Escape') closeModal()
 }
 
+// ─── Mouse tracking for ripple canvas ───
+function onMouseEnter() {}
+function onMouseLeave() {}
+function onMouseMove(e) {
+  if (!sectionRef.value || !rippleCtx) return
+  const rect = sectionRef.value.getBoundingClientRect()
+  ripples.push(new Ripple(e.clientX - rect.left, e.clientY - rect.top, 2))
+}
+
 onMounted(() => {
   requestAnimationFrame(() => initWater())
-  window.addEventListener('resize', resize)
+  requestAnimationFrame(() => initRippleCanvas())
+
+  // Observe parent for size changes (handles initial & resize robustly)
+  if (waterCanvas.value) {
+    const parent = waterCanvas.value.parentElement
+    if (parent) {
+      resizeObserver = new ResizeObserver(() => {
+        syncWaterSize()
+        syncRippleSize()
+      })
+      resizeObserver.observe(parent)
+    }
+  }
+
   window.addEventListener('keydown', onKeydown)
+
+  const section = sectionRef.value
+  if (section) {
+    section.addEventListener('mouseenter', onMouseEnter)
+    section.addEventListener('mouseleave', onMouseLeave)
+    section.addEventListener('mousemove', onMouseMove)
+  }
 })
 
 onBeforeUnmount(() => {
   if (animId) cancelAnimationFrame(animId)
   if (renderer) renderer.dispose()
-  window.removeEventListener('resize', resize)
+  if (resizeObserver) resizeObserver.disconnect()
   window.removeEventListener('keydown', onKeydown)
+
+  const section = sectionRef.value
+  if (section) {
+    section.removeEventListener('mouseenter', onMouseEnter)
+    section.removeEventListener('mouseleave', onMouseLeave)
+    section.removeEventListener('mousemove', onMouseMove)
+  }
 })
 </script>
 
@@ -314,17 +457,8 @@ onBeforeUnmount(() => {
     class="marquee-section"
     id="reflection"
   >
-    <!-- Water-eroded rock edge top — smooth flowing curves -->
-    <svg class="rock-edge-top" viewBox="0 0 1440 32" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="edge-top-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--color-bg)" />
-          <stop offset="100%" stop-color="#020a0e" />
-        </linearGradient>
-      </defs>
-      <path d="M0,0 L1440,0 C1440,6 1380,14 1320,8 C1260,2 1200,10 1140,16 C1080,22 1020,8 960,4 C900,0 840,18 780,22 C720,26 660,10 600,6 C540,2 480,20 420,24 C360,28 300,12 240,8 C180,4 120,16 60,12 C40,10 20,6 0,8 Z"
-        fill="url(#edge-top-grad)" />
-    </svg>
+    <!-- Water-eroded rock edge top — masked to show bg-brown texture -->
+    <div class="rock-edge-divider rock-edge-divider-top bg-brown" style="mask: url(#marquee-rock-mask-top); -webkit-mask: url(#marquee-rock-mask-top);"></div>
 
     <!-- Fallback image behind Three.js canvas -->
     <div class="marquee-bg-layer">
@@ -333,6 +467,9 @@ onBeforeUnmount(() => {
     <!-- Three.js canvas with water-distorted image -->
     <canvas ref="waterCanvas" class="water-canvas"></canvas>
     <!-- Dark gradient overlay -->
+    <div class="marquee-overlay"></div>
+    <!-- 2D ripple overlay — expanding stroke circles, CSS-blurred -->
+    <canvas ref="rippleCanvas" class="ripple-canvas"></canvas>
     <div class="marquee-overlay"></div>
 
     <div class="marquee-content">
@@ -397,21 +534,18 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- Water-eroded rock edge bottom — smooth flowing curves -->
-    <svg class="rock-edge-bottom" viewBox="0 0 1440 32" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="edge-bottom-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#020a0e" />
-          <stop offset="100%" stop-color="var(--color-bg)" />
-        </linearGradient>
-      </defs>
-      <path d="M0,32 L1440,32 C1440,26 1380,18 1320,24 C1260,30 1200,22 1140,16 C1080,10 1020,24 960,28 C900,32 840,14 780,10 C720,6 660,22 600,26 C540,30 480,12 420,8 C360,4 300,20 240,24 C180,28 120,16 60,20 C40,22 20,26 0,24 Z"
-        fill="url(#edge-bottom-grad)" />
-    </svg>
+    <!-- Water-eroded rock edge bottom — masked to show bg-brown texture -->
+    <div class="rock-edge-divider rock-edge-divider-bottom bg-brown" style="mask: url(#marquee-rock-mask-bottom); -webkit-mask: url(#marquee-rock-mask-bottom);"></div>
 
-    <!-- Hidden SVG defs for subtle flag-shaped clip-paths -->
+    <!-- Hidden SVG defs for rock-edge masks + flag-shaped clip-paths -->
     <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
       <defs>
+        <mask id="marquee-rock-mask-top">
+          <path d="M0,0 L1440,0 C1440,6 1380,14 1320,8 C1260,2 1200,10 1140,16 C1080,22 1020,8 960,4 C900,0 840,18 780,22 C720,26 660,10 600,6 C540,2 480,20 420,24 C360,28 300,12 240,8 C180,4 120,16 60,12 C40,10 20,6 0,8 Z" fill="white" />
+        </mask>
+        <mask id="marquee-rock-mask-bottom">
+          <path d="M0,32 L1440,32 C1440,26 1380,18 1320,24 C1260,30 1200,22 1140,16 C1080,10 1020,24 960,28 C900,32 840,14 780,10 C720,6 660,22 600,26 C540,30 480,12 420,8 C360,4 300,20 240,24 C180,28 120,16 60,20 C40,22 20,26 0,24 Z" fill="white" />
+        </mask>
         <clipPath id="flag-0" clipPathUnits="objectBoundingBox">
           <path d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 L0,0.99 Z" />
         </clipPath>
@@ -444,8 +578,7 @@ onBeforeUnmount(() => {
 }
 
 /* ── Water-eroded rock edges — smooth flowing curves ── */
-.rock-edge-top,
-.rock-edge-bottom {
+.rock-edge-divider {
   position: absolute;
   left: 0;
   width: 100%;
@@ -453,13 +586,15 @@ onBeforeUnmount(() => {
   z-index: 20;
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
 }
 
-.rock-edge-top {
+.rock-edge-divider-top {
   top: -1px;
 }
 
-.rock-edge-bottom {
+.rock-edge-divider-bottom {
   bottom: -1px;
 }
 
@@ -486,6 +621,18 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* 2D ripple overlay — CSS-blurred expanding rings */
+.ripple-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(5px);
 }
 
 .marquee-overlay {
@@ -631,10 +778,6 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .marquee-content {
     padding: var(--space-12) var(--space-4) 0;
-  }
-
-  .marquee-item {
-    width: 220px;
   }
 }
 
