@@ -56,8 +56,8 @@ onMounted(() => {
   font-style: italic;
   color: var(--color-cyber);
   text-shadow:
-    0 0 20px rgba(0, 240, 255, 0.2),
-    0 0 60px rgba(0, 240, 255, 0.06);
+    0 0 20px rgba(232, 184, 48, 0.25),
+    0 0 60px rgba(232, 184, 48, 0.08);
   animation: mark-reveal 1.6s var(--ease-out-expo) forwards;
   opacity: 0;
   transform: translateY(8px);

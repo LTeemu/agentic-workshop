@@ -6,6 +6,8 @@ const waterCanvas = ref(null)
 const rippleCanvas = ref(null)
 let scene, camera, renderer, material, mesh
 let animId = null
+let animPaused = false
+let visibilityObserver = null
 let texture = null
 let resizeObserver = null
 let rippleCtx = null
@@ -120,14 +122,14 @@ const fragmentShader = `
     result *= 0.75;
 
     // Water tint (deep cyan-blue, submerged feel)
-    vec3 waterTint = vec3(0.0, 0.12, 0.18);
-    result = mix(result, waterTint, 0.25);
+    vec3 waterTint = vec3(0.0, 0.14, 0.22);
+    result = mix(result, waterTint, 0.28);
 
     // Area illumination from wave interference (subtle bright/dark areas)
     result *= illum;
 
-    // Surface ripple shimmer (very subtle)
-    vec3 shimmer = vec3(0.05, 0.15, 0.2);
+    // Surface ripple shimmer (very subtle bioluminescent glow)
+    vec3 shimmer = vec3(0.06, 0.20, 0.26);
     result += shimmer * (ripple - 0.92) * 0.3;
 
     // Water shadow bands
@@ -175,7 +177,7 @@ async function initWater() {
     canvas.width = 64
     canvas.height = 64
     const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#0a2a3a'
+    ctx.fillStyle = '#0c2e40'
     ctx.fillRect(0, 0, 64, 64)
     texture = new THREE.CanvasTexture(canvas)
     uniforms.uTexture.value = texture
@@ -202,52 +204,61 @@ function waveDisp(x, y, t) {
   const w2 = Math.sin(y * 7.0 + x * 5.0 + t * 0.5) * 0.01
   const w3 = Math.sin(y * 22.0 - x * 4.0 + t * 1.1) * 0.008
   const w4 = Math.sin((x + y) * 9.0 + t * 0.35) * 0.006
-  return { dx: (w1 + w2) * 1.2, dy: (w3 + w4) * 1.2 }
+  return { dx: (w1 + w2) * 0.6, dy: (w3 + w4) * 0.5 }
 }
 
 // ─── Card pool — each card drifts independently, recycles when off-screen ──
 const sectionRef = ref(null)
 const sectionHovered = ref(false)
 const selectedWork = ref(null)
-const CARD_W = 300
+const CARD_W = 280
 const GAP = 80
-const POOL_SIZE = 8
-const Y_RANGE = 120 // ±px from center
+const POOL_SIZE = 30
+const ROW_SPACING = 150 // distance from center for each row (tighter fit)
+const ROW_JITTER = 8   // random jitter within row
+const HALF_STEP = (CARD_W + GAP) / 2 // base half offset for staggered brick pattern
+// Scale spacing so cards span at least 150vw
+const _vw = typeof window !== 'undefined' ? window.innerWidth : 1920
+const rawSpan = (POOL_SIZE - 1) * HALF_STEP + CARD_W
+const minSpan = _vw
+const spanScale = Math.max(1, (minSpan - CARD_W) / (rawSpan - CARD_W))
+const effectiveStep = HALF_STEP * spanScale // scaled half-step used for all placement
+const scaledSpan = (rawSpan - CARD_W) * spanScale + CARD_W
+const startOffset = Math.max(0, (_vw - scaledSpan) / 2)
 
 const works = [
-  { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/1a1410/00b4d8?text=Lumina', client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
-  { title: 'Verdant — E-Commerce', medium: 'Web Dev', size: '2025', image: 'https://placehold.co/600x450/0d201a/00b4d8?text=Verdant', client: 'Verdant Plants', desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.' },
-  { title: 'Pulse — Digital Platform', medium: 'Platform', size: '2025', image: 'https://placehold.co/600x450/0a1218/00b4d8?text=Pulse', client: 'Pulse Health', desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.' },
-  { title: 'Nomad — Travel App', medium: 'App', size: '2025', image: 'https://placehold.co/600x450/1a1410/00b4d8?text=Nomad', client: 'Nomad Co.', desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.' },
-  { title: 'Form — Design System', medium: 'Design', size: '2024', image: 'https://placehold.co/600x450/0d1810/00b4d8?text=Form', client: 'Form Studio', desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.' },
-  { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: 'https://placehold.co/600x450/1a1408/00b4d8?text=Cipher', client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
-  { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: 'https://placehold.co/600x450/0a1218/00b4d8?text=Aether', client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
-  { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: 'https://placehold.co/600x450/150a10/00b4d8?text=Drift', client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
-  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/1a0e08/00b4d8?text=Ember', client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
-  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: 'https://placehold.co/600x450/081a1e/00b4d8?text=Tide', client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
+  { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/0c2e40/e8b830?text=Lumina', client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
+  { title: 'Verdant — E-Commerce', medium: 'Web Dev', size: '2025', image: 'https://placehold.co/600x450/1e4034/e8b830?text=Verdant', client: 'Verdant Plants', desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.' },
+  { title: 'Pulse — Digital Platform', medium: 'Platform', size: '2025', image: 'https://placehold.co/600x450/1e2430/e8b830?text=Pulse', client: 'Pulse Health', desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.' },
+  { title: 'Nomad — Travel App', medium: 'App', size: '2025', image: 'https://placehold.co/600x450/301e30/e8b830?text=Nomad', client: 'Nomad Co.', desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.' },
+  { title: 'Form — Design System', medium: 'Design', size: '2024', image: 'https://placehold.co/600x450/1e2e22/e8b830?text=Form', client: 'Form Studio', desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.' },
+  { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: 'https://placehold.co/600x450/302412/e8b830?text=Cipher', client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
+  { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: 'https://placehold.co/600x450/301e22/e8b830?text=Aether', client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
+  { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: 'https://placehold.co/600x450/301e22/e8b830?text=Drift', client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
+  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/30100a/e8b830?text=Ember', client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
+  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: 'https://placehold.co/600x450/0a2028/e8b830?text=Tide', client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
 ]
 
 const colors = [
-  ['#0a2a3a', '#051520'],
-  ['#1a3a30', '#0d201a'],
-  ['#2d1f12', '#1a1410'],
-  ['#2a1a2a', '#150a15'],
-  ['#1a2a20', '#0d1810'],
-  ['#2a2010', '#1a1408'],
-  ['#1a202a', '#0a1218'],
-  ['#2a1a20', '#150a10'],
-  ['#2a0e08', '#1a0804'],
-  ['#081a20', '#040e12'],
+  ['#0c2e40', '#061a24'],   // deep teal
+  ['#1e4034', '#0f241c'],   // rich jade
+  ['#322214', '#1c1610'],   // warm amber earth
+  ['#301e30', '#180c18'],   // deep plum
+  ['#1e2e22', '#0f1a12'],   // sage-green
+  ['#302412', '#1c160a'],   // bronze
+  ['#1e2430', '#0c141c'],   // midnight navy
+  ['#301e22', '#180c12'],   // burgundy
+  ['#30100a', '#1c0a06'],   // rust
+  ['#0a2028', '#061014'],   // dark petrel
 ]
 
 let nextWorkIndex = 0
 
-function randY() { return (Math.random() * 2 - 1) * Y_RANGE }
 function randFlag() { return Math.floor(Math.random() * 6) }
 
 // Linear constant speed based on viewport width
 function getScrollSpeed(_t, vw) {
-  return vw * 0.03 // 3% of viewport per second
+  return vw * 0.02 // 2% of viewport per second
 }
 
 const cards = ref(
@@ -255,13 +266,20 @@ const cards = ref(
     id: i,
     workIndex: nextWorkIndex++ % works.length,
     flagIndex: randFlag(),
-    x: -0 + i * (CARD_W + GAP),
-    y: randY(),
+    // Staggered brick pattern scaled to span 150vw
+    x: startOffset + Math.floor(i / 2) * effectiveStep * 2 + (i % 2) * effectiveStep,
+    row: i % 2, // 0, 1, 0, 1...
+    y: (Math.random() - 0.5) * ROW_JITTER * 2, // small jitter within row
   }))
 )
 
 function animate() {
-  time += 0.01
+  if (animPaused) {
+    animId = null
+    return
+  }
+
+  time = (time + 0.01) % 2000
   if (uniforms.uTime) uniforms.uTime.value = time
   if (renderer && scene && camera) renderer.render(scene, camera)
 
@@ -273,10 +291,14 @@ function animate() {
   const cardMap = new Map()
   for (const el of items) cardMap.set(Number(el.dataset.cardId), el)
 
-  // First pass: find rightmost card position for gap spacing
+  // First pass: find rightmost card position and its row for zigzag continuation
   let maxX = -Infinity
+  let rightmostRow = 0
   for (const card of cards.value) {
-    if (card.x > maxX) maxX = card.x
+    if (card.x > maxX) {
+      maxX = card.x
+      rightmostRow = card.row
+    }
   }
 
   // Second pass: update and recycle
@@ -286,9 +308,11 @@ function animate() {
     }
 
     if (card.x + CARD_W < -50) {
-      card.x = Math.max(w + 50, maxX + CARD_W + GAP)
+      card.x = maxX + effectiveStep
       maxX = card.x
-      card.y = randY()
+      card.y = (Math.random() - 0.5) * ROW_JITTER * 2
+      card.row = rightmostRow === 0 ? 1 : 0
+      rightmostRow = card.row
       card.flagIndex = randFlag()
       card.workIndex = nextWorkIndex++ % works.length
     }
@@ -296,9 +320,11 @@ function animate() {
     // Apply position + wave displacement + flag clip-path
     const el = cardMap.get(card.id)
     if (el) {
-      const cy = (card.y + Y_RANGE) / h + 0.4
+      const rowBase = card.row === 0 ? -ROW_SPACING : ROW_SPACING
+      const actualY = rowBase + card.y
+      const cy = (actualY + ROW_SPACING + ROW_JITTER) / h + 0.4
       const { dy } = waveDisp(0.5, cy, time)
-      el.style.transform = `translate(${card.x}px, ${card.y + dy * h}px)`
+      el.style.transform = `translate(${card.x}px, ${actualY + dy * h}px)`
 
       const visual = el.querySelector('.marquee-item-visual')
       if (visual) visual.style.clipPath = `url(#flag-${card.flagIndex})`
@@ -325,9 +351,9 @@ function closeModal() {
 }
 
 // ─── 2D Ripple overlay — expanding stroke circles (like CodePen) ───
-const RIPPLE_SPEED = 2
-const RIPPLE_MAX = 50
-const RIPPLE_COLOR = [46, 46, 46]
+const RIPPLE_SPEED = 0.8
+const RIPPLE_MAX = 36
+const RIPPLE_COLOR = [20, 36, 40]
 
 class Ripple {
   constructor(x, y, startSize) {
@@ -433,11 +459,26 @@ onMounted(() => {
     section.addEventListener('mouseenter', onMouseEnter)
     section.addEventListener('mouseleave', onMouseLeave)
     section.addEventListener('mousemove', onMouseMove)
+
+    // Pause animation when scrolled out of view
+    visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          animPaused = !entry.isIntersecting
+          if (!animPaused && !animId) {
+            animId = requestAnimationFrame(animate)
+          }
+        }
+      },
+      { threshold: 0 }
+    )
+    visibilityObserver.observe(section)
   }
 })
 
 onBeforeUnmount(() => {
   if (animId) cancelAnimationFrame(animId)
+  if (visibilityObserver) visibilityObserver.disconnect()
   if (renderer) renderer.dispose()
   if (resizeObserver) resizeObserver.disconnect()
   window.removeEventListener('keydown', onKeydown)
@@ -540,11 +581,11 @@ onBeforeUnmount(() => {
     <!-- Hidden SVG defs for rock-edge masks + flag-shaped clip-paths -->
     <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
       <defs>
-        <mask id="marquee-rock-mask-top">
-          <path d="M0,0 L1440,0 C1440,6 1380,14 1320,8 C1260,2 1200,10 1140,16 C1080,22 1020,8 960,4 C900,0 840,18 780,22 C720,26 660,10 600,6 C540,2 480,20 420,24 C360,28 300,12 240,8 C180,4 120,16 60,12 C40,10 20,6 0,8 Z" fill="white" />
+        <mask id="marquee-rock-mask-top" maskContentUnits="objectBoundingBox">
+          <path d="M0,0 L1,0 L1,1 C0.93,0.72 0.87,0.88 0.80,0.65 C0.73,0.42 0.67,0.58 0.60,0.75 C0.53,0.92 0.47,0.38 0.40,0.55 C0.33,0.72 0.27,0.85 0.20,0.62 C0.13,0.39 0.07,0.50 0,0.28 Z" fill="white" />
         </mask>
-        <mask id="marquee-rock-mask-bottom">
-          <path d="M0,32 L1440,32 C1440,26 1380,18 1320,24 C1260,30 1200,22 1140,16 C1080,10 1020,24 960,28 C900,32 840,14 780,10 C720,6 660,22 600,26 C540,30 480,12 420,8 C360,4 300,20 240,24 C180,28 120,16 60,20 C40,22 20,26 0,24 Z" fill="white" />
+        <mask id="marquee-rock-mask-bottom" maskContentUnits="objectBoundingBox">
+          <path d="M0,1 L1,1 L1,0 C0.93,0.28 0.87,0.12 0.80,0.35 C0.73,0.58 0.67,0.42 0.60,0.25 C0.53,0.08 0.47,0.62 0.40,0.45 C0.33,0.28 0.27,0.15 0.20,0.38 C0.13,0.61 0.07,0.50 0,0.72 Z" fill="white" />
         </mask>
         <clipPath id="flag-0" clipPathUnits="objectBoundingBox">
           <path d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 L0,0.99 Z" />
@@ -572,20 +613,20 @@ onBeforeUnmount(() => {
 <style scoped>
 .marquee-section {
   position: relative;
-  height: 100vh;
+  height: max-content;
   overflow: hidden;
-  background: #081a22;
+  background: var(--color-pool-mid);
 }
 
-/* ── Water-eroded rock edges — smooth flowing curves ── */
+/* ── Smooth organic dividers — flowing wave edges ── */
 .rock-edge-divider {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 32px;
+  height: 40px;
   z-index: 20;
   pointer-events: none;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
   mask-size: 100% 100%;
   -webkit-mask-size: 100% 100%;
 }
@@ -639,10 +680,12 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    180deg,
-    rgba(5, 10, 15, 0.25) 0%,
-    rgba(5, 10, 15, 0.08) 50%,
-    rgba(5, 10, 15, 0.35) 100%
+    150deg,
+    rgba(12, 14, 18, 0.12) 0%,
+    rgba(15, 18, 24, 0.2) 25%,
+    rgba(10, 30, 40, 0.28) 45%,
+    rgba(8, 22, 32, 0.32) 65%,
+    rgba(5, 10, 15, 0.4) 100% 
   );
   pointer-events: none;
   z-index: 1;
@@ -653,8 +696,8 @@ onBeforeUnmount(() => {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: var(--space-16) var(--space-8) 0;
+  min-height: 100%;
+  padding: var(--space-16) 0 0;
 }
 
 .marquee-header {
@@ -684,6 +727,10 @@ onBeforeUnmount(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  min-height: 580px;
+  align-self: flex-start;
+  margin: var(--space-16) 0;
   mask-image: linear-gradient(
     90deg,
     transparent 0%,
@@ -696,7 +743,7 @@ onBeforeUnmount(() => {
 .marquee-item {
   position: absolute;
   top: calc(50% - 120px);
-  width: 280px;
+  width: 240px;
   cursor: pointer;
   opacity: 0.8;
   transition: opacity var(--duration-normal) var(--ease-out-expo);
@@ -743,8 +790,8 @@ onBeforeUnmount(() => {
   background: linear-gradient(
     180deg,
     rgba(2, 10, 14, 0.35) 0%,
-    rgba(0, 180, 216, 0.08) 40%,
-    rgba(0, 180, 216, 0.03) 60%,
+    rgba(232, 184, 48, 0.08) 40%,
+    rgba(232, 184, 48, 0.03) 60%,
     rgba(2, 10, 14, 0.4) 100%
   );
   pointer-events: none;

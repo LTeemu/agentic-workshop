@@ -44,7 +44,7 @@ const fragmentShader = `
 
       float hue = fract(fi * 0.3456 + 0.7890);
       float period = 3.5 + fract(fi * 0.2345 + 0.5678) * 2.5;
-      float maxSize = 0.05 + fract(fi * 0.6789 + 0.1234) * 0.07;
+      float maxSize = 0.04 + fract(fi * 0.6789 + 0.1234) * 0.07;
 
       vec3 starColor = mix(vec3(0.15, 0.7, 1.0), vec3(0.6, 0.3, 1.0), hue);
 
@@ -55,7 +55,7 @@ const fragmentShader = `
 
       float t = fract(uTime / period);
       float grow = t * t;
-      float size = 0.005 + grow * maxSize;
+      float size = 0.004 + grow * maxSize;
 
       // Wobble
       float ws = 0.001 + t * 0.025;
@@ -171,6 +171,7 @@ const uniforms = {
 
 // ─── Scene setup ────────────────────────────────────
 let observer = null
+let visibilityObserver = null
 
 function syncSize() {
   if (!renderer || !canvas.value) return
@@ -186,8 +187,13 @@ function syncSize() {
 }
 
 let animId = null
+let animPaused = false
 
 function animate() {
+  if (animPaused) {
+    animId = null
+    return
+  }
   if (material) {
     uniforms.uTime.value += 0.01
   }
@@ -232,6 +238,20 @@ onMounted(() => {
   if (parent) {
     observer = new ResizeObserver(() => syncSize())
     observer.observe(parent)
+
+    // Pause when scrolled out of view — saves GPU/CPU
+    visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          animPaused = !entry.isIntersecting
+          if (!animPaused && !animId) {
+            animId = requestAnimationFrame(animate)
+          }
+        }
+      },
+      { threshold: 0 }
+    )
+    visibilityObserver.observe(parent)
   }
 
   animate()
@@ -239,6 +259,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (animId) cancelAnimationFrame(animId)
+  if (visibilityObserver) visibilityObserver.disconnect()
   if (observer) observer.disconnect()
   if (renderer) renderer.dispose()
 })

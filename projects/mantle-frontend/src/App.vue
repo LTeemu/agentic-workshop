@@ -15,14 +15,17 @@ const loaded = ref(false)
 <template>
   <LoadingScreen v-if="!loaded" @loaded="loaded = true" />
 
+  <a href="#hero" class="skip-link">Skip to content</a>
   <div v-show="loaded" class="app-root bg-brown">
     <TlDrModal />
-    <HeroSection />
-    <ServicesGrid />
-    <WaterMarquee />
-    <ProcessSection />
-    <AboutSection />
-    <ContactSection />
+    <main>
+      <HeroSection />
+      <ServicesGrid />
+      <WaterMarquee />
+      <ProcessSection />
+      <AboutSection />
+      <ContactSection />
+    </main>
   </div>
 </template>
 

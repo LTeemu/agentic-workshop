@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const isOpen = ref(false)
+
+const modalRef = ref(null)
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -10,6 +12,46 @@ function toggle() {
 function close() {
   isOpen.value = false
 }
+
+function trapFocus(e) {
+  if (e.key !== 'Tab' || !modalRef.value) return
+  const focusable = modalRef.value.querySelectorAll(
+    'a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+  )
+  if (focusable.length === 0) return
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('keydown', trapFocus)
+})
+
+watch(isOpen, (open) => {
+  if (open) {
+    // Auto-focus first nav link
+    requestAnimationFrame(() => {
+      if (!modalRef.value) return
+      const first = modalRef.value.querySelector('button, a')
+      if (first) first.focus()
+    })
+    window.addEventListener('keydown', trapFocus)
+  } else {
+    window.removeEventListener('keydown', trapFocus)
+  }
+})
 
 function scrollTo(id) {
   close()
@@ -49,7 +91,7 @@ const sections = [
 
     <Transition name="tldr">
       <div v-if="isOpen" class="tldr-overlay" @click.self="close">
-        <div class="tldr-modal">
+        <div ref="modalRef" class="tldr-modal">
           <div class="tldr-header">
             <span class="tldr-label">TL;DR</span>
             <span class="tldr-sub">too long; didn't read</span>
@@ -91,7 +133,7 @@ const sections = [
   z-index: 1001;
   width: 48px;
   height: 48px;
-  background: rgba(0, 240, 255, 0.05);
+  background: rgba(232, 184, 48, 0.06);
   border: 1px solid var(--color-border);
   cursor: pointer;
   display: grid;
@@ -100,7 +142,7 @@ const sections = [
 }
 
 .tldr-toggle:hover {
-  background: rgba(0, 240, 255, 0.1);
+  background: rgba(232, 184, 48, 0.12);
   border-color: var(--color-cyber);
 }
 
@@ -129,24 +171,9 @@ const sections = [
 .tldr-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(13, 10, 8, 0.95);
-  background-image:
-    /* Warm organic grain */
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 1px,
-      rgba(139, 107, 74, 0.12) 1px,
-      rgba(139, 107, 74, 0.12) 2px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1px,
-      rgba(139, 107, 74, 0.08) 1px,
-      rgba(139, 107, 74, 0.08) 2px
-    );
-  background-size: 3px 3px, 3px 3px;
+  background: rgba(13, 10, 8, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -173,9 +200,9 @@ const sections = [
       rgba(139, 107, 74, 0.04) 1px,
       rgba(139, 107, 74, 0.04) 2px
     ),
-    /* Cyan grid lines */
-    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    /* Honey grid lines */
+    linear-gradient(rgba(232, 184, 48, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 184, 48, 0.04) 1px, transparent 1px);
   background-size: 3px 3px, 3px 3px, 60px 60px, 60px 60px;
   pointer-events: none;
   animation: grid-drift 8s linear infinite;

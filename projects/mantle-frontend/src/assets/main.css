@@ -12,26 +12,26 @@
 }
 
 :root {
-  /* Cave depths */
-  --color-cave-deep: #050302;
-  --color-cave-dark: #0a0706;
-  --color-bg: #0d0a08;
-  --color-cave-wall: #1a1410;
-  --color-cave-wall-hover: #2d241d;
-  --color-cave-wall-light: #3a2d24;
-  --color-cave-stone: #4c3d32;
-  --color-glow-cyan: #00f0ff;
-  --color-glow-cyan-dim: rgba(0, 240, 255, 0.15);
-  --color-glow-cyan-glow: rgba(0, 240, 255, 0.25);
-  --color-crystal: #7c3aed;
-  --color-crystal-dim: rgba(124, 58, 237, 0.12);
+  /* Cave depths — cool slate/charcoal, lets teal accents pop */
+  --color-cave-deep: #040506;
+  --color-cave-dark: #090b0d;
+  --color-bg: #0c0e10;
+  --color-cave-wall: #16181c;
+  --color-cave-wall-hover: #24272d;
+  --color-cave-wall-light: #303339;
+  --color-cave-stone: #40444a;
+  --color-glow-cyan: #e8b830;
+  --color-glow-cyan-dim: rgba(232, 184, 48, 0.2);
+  --color-glow-cyan-glow: rgba(232, 184, 48, 0.35);
+  --color-crystal: #8b5cf6;
+  --color-crystal-dim: rgba(139, 92, 246, 0.15);
 
-  /* Water/cave pool */
-  --color-pool-deep: #041824;
-  --color-pool-mid: #081a22;
-  --color-pool-surface: #00b4d8;
-  --color-pool-dim: rgba(0, 180, 216, 0.12);
-  --color-pool-glow: rgba(0, 180, 216, 0.08);
+  /* Water/cave pool — bioluminescent teal/jade richness */
+  --color-pool-deep: #031c2c;
+  --color-pool-mid: #06202e;
+  --color-pool-surface: #e8b830;
+  --color-pool-dim: rgba(232, 184, 48, 0.18);
+  --color-pool-glow: rgba(232, 184, 48, 0.12);
 
   /* Aliases — kept for backward compat, map to new tokens */
   --color-surface: var(--color-cave-wall);
@@ -42,18 +42,19 @@
   --color-cyber: var(--color-glow-cyan);
   --color-cyber-dim: var(--color-glow-cyan-dim);
   --color-cyber-glow: var(--color-glow-cyan-glow);
-  --color-wood: #563c28;
-  --color-wood-light: #7a593a;
-  --color-wood-glow: rgba(86, 60, 40, 0.15);
+  --color-wood: #5b3f2a;
+  --color-wood-light: #7e5d3d;
+  --color-wood-glow: rgba(91, 63, 42, 0.18);
   --color-water-deep: var(--color-pool-deep);
   --color-water-mid: var(--color-pool-mid);
   --color-water-surface: var(--color-pool-surface);
   --color-water-dim: var(--color-pool-dim);
   --color-water-glow: var(--color-pool-glow);
 
-  --color-text: #e8ddd0;
-  --color-text-muted: #9a8a7a;
-  --color-text-dim: #6b5d50;
+  /* Text — warm cream, softer glow on dark */
+  --color-text: #ece0d0;
+  --color-text-muted: #a08d7a;
+  --color-text-dim: #8a7a6a;
 
   /* Typography */
   --font-display: 'Instrument Serif', Georgia, serif;
@@ -96,6 +97,7 @@ html {
   scroll-behavior: smooth;
   overflow-x: hidden;
   width: 100%;
+  max-width: 2560px;
 }
 
 body {
@@ -109,6 +111,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   width: 100%;
+}
+
+/* Skip link — visible on focus for keyboard users */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-cyber);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  transform: translateY(-100%);
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--color-cyber);
+  outline-offset: 2px;
 }
 
 ::selection {
@@ -184,21 +207,31 @@ a:hover {
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.04;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent 2px,
-    rgba(139, 107, 74, 0.3) 2px,
-    rgba(139, 107, 74, 0.3) 3px
-  );
-  background-size: 40px 100%;
   pointer-events: none;
+  background-image:
+    /* Warm organic grain */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.06) 1px,
+      rgba(139, 107, 74, 0.06) 2px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(139, 107, 74, 0.04) 1px,
+      rgba(139, 107, 74, 0.04) 2px
+    );
+  background-size:
+    2px 2px,
+    2px 2px;
 }
 
-/* ── Brown cave texture: grain + grid composite ──
-   Mixes subtle organic grain with a tech grid for brown-background areas.
-   Apply to any element that needs a warm textured cave surface. */
+/* ── Cave surface texture: organic grain on slate ──
+   Subtle warm cross-hatch grain over cool cave-wall background.
+   Warm grain provides organic contrast against cool slate base. */
 .bg-brown {
   position: relative;
   background: var(--color-cave-wall);
@@ -210,43 +243,25 @@ a:hover {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.06;
   background-image:
-    /* Grain noise layer */
+    /* Warm organic grain */
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 1px,
-      rgba(139, 107, 74, 0.4) 1px,
-      rgba(139, 107, 74, 0.4) 2px
+      rgba(139, 107, 74, 0.06) 1px,
+      rgba(139, 107, 74, 0.06) 2px
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 1px,
-      rgba(139, 107, 74, 0.25) 1px,
-      rgba(139, 107, 74, 0.25) 2px
-    ),
-    /* Subtle grid overlay */
-    repeating-linear-gradient(
-        90deg,
-        rgba(0, 240, 255, 0.02) 0px,
-        transparent 1px,
-        transparent 59px,
-        rgba(0, 240, 255, 0.02) 60px
-      ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(0, 240, 255, 0.02) 0px,
-      transparent 1px,
-      transparent 59px,
-      rgba(0, 240, 255, 0.02) 60px
+      rgba(139, 107, 74, 0.04) 1px,
+      rgba(139, 107, 74, 0.04) 2px
     );
   background-size:
-    3px 3px,
-    3px 3px,
-    60px 60px,
-    60px 60px;
+    2px 2px,
+    2px 2px;
 }
 
 /* Cave depth gradient — subtle pool glow from below */
@@ -260,7 +275,7 @@ a:hover {
   inset: 0;
   background:
     radial-gradient(ellipse 80% 50% at 50% 100%, var(--color-pool-dim) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 20% 80%, rgba(0, 180, 216, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 20% 80%, var(--color-pool-glow) 0%, transparent 50%),
     radial-gradient(ellipse 50% 30% at 80% 20%, var(--color-crystal-dim) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
@@ -278,7 +293,7 @@ a:hover {
   inset: 0;
   background: radial-gradient(
     circle at var(--rx, 50%) var(--ry, 50%),
-    rgba(0, 180, 216, 0.06) 0%,
+    var(--color-pool-dim) 0%,
     transparent 60%
   );
   opacity: 0;
@@ -301,7 +316,12 @@ a:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.03) 50%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(232, 184, 48, 0.04) 50%,
+    transparent 100%
+  );
   background-size: 200% 100%;
   animation: shimmer-slide 4s ease-in-out infinite;
   pointer-events: none;
@@ -329,6 +349,17 @@ a:hover {
   z-index: 0;
   transform: translate(-50%, -50%);
   transition: opacity var(--duration-slow) var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (max-width: 768px) {

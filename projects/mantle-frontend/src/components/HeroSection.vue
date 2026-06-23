@@ -4,6 +4,7 @@ import HeroShader from './HeroShader.vue'
 
 const heroRef = ref(null)
 const scrollProgress = ref(0)
+const constellationCanvas = ref(null)
 
 function onScroll() {
   if (!heroRef.value) return
@@ -25,14 +26,149 @@ function handleScroll() {
   }
 }
 
+// ── Constellation effect ────────────────────────────
+const HONEY_RGB = [232, 184, 48]
+let nodes = []
+let connAnimId = null
+let connPaused = false
+let connVisibilityObserver = null
+let connResizeObserver = null
+
+function spawnNodes(cw, ch) {
+  const count = 28
+  nodes = []
+  for (let i = 0; i < count; i++) {
+    nodes.push({
+      x: Math.random() * cw,
+      y: Math.random() * ch,
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: (Math.random() - 0.5) * 0.15,
+      phase: Math.random() * Math.PI * 2,
+      baseSize: 1.5 + Math.random() * 2,
+    })
+  }
+}
+
+function drawConstellation(ctx, cw, ch, t) {
+  ctx.clearRect(0, 0, cw, ch)
+
+  // Drift nodes slowly
+  for (const n of nodes) {
+    n.x += n.vx * 0.3
+    n.y += n.vy * 0.3
+    if (n.x < 0 || n.x > cw) n.vx *= -1
+    if (n.y < 0 || n.y > ch) n.vy *= -1
+  }
+
+  const maxDist = Math.min(cw, ch) * 0.22
+  const [cr, cg, cb] = HONEY_RGB
+
+  // Draw lines between nearby nodes
+  ctx.lineCap = 'round'
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x
+      const dy = nodes[i].y - nodes[j].y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < maxDist) {
+        const alpha = (1 - dist / maxDist) * 0.25
+        ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`
+        ctx.lineWidth = 0.5 + (1 - dist / maxDist) * 0.8
+        ctx.beginPath()
+        ctx.moveTo(nodes[i].x, nodes[i].y)
+        ctx.lineTo(nodes[j].x, nodes[j].y)
+        ctx.stroke()
+      }
+    }
+  }
+
+  // Draw glowing nodes
+  for (const n of nodes) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.6 + n.phase)
+    const size = n.baseSize * (0.7 + pulse * 0.3)
+    const alpha = 0.3 + pulse * 0.35
+
+    // Outer glow
+    const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, size * 4)
+    grad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.3})`)
+    grad.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`)
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.arc(n.x, n.y, size * 4, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Core dot
+    ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`
+    ctx.beginPath()
+    ctx.arc(n.x, n.y, size, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
+
+function startConstellation() {
+  const canvas = constellationCanvas.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  const parent = canvas.parentElement
+  if (!parent) return
+
+  function resize() {
+    const rect = parent.getBoundingClientRect()
+    const dpr = Math.min(window.devicePixelRatio, 2)
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    canvas.style.width = rect.width + 'px'
+    canvas.style.height = rect.height + 'px'
+    // Reset transform before scaling (setTransform replaces cumulative scale)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    spawnNodes(rect.width, rect.height)
+  }
+
+  resize()
+  connResizeObserver = new ResizeObserver(() => resize())
+  connResizeObserver.observe(parent)
+
+  let time = 0
+  function loop() {
+    if (connPaused) {
+      connAnimId = null
+      return
+    }
+    const rect = parent.getBoundingClientRect()
+    time += 0.016
+    drawConstellation(ctx, rect.width, rect.height, time)
+    connAnimId = requestAnimationFrame(loop)
+  }
+  loop()
+
+  // Visibility pause using IntersectionObserver on the hero section
+  connVisibilityObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        connPaused = !entry.isIntersecting
+        if (!connPaused && !connAnimId) {
+          connAnimId = requestAnimationFrame(loop)
+        }
+      }
+    },
+    { threshold: 0 }
+  )
+  if (heroRef.value) connVisibilityObserver.observe(heroRef.value)
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   onScroll()
+  startConstellation()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  if (connAnimId) cancelAnimationFrame(connAnimId)
+  if (connVisibilityObserver) connVisibilityObserver.disconnect()
+  if (connResizeObserver) connResizeObserver.disconnect()
 })
+
 </script>
 
 <template>
@@ -48,6 +184,7 @@ onBeforeUnmount(() => {
       class="hero-text"
       :style="{ transform: `translateY(${scrollProgress * 4}%)` }"
     >
+      <canvas ref="constellationCanvas" class="constellation-canvas" aria-hidden="true"></canvas>
       <span class="hero-label">Mantle</span>
       <h1 class="hero-title">
         <span class="hero-line">Where craft</span>
@@ -85,7 +222,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 85vmin;
   display: grid;
   place-items: center;
   overflow: clip;
@@ -143,6 +280,17 @@ onBeforeUnmount(() => {
   );
 }
 
+/* ── Constellation canvas ── */
+.constellation-canvas {
+  position: absolute;
+  inset: -40px -60px -20px;
+  width: calc(100% + 120px);
+  height: calc(100% + 60px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
 /* ── Text ── */
 .hero-text {
   position: relative;
@@ -163,7 +311,7 @@ onBeforeUnmount(() => {
   color: var(--color-glow-cyan);
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  text-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  text-shadow: 0 0 20px rgba(232, 184, 48, 0.25);
 }
 
 .hero-title {
@@ -184,7 +332,7 @@ onBeforeUnmount(() => {
 
 .hero-line-accent {
   color: var(--color-glow-cyan);
-  text-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+  text-shadow: 0 0 30px rgba(232, 184, 48, 0.20);
 }
 
 .hero-sub {
@@ -215,13 +363,13 @@ onBeforeUnmount(() => {
   border: none;
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out-expo);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 25px rgba(232, 184, 48, 0.20);
 }
 
 .btn-primary:hover {
   background: var(--color-text);
   color: var(--color-cave-deep);
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 35px rgba(232, 184, 48, 0.30);
 }
 
 .btn-ghost {
@@ -240,7 +388,7 @@ onBeforeUnmount(() => {
 .btn-ghost:hover {
   border-color: var(--color-glow-cyan);
   color: var(--color-glow-cyan);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 15px rgba(232, 184, 48, 0.15);
 }
 
 /* ── Scroll Indicator ── */

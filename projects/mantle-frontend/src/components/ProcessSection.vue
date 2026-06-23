@@ -42,8 +42,6 @@ const steps = [
         </AppearTransition>
         <div v-if="i < steps.length - 1" class="step-connector" aria-hidden="true">
           <span class="connector-dot"></span>
-          <span class="connector-line"></span>
-          <span class="connector-dot"></span>
         </div>
       </template>
     </div>
@@ -74,7 +72,7 @@ const steps = [
   min-width: 0;
   padding: var(--space-6) var(--space-5);
   position: relative;
-  border-top: 1px solid var(--color-border);
+
   transition: background var(--duration-normal) var(--ease-out-expo);
 }
 
@@ -88,6 +86,7 @@ const steps = [
   font-weight: 400;
   font-style: italic;
   color: var(--color-text);
+  margin-top: var(--space-2);
   margin-bottom: var(--space-3);
   line-height: 1.2;
 }
@@ -100,45 +99,74 @@ const steps = [
 
 /* Connector between steps */
 .step-connector {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: var(--space-6) 0;
+  justify-content: center;
   flex-shrink: 0;
-  width: 24px;
+  width: 32px;
+  align-self: stretch;
+  padding: var(--space-2) 0;
+}
+
+/* Continuous vertical line behind the dot */
+.step-connector::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--color-water-surface) 25%,
+    var(--color-water-surface) 75%,
+    transparent 100%
+  );
+  opacity: 0.18;
+}
+
+.connector-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-water-surface);
+  opacity: 0.55;
+  flex-shrink: 0;
+  z-index: 1;
+  box-shadow: 0 0 8px var(--color-water-glow);
 }
 
 @media (max-width: 900px) {
   .step-connector {
-    flex-direction: row;
     width: auto;
-    height: 24px;
-    padding: 0 var(--space-6);
+    height: 48px;
+    align-self: stretch;
+    padding: 0;
   }
-}
 
-.connector-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--color-water-surface);
-  opacity: 0.3;
-  flex-shrink: 0;
-}
+  .step-connector::before {
+    top: calc(50% - 1px);
+    left: 12px;
+    right: 12px;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+    transform: none;
+    opacity: 0.25;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-water-surface) 10%,
+      var(--color-water-surface) 90%,
+      transparent 100%
+    );
+  }
 
-.connector-line {
-  flex: 1;
-  width: 1px;
-  background: linear-gradient(180deg, var(--color-water-surface), transparent);
-  opacity: 0.15;
-}
-
-@media (max-width: 900px) {
-  .connector-line {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, var(--color-water-surface), transparent);
+  .connector-dot {
+    width: 10px;
+    height: 10px;
+    opacity: 0.65;
   }
 }
 </style>
