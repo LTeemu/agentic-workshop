@@ -222,7 +222,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .hero {
   position: relative;
-  min-height: 85vmin;
+  min-height: 660px;
+  height: 80vmin;
   display: grid;
   place-items: center;
   overflow: clip;
