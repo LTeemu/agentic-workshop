@@ -1,6 +1,6 @@
 # agentic-workshop
 
-> Fully AI-generated experimental project. Built entirely through agentic LLM tooling as a coding sandbox playground.
+> Mostly AI-generated experimental project. Built entirely through agentic LLM tooling as a coding sandbox playground.
 
 A local development sandbox for spinning up and managing small coding projects.
 
