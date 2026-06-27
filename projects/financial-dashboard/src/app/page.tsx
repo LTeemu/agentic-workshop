@@ -11,27 +11,27 @@ export default function Home() {
       <main className="flex max-w-2xl flex-col items-center gap-8 px-8 text-center">
         <h1 className="text-5xl font-bold tracking-tight">Financial Dashboard</h1>
         <p className="max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-          Real-time market data and analysis for stocks, ETFs, and funds.
+          Real-time US market data and analysis for stocks, ETFs, and funds.
         </p>
         <div className="flex gap-4">
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Go to Dashboard
-          </Link>
-          {!isPending && !session && (
+          {isPending ? (
+            <span className="rounded-lg border px-6 py-3 text-sm font-medium text-zinc-400">
+              Loading…
+            </span>
+          ) : session ? (
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Go to Dashboard ({session.user.name})
+            </Link>
+          ) : (
             <Link
               href="/login"
-              className="rounded-lg border px-6 py-3 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700"
             >
               Sign In
             </Link>
-          )}
-          {session && (
-            <span className="rounded-lg border px-6 py-3 text-sm font-medium">
-              Signed in as {session.user.name}
-            </span>
           )}
         </div>
       </main>

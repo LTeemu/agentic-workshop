@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { router, publicProcedure } from "@/trpc/init";
 import { searchSymbol, getProfile, getNews, getQuote } from "@/lib/finance/finnhub";
-import { trackedSymbols, dataFreshness } from "@/server/db/schema/index";
-import { eq, desc, sql } from "drizzle-orm";
+import { trackedSymbols } from "@/server/db/schema/index";
+import { eq, desc } from "drizzle-orm";
 
 export const stocksRouter = router({
   /** Search for a stock/ETF/fund by query */
@@ -68,18 +68,4 @@ export const stocksRouter = router({
       return news.slice(0, input.limit);
     }),
 
-  /** Manual refresh of a symbol's data freshness */
-  refresh: publicProcedure
-    .input(z.object({ symbol: z.string().toUpperCase() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .insert(dataFreshness)
-        .values({ symbol: input.symbol, dataType: "candles" })
-        .onConflictDoUpdate({
-          target: [dataFreshness.symbol, dataFreshness.dataType],
-          set: { lastFetchedAt: sql`now()` },
-        });
-
-      return { success: true };
-    }),
 });

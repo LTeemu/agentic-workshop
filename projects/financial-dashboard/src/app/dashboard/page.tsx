@@ -33,8 +33,8 @@ export default function DashboardPage() {
   const removeSymbol = useRemoveSymbol();
 
   const handleAddSymbol = useCallback(
-    async (symbol: string, name: string, type: string) => {
-      await addSymbol.mutateAsync({ symbol, name, type: normalizeType(type) });
+    (symbol: string, name: string, type: string) => {
+      addSymbol.mutate({ symbol, name, type: normalizeType(type) });
       setSearchQuery("");
     },
     [addSymbol],
@@ -45,7 +45,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Search and track stocks, ETFs, and funds
+          Search and track US stocks, ETFs, and funds
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export default function DashboardPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search symbols (e.g. AAPL, VOO, MSFT)..."
+            placeholder="Search US symbols (e.g. AAPL, VOO, MSFT)..."
             className="w-full rounded-lg border px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 

@@ -1,32 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 
-export function useQuote(symbol: string) {
+export function useQuote(symbol: string, enabled?: boolean) {
   const trpc = useTRPC();
 
   return useQuery({
     ...trpc.stocks.getQuote.queryOptions({ symbol }),
-    enabled: symbol.length > 0,
+    enabled: enabled ?? symbol.length > 0,
     staleTime: 1000 * 60, // 1 minute — quote data changes fast
   });
 }
 
-export function useStockProfile(symbol: string) {
+export function useStockProfile(symbol: string, enabled?: boolean) {
   const trpc = useTRPC();
 
   return useQuery({
     ...trpc.stocks.getProfile.queryOptions({ symbol }),
-    enabled: symbol.length > 0,
+    enabled: enabled ?? symbol.length > 0,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 }
 
-export function useNews(symbol: string, limit?: number) {
+export function useNews(symbol: string, limit?: number, enabled?: boolean) {
   const trpc = useTRPC();
 
   return useQuery({
     ...trpc.stocks.getNews.queryOptions({ symbol, limit }),
-    enabled: symbol.length > 0,
+    enabled: enabled ?? symbol.length > 0,
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 }

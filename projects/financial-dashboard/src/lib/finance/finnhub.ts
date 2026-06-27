@@ -1,5 +1,14 @@
 const BASE_URL = "https://finnhub.io/api/v1";
 
+export class FinnhubError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "FinnhubError";
+    this.status = status;
+  }
+}
+
 function getApiKey(): string {
   const key = process.env.FINNHUB_API_KEY;
   if (!key) throw new Error("FINNHUB_API_KEY is not set");
@@ -16,10 +25,15 @@ async function fetchApi<T>(path: string, params: Record<string, string> = {}): P
   const response = await fetch(url.toString());
 
   if (!response.ok) {
+    let message: string;
     if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please wait before making more requests.");
+      message = "Rate limit reached. Please wait before making more requests.";
+    } else if (response.status === 403) {
+      message = "Not available on the free plan (US only). A paid subscription is required for global markets.";
+    } else {
+      message = `Finnhub API error: ${response.status} ${response.statusText}`;
     }
-    throw new Error(`Finnhub API error: ${response.status} ${response.statusText}`);
+    throw new FinnhubError(message, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -83,10 +97,34 @@ export interface FinnhubNewsItem {
   url: string;
 }
 
+// --- Constants ---
+
+/**
+ * US-traded symbols on Finnhub are plain tickers (AAPL, MSFT) or class shares (BRK.B, BF.A).
+ * Non-US symbols have an exchange suffix like .HK, .L, .DE, etc.
+ */
+const NON_US_SUFFIXES = [
+  ".HK", ".L", ".DE", ".F", ".PA", ".AS", ".BR",   // Europe / Asia
+  ".TO", ".V",                                       // Canada
+  ".SS", ".SZ", ".T", ".KS", ".KQ", ".TW",          // Asia
+  ".SI", ".KL", ".JK",                               // SE Asia
+  ".ST", ".CO", ".OL", ".HE", ".IR",                 // Nordics / Ireland
+];
+
+export function isRestrictedSymbol(symbol: string): boolean {
+  return NON_US_SUFFIXES.some((suffix) => symbol.endsWith(suffix));
+}
+
 // --- API Methods ---
 
-export function searchSymbol(query: string): Promise<FinnhubSearchResult> {
-  return fetchApi<FinnhubSearchResult>("/search", { q: query });
+export async function searchSymbol(query: string): Promise<FinnhubSearchResult> {
+  const data = await fetchApi<FinnhubSearchResult>("/search", { q: query });
+  // Filter out symbols from known-restricted exchanges
+  if (data.result) {
+    data.result = data.result.filter((r) => !isRestrictedSymbol(r.symbol));
+    data.count = data.result.length;
+  }
+  return data;
 }
 
 export function getProfile(symbol: string): Promise<FinnhubProfile | Record<string, never>> {

@@ -28,11 +28,23 @@
     "bash": {
       "*": "allow",
       "Remove-Item *": "ask",
-      "git *": "deny",
       "git log": "allow",
       "git show *": "allow",
       "git diff *": "allow",
-      "git status": "allow"
+      "git status": "allow",
+      "git add *": "deny",
+      "git commit *": "deny",
+      "git push *": "deny",
+      "git pull *": "deny",
+      "git merge *": "deny",
+      "git rebase *": "deny",
+      "git reset *": "deny",
+      "git branch -d *": "deny",
+      "git checkout *": "deny",
+      "git stash *": "deny",
+      "git tag *": "deny",
+      "git revert *": "deny",
+      "git rm *": "deny"
     }
   },
   "tool_output": {

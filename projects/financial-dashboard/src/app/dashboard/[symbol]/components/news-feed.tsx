@@ -1,5 +1,7 @@
 "use client";
 
+import { CacheIndicator } from "./cache-indicator";
+
 interface NewsItem {
   headline: string;
   summary: string;
@@ -11,21 +13,36 @@ interface NewsItem {
 
 interface NewsFeedProps {
   news: NewsItem[] | null | undefined;
+  newsUpdatedAt?: number;
+  newsError?: { message: string } | null;
 }
 
-export function NewsFeed({ news }: NewsFeedProps) {
+export function NewsFeed({ news, newsUpdatedAt, newsError }: NewsFeedProps) {
   if (!news || news.length === 0) {
     return (
       <section className="rounded-lg border p-4">
-        <h3 className="mb-2 font-semibold">News</h3>
-        <p className="text-sm text-zinc-500">No recent news available.</p>
+        <div className="mb-2 flex items-center gap-2">
+          <h3 className="font-semibold">News</h3>
+          <CacheIndicator label="News" updatedAt={newsUpdatedAt} staleAfter={3_600_000} />
+        </div>
+        {newsError ? (
+          <p className="text-sm text-red-600">{newsError.message}</p>
+        ) : (
+          <p className="text-sm text-zinc-500">No recent news available.</p>
+        )}
       </section>
     );
   }
 
   return (
     <section className="rounded-lg border p-4">
-      <h3 className="mb-3 font-semibold">Recent News</h3>
+      <div className="mb-3 flex items-center gap-2">
+        <h3 className="font-semibold">Recent News</h3>
+        <CacheIndicator label="News" updatedAt={newsUpdatedAt} staleAfter={3_600_000} />
+      </div>
+      {newsError && (
+        <p className="mb-3 text-sm text-red-600">{newsError.message}</p>
+      )}
 
       <div className="flex flex-col gap-3">
         {news.map((item) => (

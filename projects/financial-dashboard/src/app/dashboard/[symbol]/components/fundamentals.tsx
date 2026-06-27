@@ -1,5 +1,7 @@
 "use client";
 
+import { CacheIndicator } from "./cache-indicator";
+
 interface ProfileData {
   name: string;
   exchange: string;
@@ -15,14 +17,23 @@ interface FundamentalsProps {
   profile: ProfileData | Record<string, never> | null | undefined;
   profileLoading: boolean;
   symbol: string;
+  profileUpdatedAt?: number;
+  profileError?: { message: string } | null;
 }
 
-export function Fundamentals({ profile, profileLoading, symbol }: FundamentalsProps) {
+export function Fundamentals({ profile, profileLoading, symbol, profileUpdatedAt, profileError }: FundamentalsProps) {
   if (profileLoading) {
     return (
       <section className="rounded-lg border p-4">
-        <h3 className="mb-2 font-semibold">Fundamentals</h3>
-        <p className="text-sm text-zinc-500">Loading...</p>
+        <div className="mb-2 flex items-center gap-2">
+          <h3 className="font-semibold">Fundamentals</h3>
+          <CacheIndicator label="Profile" updatedAt={profileUpdatedAt} staleAfter={86_400_000} />
+        </div>
+        {profileError ? (
+          <p className="text-sm text-red-600">{profileError.message}</p>
+        ) : (
+          <p className="text-sm text-zinc-500">Loading...</p>
+        )}
       </section>
     );
   }
@@ -30,8 +41,15 @@ export function Fundamentals({ profile, profileLoading, symbol }: FundamentalsPr
   if (!profile || !("name" in profile)) {
     return (
       <section className="rounded-lg border p-4">
-        <h3 className="mb-2 font-semibold">Fundamentals</h3>
-        <p className="text-sm text-zinc-500">Fundamental data not available for {symbol}.</p>
+        <div className="mb-2 flex items-center gap-2">
+          <h3 className="font-semibold">Fundamentals</h3>
+          <CacheIndicator label="Profile" updatedAt={profileUpdatedAt} staleAfter={86_400_000} />
+        </div>
+        {profileError ? (
+          <p className="text-sm text-red-600">{profileError.message}</p>
+        ) : (
+          <p className="text-sm text-zinc-500">Fundamental data not available for {symbol} on the free plan (US only).</p>
+        )}
       </section>
     );
   }
@@ -45,7 +63,13 @@ export function Fundamentals({ profile, profileLoading, symbol }: FundamentalsPr
 
   return (
     <section className="rounded-lg border p-4">
-      <h3 className="mb-3 font-semibold">Fundamentals</h3>
+      <div className="mb-3 flex items-center gap-2">
+        <h3 className="font-semibold">Fundamentals</h3>
+        <CacheIndicator label="Profile" updatedAt={profileUpdatedAt} staleAfter={86_400_000} />
+      </div>
+      {profileError && (
+        <p className="mb-3 text-sm text-red-600">{profileError.message}</p>
+      )}
 
       <div className="flex items-center gap-3 mb-4">
         {profile.logo && (

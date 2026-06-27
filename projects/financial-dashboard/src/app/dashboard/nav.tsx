@@ -1,9 +1,7 @@
 "use client";
 
-import { createAuthClient } from "better-auth/client";
 import { useRouter } from "next/navigation";
-
-const authClient = createAuthClient();
+import { authClient } from "@/lib/auth-client";
 
 export function DashboardNav() {
   const router = useRouter();

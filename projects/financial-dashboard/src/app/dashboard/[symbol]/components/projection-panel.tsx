@@ -46,7 +46,7 @@ export function ProjectionPanel({ projection }: ProjectionPanelProps) {
     <section className="rounded-lg border p-4">
       <h3 className="mb-3 font-semibold">Intraday Projection</h3>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 text-sm">
         <div>
           <div className="text-zinc-500">Signal</div>
           <div className={`font-medium ${color}`}>{signalLabel}</div>

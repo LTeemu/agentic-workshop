@@ -1,8 +1,8 @@
 # Financial Dashboard
 
-> ⚠️ **Experimental AI-assisted project** — built iteratively with agentic coding. The app fetches real-time market data via Finnhub's free tier and performs intraday analysis on current values only.
+> ⚠️ **Experimental AI-assisted project** — built iteratively with agentic coding. Uses Finnhub's **free tier (US-only)**. The free API is too limited to make this useful — but the code is functional and demonstrates the full-stack architecture.
 
-Search stocks, ETFs, and funds — view real-time quotes, company profiles, news, and simple intraday projections based on current market data.
+Search US stocks, ETFs, and funds — view real-time quotes, company profiles, news, and simple intraday projections based on current market data.
 
 Built with **Next.js 16 (App Router) + tRPC v11 + Drizzle ORM + Better Auth + TanStack Query**.
 
@@ -63,10 +63,13 @@ Open [http://localhost:3000](http://localhost:3000), register an account, then s
 
 ### What it doesn't do (Finnhub free tier limitations)
 
+- ❌ **No international markets** — free tier only covers US exchanges
 - ❌ No historical prices (candles/OHLCV)
 - ❌ No technical indicators (SMA, RSI, MACD, Bollinger)
 - ❌ No candlestick charts
 - ❌ No multi-year forecasts
+- ❌ No volume data
+- ❌ No deep analysis — all insights derived from a single current quote
 
 ## Project Structure
 
