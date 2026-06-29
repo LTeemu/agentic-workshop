@@ -1,0 +1,122 @@
+/* ─── Spectra Glass Site Theme ───
+   Imports the component library's design tokens and adds
+   site‑level overrides. */
+
+@import 'spectra-glass-ui/themes/glass.css';
+
+/* ═══ Global reset ═══ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--sg-font-family, 'Inter', -apple-system, sans-serif);
+  background: #0d0d14;
+  color: var(--sg-text-primary, rgba(255, 255, 255, 0.9));
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══ Subtle background texture ═══ */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(122, 128, 192, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(212, 134, 159, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgba(127, 168, 141, 0.04) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ═══ Typography helpers ═══ */
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ═══ Section overrides ═══ */
+
+sg-section:last-of-type {
+  border-bottom: none;
+}
+
+/* ═══ Badge showcase grid ═══ */
+
+.badge-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ═══ Feature card icons ═══ */
+
+/* ═══ Footer social icons spacing ═══ */
+
+.footer-social {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+/* ═══ Header nav link spacing ═══ */
+
+a[slot='nav'] {
+  margin: 0 6px;
+}
+
+/* ═══ Showcase grid — 2 columns on desktop, 1 on mobile ═══ */
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 640px) {
+  .showcase-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sg-radius-md, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  background: var(--sg-glass-bg, rgba(255, 255, 255, 0.08));
+  backdrop-filter: var(--sg-glass-blur-sm, blur(12px));
+  border: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12));
+  color: var(--sg-spectral-gold, #c4a050);
+}

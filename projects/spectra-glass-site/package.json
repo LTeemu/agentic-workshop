@@ -1,0 +1,17 @@
+{
+  "name": "spectra-glass-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "spectra-glass-ui": "file:../spectra-glass-ui"
+  },
+  "devDependencies": {
+    "vite": "^6.3.2"
+  }
+}

@@ -1,0 +1,3733 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-accordion.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgAccordion', component: 'sg-accordion', argTypes: { multiple: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'Expand/collapse accordion container. Set `multiple` to allow several items open simultaneously.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-accordion ?multiple=${args.multiple ?? false} style=\"max-width:600px;\"> <sg-accordion-item heading=\"What is Spectra Glass?\"> A Web Component library with glassmorphism aesthetics and spectral gradients, built with Lit. </sg-accordion-item> <sg-accordion-item heading=\"Can I use it with React?\"> Yes — Web Components work with any framework. Import the elements and use them as HTML tags. </sg-accordion-item> <sg-accordion-item heading=\"How do I customise the theme?\"> Override CSS custom properties like <code>--sg-glass-bg</code> and <code>--sg-spectral-rose</code>. </sg-accordion-item> </sg-accordion> `, args: { multiple: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "MultipleOpen",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-accordion multiple style=\"max-width:600px;\"> <sg-accordion-item heading=\"First item\" open> This item starts open. Others can be opened independently. </sg-accordion-item> <sg-accordion-item heading=\"Second item\"> Clicking this won't close the first one because <code>multiple</code> is set. </sg-accordion-item> </sg-accordion> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-accordion.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-accordion.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MultipleOpen",
+          "declaration": {
+            "name": "MultipleOpen",
+            "module": "src/components/sg-accordion.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-accordion.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Container for `sg-accordion-item` elements. Manages single/multi-open.",
+          "name": "SgAccordion",
+          "members": [
+            {
+              "kind": "field",
+              "name": "multiple",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "If true, multiple items can be open simultaneously.",
+              "attribute": "multiple"
+            },
+            {
+              "kind": "field",
+              "name": "_items",
+              "type": {
+                "text": "SgAccordionItem[]"
+              },
+              "privacy": "private",
+              "readonly": true,
+              "default": "[]"
+            },
+            {
+              "kind": "method",
+              "name": "#queryItems",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleItemToggle",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "description": "Emitted when an item toggles. `event.detail` contains `{ index, open }`.",
+              "name": "change"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "multiple",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "If true, multiple items can be open simultaneously.",
+              "fieldName": "multiple"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-accordion",
+          "customElement": true
+        },
+        {
+          "kind": "class",
+          "description": "A single collapsible panel inside an `sg-accordion`.",
+          "name": "SgAccordionItem",
+          "cssProperties": [
+            {
+              "description": "Header background.",
+              "name": "--sg-accordion-header-bg",
+              "default": "var(--sg-glass-bg)"
+            },
+            {
+              "description": "Header hover background.",
+              "name": "--sg-accordion-header-hover",
+              "default": "var(--sg-glass-bg-hover)"
+            },
+            {
+              "description": "Content panel background.",
+              "name": "--sg-accordion-content-bg",
+              "default": "transparent"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether this item is open.",
+              "attribute": "open",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Heading text shown in the header button.",
+              "attribute": "heading"
+            },
+            {
+              "kind": "field",
+              "name": "_contentHeight",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "default": "0",
+              "description": "Measured content height for pixel-perfect animation."
+            },
+            {
+              "kind": "method",
+              "name": "#toggle",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#measureContent",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Measure content when slots change so we always have the right height."
+            },
+            {
+              "kind": "method",
+              "name": "#animatePanel",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Animate panel open or closed by setting exact max-height."
+            }
+          ],
+          "events": [
+            {
+              "name": "toggle",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when opened or closed. `event.detail` contains `{ open }`."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether this item is open.",
+              "fieldName": "open"
+            },
+            {
+              "name": "heading",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Heading text shown in the header button.",
+              "fieldName": "heading"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-accordion-item",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgAccordion",
+          "declaration": {
+            "name": "SgAccordion",
+            "module": "src/components/sg-accordion.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-accordion",
+          "declaration": {
+            "name": "SgAccordion",
+            "module": "src/components/sg-accordion.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "SgAccordionItem",
+          "declaration": {
+            "name": "SgAccordionItem",
+            "module": "src/components/sg-accordion.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-accordion-item",
+          "declaration": {
+            "name": "SgAccordionItem",
+            "module": "src/components/sg-accordion.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-avatar.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgAvatar', component: 'sg-avatar', argTypes: { src: { control: 'text' }, alt: { control: 'text' }, size: { control: 'select', options: ['sm', 'md', 'lg', 'xl'], }, initials: { control: 'text' }, status: { control: 'select', options: ['', 'online', 'away'], }, }, parameters: { docs: { description: { component: 'Circular avatar with image, initials fallback on error, and optional online/away status dot.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-avatar src=${args.src || ''} alt=${args.alt || ''} size=${args.size || 'md'} initials=${args.initials || 'JD'} status=${args.status || ''} ></sg-avatar> `, args: { initials: 'JD', size: 'md', status: '' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithImage",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-avatar src=\"https://i.pravatar.cc/80?img=11\" alt=\"Jane Doe\" size=\"lg\" ></sg-avatar> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Sizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:16px;align-items:center;padding:1rem;\"> <sg-avatar initials=\"XS\" size=\"sm\"></sg-avatar> <sg-avatar initials=\"MD\" size=\"md\"></sg-avatar> <sg-avatar initials=\"LG\" size=\"lg\"></sg-avatar> <sg-avatar initials=\"XL\" size=\"xl\"></sg-avatar> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "StatusOnline",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:16px;align-items:center;padding:1rem;\"> <sg-avatar initials=\"ON\" size=\"lg\" status=\"online\"></sg-avatar> <sg-avatar initials=\"AW\" size=\"lg\" status=\"away\"></sg-avatar> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-avatar.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-avatar.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithImage",
+          "declaration": {
+            "name": "WithImage",
+            "module": "src/components/sg-avatar.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Sizes",
+          "declaration": {
+            "name": "Sizes",
+            "module": "src/components/sg-avatar.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "StatusOnline",
+          "declaration": {
+            "name": "StatusOnline",
+            "module": "src/components/sg-avatar.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-avatar.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Circular avatar with image, initials fallback, and optional status dot.",
+          "name": "SgAvatar",
+          "cssProperties": [
+            {
+              "description": "Avatar diameter (each `size` maps to a default).",
+              "name": "--sg-avatar-size",
+              "default": "40px"
+            },
+            {
+              "description": "Fallback background colour.",
+              "name": "--sg-avatar-bg",
+              "default": "var(--sg-glass-bg)"
+            },
+            {
+              "description": "Fallback initials colour.",
+              "name": "--sg-avatar-color",
+              "default": "var(--sg-text-primary)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "src",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Image URL. Omit to show initials fallback.",
+              "attribute": "src"
+            },
+            {
+              "kind": "field",
+              "name": "alt",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Alt text for the image.",
+              "attribute": "alt"
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "'sm' | 'md' | 'lg' | 'xl'"
+              },
+              "default": "'md'",
+              "description": "Avatar size.",
+              "attribute": "size"
+            },
+            {
+              "kind": "field",
+              "name": "initials",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Fallback initials shown when no `src` or on image error.",
+              "attribute": "initials"
+            },
+            {
+              "kind": "field",
+              "name": "status",
+              "type": {
+                "text": "'' | 'online' | 'away'"
+              },
+              "default": "''",
+              "description": "Status indicator dot.\n- `''` (empty): hidden\n- `'online'`: green dot\n- `'away'`: yellow dot",
+              "attribute": "status"
+            },
+            {
+              "kind": "field",
+              "name": "_imgError",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "SIZE_MAP",
+              "type": {
+                "text": "Record<string, string>"
+              },
+              "privacy": "private",
+              "readonly": true,
+              "default": "{ sm: '32px', md: '40px', lg: '56px', xl: '80px', }"
+            },
+            {
+              "kind": "method",
+              "name": "#onImgError",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "src",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Image URL. Omit to show initials fallback.",
+              "fieldName": "src"
+            },
+            {
+              "name": "alt",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Alt text for the image.",
+              "fieldName": "alt"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "'sm' | 'md' | 'lg' | 'xl'"
+              },
+              "default": "'md'",
+              "description": "Avatar size.",
+              "fieldName": "size"
+            },
+            {
+              "name": "initials",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Fallback initials shown when no `src` or on image error.",
+              "fieldName": "initials"
+            },
+            {
+              "name": "status",
+              "type": {
+                "text": "'' | 'online' | 'away'"
+              },
+              "default": "''",
+              "description": "Status indicator dot.\n- `''` (empty): hidden\n- `'online'`: green dot\n- `'away'`: yellow dot",
+              "fieldName": "status"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-avatar",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgAvatar",
+          "declaration": {
+            "name": "SgAvatar",
+            "module": "src/components/sg-avatar.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-avatar",
+          "declaration": {
+            "name": "SgAvatar",
+            "module": "src/components/sg-avatar.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-badge.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgBadge', component: 'sg-badge', argTypes: { variant: { control: 'select', options: ['default', 'success', 'warning', 'error', 'info', 'spectral'], }, size: { control: 'select', options: ['sm', 'md'] }, removable: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A small badge/chip with spectral color variants and optional dismiss.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-badge variant=${args.variant || 'default'} size=${args.size || 'md'} ?removable=${args.removable} > Label </sg-badge> `, args: { variant: 'default', size: 'md', removable: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Variants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:8px;flex-wrap:wrap;\"> <sg-badge variant=\"default\">Default</sg-badge> <sg-badge variant=\"success\">Success</sg-badge> <sg-badge variant=\"warning\">Warning</sg-badge> <sg-badge variant=\"error\">Error</sg-badge> <sg-badge variant=\"info\">Info</sg-badge> <sg-badge variant=\"spectral\">Spectral</sg-badge> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Sizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;align-items:center;gap:8px;\"> <sg-badge variant=\"spectral\" size=\"sm\">Small</sg-badge> <sg-badge variant=\"spectral\" size=\"md\">Medium</sg-badge> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Removable",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:8px;flex-wrap:wrap;\"> <sg-badge variant=\"default\" removable>Default</sg-badge> <sg-badge variant=\"success\" removable>Success</sg-badge> <sg-badge variant=\"error\" removable>Error</sg-badge> <sg-badge variant=\"spectral\" removable>Spectral</sg-badge> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-badge.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-badge.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Variants",
+          "declaration": {
+            "name": "Variants",
+            "module": "src/components/sg-badge.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Sizes",
+          "declaration": {
+            "name": "Sizes",
+            "module": "src/components/sg-badge.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Removable",
+          "declaration": {
+            "name": "Removable",
+            "module": "src/components/sg-badge.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-badge.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A small badge/chip component using spectral color variants.",
+          "name": "SgBadge",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-badge-radius",
+              "default": "var(--sg-radius-full, 9999px)"
+            },
+            {
+              "description": "Small font size.",
+              "name": "--sg-badge-font-size-sm",
+              "default": "0.6875rem"
+            },
+            {
+              "description": "Medium font size.",
+              "name": "--sg-badge-font-size-md",
+              "default": "0.75rem"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "BadgeVariant"
+              },
+              "default": "'default'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "BadgeSize"
+              },
+              "default": "'md'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "removable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, shows a dismiss (×) button and emits a `dismiss` event.",
+              "attribute": "removable",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "#handleDismiss",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "dismiss",
+              "type": {
+                "text": "CustomEvent"
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "BadgeVariant"
+              },
+              "default": "'default'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "BadgeSize"
+              },
+              "default": "'md'",
+              "fieldName": "size"
+            },
+            {
+              "name": "removable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, shows a dismiss (×) button and emits a `dismiss` event.",
+              "fieldName": "removable"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-badge",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgBadge",
+          "declaration": {
+            "name": "SgBadge",
+            "module": "src/components/sg-badge.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-badge",
+          "declaration": {
+            "name": "SgBadge",
+            "module": "src/components/sg-badge.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-button.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgButton', component: 'sg-button', argTypes: { variant: { control: 'select', options: ['primary', 'secondary', 'ghost'], }, size: { control: 'select', options: ['sm', 'md', 'lg'], }, disabled: { control: 'boolean' }, loading: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glassmorphic button with spectral gradient background (primary), glass surface (secondary), or minimal style (ghost).', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Primary",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'primary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'primary', size: 'md', disabled: false, loading: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Secondary",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'secondary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'secondary', size: 'md', disabled: false, loading: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Ghost",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'ghost'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'ghost', size: 'md', disabled: false, loading: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Sizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;align-items:center;gap:12px;flex-wrap:wrap;\"> <sg-button variant=\"primary\" size=\"sm\">Small</sg-button> <sg-button variant=\"primary\" size=\"md\">Medium</sg-button> <sg-button variant=\"primary\" size=\"lg\">Large</sg-button> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllVariants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:12px;\"> <div style=\"display:flex;gap:12px;\"> <sg-button variant=\"primary\">Primary</sg-button> <sg-button variant=\"secondary\">Secondary</sg-button> <sg-button variant=\"ghost\">Ghost</sg-button> </div> <div style=\"display:flex;gap:12px;\"> <sg-button variant=\"primary\" disabled>Primary</sg-button> <sg-button variant=\"secondary\" disabled>Secondary</sg-button> <sg-button variant=\"ghost\" disabled>Ghost</sg-button> </div> <div style=\"display:flex;gap:12px;\"> <sg-button variant=\"primary\" loading>Primary</sg-button> <sg-button variant=\"secondary\" loading>Secondary</sg-button> <sg-button variant=\"ghost\" loading>Ghost</sg-button> </div> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Loading",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-button variant=\"primary\" size=\"md\" loading>Processing</sg-button> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Primary",
+          "declaration": {
+            "name": "Primary",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Secondary",
+          "declaration": {
+            "name": "Secondary",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Ghost",
+          "declaration": {
+            "name": "Ghost",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Sizes",
+          "declaration": {
+            "name": "Sizes",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllVariants",
+          "declaration": {
+            "name": "AllVariants",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Loading",
+          "declaration": {
+            "name": "Loading",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-button.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glassmorphic button with spectral gradient interactions.\n\n- **primary**: Spectral gradient background with hover glow.\n- **secondary**: Glass surface with spectral border on hover.\n- **ghost**: Minimal, text appears on hover.",
+          "name": "SgButton",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-button-radius",
+              "default": "var(--sg-radius-md, 12px)"
+            },
+            {
+              "description": "Primary bg.",
+              "name": "--sg-button-primary-bg",
+              "default": "var(--sg-gradient-spectral)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "ButtonVariant"
+              },
+              "default": "'primary'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "ButtonSize"
+              },
+              "default": "'md'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "loading",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "type",
+              "type": {
+                "text": "'button' | 'submit' | 'reset'"
+              },
+              "default": "'button'",
+              "attribute": "type"
+            }
+          ],
+          "events": [
+            {
+              "description": "Native click event.",
+              "name": "click"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "ButtonVariant"
+              },
+              "default": "'primary'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "ButtonSize"
+              },
+              "default": "'md'",
+              "fieldName": "size"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "loading",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "loading"
+            },
+            {
+              "name": "type",
+              "type": {
+                "text": "'button' | 'submit' | 'reset'"
+              },
+              "default": "'button'",
+              "fieldName": "type"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-button",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgButton",
+          "declaration": {
+            "name": "SgButton",
+            "module": "src/components/sg-button.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-button",
+          "declaration": {
+            "name": "SgButton",
+            "module": "src/components/sg-button.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-card.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgCard', component: 'sg-card', argTypes: { variant: { control: 'select', options: ['elevated', 'outlined', 'ghost'], }, padding: { control: 'select', options: ['sm', 'md', 'lg'], }, accent: { control: 'boolean', }, selected: { control: 'boolean', }, }, parameters: { docs: { description: { component: 'A glassmorphic card with spectral gradient interactions. Focus-visible shows a gradient ring, hover adds a spectral glow, and selected/accent render a gradient border.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-card variant=${args.variant || 'elevated'} padding=${args.padding || 'md'} ?accent=${args.accent ?? false} ?selected=${args.selected ?? false} > <div>This is the card body content.</div> </sg-card> `, args: { variant: 'elevated', padding: 'md', accent: false, selected: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithHeader",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-card variant=${args.variant || 'elevated'} padding=${args.padding || 'md'} ?accent=${args.accent ?? false} ?selected=${args.selected ?? false} > <span slot=\"header\">Card Title</span> <div>Body content goes here. The header is separated by a subtle divider.</div> </sg-card> `, args: { variant: 'elevated', padding: 'md', accent: false, selected: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithFooter",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-card variant=${args.variant || 'elevated'} padding=${args.padding || 'md'} ?accent=${args.accent ?? false} ?selected=${args.selected ?? false} > <div>Main content area.</div> <span slot=\"footer\">Updated 2 minutes ago</span> </sg-card> `, args: { variant: 'elevated', padding: 'md', accent: false, selected: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "FullComposition",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-card variant=${args.variant || 'elevated'} padding=${args.padding || 'md'} ?accent=${args.accent ?? false} ?selected=${args.selected ?? false} > <span slot=\"header\">Profile Card</span> <div style=\"display:flex;gap:16px;align-items:center;\"> <div style=\"width:48px;height:48px;border-radius:50%;background:var(--sg-gradient-spectral, linear-gradient(135deg,rgba(212,134,159,0.5),rgba(122,128,192,0.5)));flex-shrink:0;\" ></div> <div> <div style=\"font-weight:600;\">Alex Rivera</div> <div style=\"font-size:0.875rem;opacity:0.6;\">Design Engineer</div> </div> </div> <span slot=\"footer\" style=\"display:flex;gap:8px;justify-content:flex-end;\"> <button style=\"padding:6px 16px;border-radius:8px;border:1px solid var(--sg-glass-border, rgba(255,255,255,0.12));background:transparent;color:inherit;cursor:pointer;\">Profile</button> <button style=\"padding:6px 16px;border-radius:8px;border:none;background:var(--sg-gradient-spectral, linear-gradient(135deg,rgba(212,134,159,0.5),rgba(122,128,192,0.5)));color:#fff;cursor:pointer;\">Message</button> </span> </sg-card> `, args: { variant: 'elevated', padding: 'md', accent: true, selected: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Variants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-card variant=\"elevated\" padding=\"md\"> <div><strong>Elevated</strong> — glass surface + spectral glow on hover</div> </sg-card> <sg-card variant=\"outlined\" padding=\"md\"> <div><strong>Outlined</strong> — transparent with subtle glow on hover</div> </sg-card> <sg-card variant=\"ghost\" padding=\"md\"> <div><strong>Ghost</strong> — minimal, appears on hover</div> </sg-card> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AccentBorder",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-card variant=\"elevated\" padding=\"md\" accent> <div> <strong>Spectral accent border</strong><br /> A 1px gradient border overlay using the full spectrum. </div> </sg-card> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Selected",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-card variant=\"elevated\" padding=\"md\" selected> <div> <strong>Selected state</strong><br /> A thicker (1.5px) gradient border to indicate selection. </div> </sg-card> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "SelectedVariants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-card variant=\"elevated\" padding=\"md\" selected> <div>Elevated — selected</div> </sg-card> <sg-card variant=\"outlined\" padding=\"md\" selected> <div>Outlined — selected</div> </sg-card> <sg-card variant=\"ghost\" padding=\"md\" selected> <div>Ghost — selected</div> </sg-card> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "PaddingSizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-card variant=\"elevated\" padding=\"sm\"> <div>Small padding (12px)</div> </sg-card> <sg-card variant=\"elevated\" padding=\"md\"> <div>Medium padding (20px)</div> </sg-card> <sg-card variant=\"elevated\" padding=\"lg\"> <div>Large padding (28px)</div> </sg-card> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithHeader",
+          "declaration": {
+            "name": "WithHeader",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithFooter",
+          "declaration": {
+            "name": "WithFooter",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "FullComposition",
+          "declaration": {
+            "name": "FullComposition",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Variants",
+          "declaration": {
+            "name": "Variants",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AccentBorder",
+          "declaration": {
+            "name": "AccentBorder",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Selected",
+          "declaration": {
+            "name": "Selected",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "SelectedVariants",
+          "declaration": {
+            "name": "SelectedVariants",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PaddingSizes",
+          "declaration": {
+            "name": "PaddingSizes",
+            "module": "src/components/sg-card.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-card.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glassmorphic card component with spectral gradient interactions.\n\n- **Focus-visible**: A 2px spectral gradient ring appears on keyboard focus.\n- **Hover**: The elevated variant gains a subtle spectral glow.\n- **Selected/accent**: A gradient border overlay decorates the card.",
+          "name": "SgCard",
+          "cssProperties": [
+            {
+              "description": "Card background.",
+              "name": "--sg-card-bg",
+              "default": "var(--sg-glass-bg, rgba(255,255,255,0.08))"
+            },
+            {
+              "description": "Card border colour.",
+              "name": "--sg-card-border",
+              "default": "var(--sg-glass-border, rgba(255,255,255,0.12))"
+            },
+            {
+              "description": "Card box-shadow.",
+              "name": "--sg-card-shadow",
+              "default": "var(--sg-glass-shadow, 0 4px 24px rgba(0,0,0,0.12))"
+            },
+            {
+              "description": "Card border-radius.",
+              "name": "--sg-card-radius",
+              "default": "var(--sg-radius-lg, 20px)"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Optional header content.",
+              "name": "header"
+            },
+            {
+              "description": "Default body content.",
+              "name": ""
+            },
+            {
+              "description": "Optional footer content.",
+              "name": "footer"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "CardVariant"
+              },
+              "default": "'elevated'",
+              "description": "Card visual variant.\n- `elevated`: glass surface with shadow + spectral hover glow (default)\n- `outlined`: transparent with visible border + subtle glow on hover\n- `ghost`: minimal, no border or bg until hover",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "padding",
+              "type": {
+                "text": "CardPadding"
+              },
+              "default": "'md'",
+              "description": "Inner padding size.\n- `sm`: 12px\n- `md`: 20px (default)\n- `lg`: 28px",
+              "attribute": "padding",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border\nto indicate the selected/active state.",
+              "attribute": "selected",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "#hasHeaderSlotted",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#hasFooterSlotted",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#updateSlots",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "tabIndex",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "CardVariant"
+              },
+              "default": "'elevated'",
+              "description": "Card visual variant.\n- `elevated`: glass surface with shadow + spectral hover glow (default)\n- `outlined`: transparent with visible border + subtle glow on hover\n- `ghost`: minimal, no border or bg until hover",
+              "fieldName": "variant"
+            },
+            {
+              "name": "padding",
+              "type": {
+                "text": "CardPadding"
+              },
+              "default": "'md'",
+              "description": "Inner padding size.\n- `sm`: 12px\n- `md`: 20px (default)\n- `lg`: 28px",
+              "fieldName": "padding"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "fieldName": "accent"
+            },
+            {
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border\nto indicate the selected/active state.",
+              "fieldName": "selected"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-card",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgCard",
+          "declaration": {
+            "name": "SgCard",
+            "module": "src/components/sg-card.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-card",
+          "declaration": {
+            "name": "SgCard",
+            "module": "src/components/sg-card.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-dialog.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgDialog', component: 'sg-dialog', argTypes: { open: { control: 'boolean' }, closable: { control: 'boolean' }, backdropDismiss: { control: 'boolean' }, title: { control: 'text' }, }, parameters: { docs: { description: { component: 'A glassmorphic modal with backdrop blur. Press Escape or click the backdrop to close.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Closed",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-dialog ?open=${args.open} ?closable=${args.closable} ?backdrop-dismiss=${args.backdropDismiss} title=${args.title || 'Dialog Title'} > <p>This is the dialog body content. It supports any HTML or slotted content.</p> <p> Press <strong>Escape</strong> or click the backdrop to close. </p> <span slot=\"footer\"> <sg-button variant=\"ghost\" size=\"sm\">Cancel</sg-button> <sg-button variant=\"primary\" size=\"sm\">Confirm</sg-button> </span> </sg-dialog> `, args: { open: false, closable: true, backdropDismiss: true, title: 'Dialog Title', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Open",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-dialog ?open=${args.open} ?closable=${args.closable} ?backdrop-dismiss=${args.backdropDismiss} title=${args.title || 'Dialog Title'} > <p>This dialog is open by default. It demonstrates the glass surface with backdrop blur.</p> <span slot=\"footer\"> <sg-button variant=\"ghost\" size=\"sm\">Cancel</sg-button> <sg-button variant=\"primary\" size=\"sm\">Save</sg-button> </span> </sg-dialog> `, args: { open: true, closable: true, backdropDismiss: true, title: 'Dialog Title', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "NoFooter",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-dialog open title=\"Information\"> <p>A simple dialog with no footer actions, just a close button.</p> </sg-dialog> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "LongContent",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-dialog open title=\"Terms of Service\"> <p>1. Acceptance of Terms</p> <p>By accessing and using this service, you accept and agree to be bound by the terms and conditions.</p> <p>2. Description of Service</p> <p>We provide a platform for demonstrating web components built with the Spectra Glass design system.</p> <p>3. Intellectual Property</p> <p>All components, styles, and documentation are provided under the MIT license.</p> <p>4. Limitation of Liability</p> <p>In no event shall the authors be liable for any claim, damages, or other liability.</p> <span slot=\"footer\"> <sg-button variant=\"secondary\" size=\"sm\">Decline</sg-button> <sg-button variant=\"primary\" size=\"sm\">Accept</sg-button> </span> </sg-dialog> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-dialog.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Closed",
+          "declaration": {
+            "name": "Closed",
+            "module": "src/components/sg-dialog.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Open",
+          "declaration": {
+            "name": "Open",
+            "module": "src/components/sg-dialog.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "NoFooter",
+          "declaration": {
+            "name": "NoFooter",
+            "module": "src/components/sg-dialog.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LongContent",
+          "declaration": {
+            "name": "LongContent",
+            "module": "src/components/sg-dialog.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-dialog.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glassmorphic modal dialog with backdrop blur.",
+          "name": "SgDialog",
+          "cssProperties": [
+            {
+              "description": "Dialog border radius.",
+              "name": "--sg-dialog-radius",
+              "default": "var(--sg-radius-lg, 20px)"
+            },
+            {
+              "description": "Dialog max width.",
+              "name": "--sg-dialog-max-width",
+              "default": "480px"
+            },
+            {
+              "description": "Dialog padding.",
+              "name": "--sg-dialog-padding",
+              "default": "24px"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Body content.",
+              "name": ""
+            },
+            {
+              "description": "Action buttons (optional).",
+              "name": "footer"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "open",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "closable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "attribute": "closable",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "backdropDismiss",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "attribute": "backdrop-dismiss"
+            },
+            {
+              "kind": "field",
+              "name": "title",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "title"
+            },
+            {
+              "kind": "method",
+              "name": "#handleBackdropClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#close",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#hasFooterSlotted",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "close",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when the dialog is dismissed."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "open"
+            },
+            {
+              "name": "closable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "fieldName": "closable"
+            },
+            {
+              "name": "backdrop-dismiss",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "fieldName": "backdropDismiss"
+            },
+            {
+              "name": "title",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "title"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-dialog",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgDialog",
+          "declaration": {
+            "name": "SgDialog",
+            "module": "src/components/sg-dialog.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-dialog",
+          "declaration": {
+            "name": "SgDialog",
+            "module": "src/components/sg-dialog.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-divider.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgDivider', component: 'sg-divider', argTypes: { variant: { control: 'select', options: ['solid', 'glass', 'gradient'], }, label: { control: 'text' }, labelPosition: { control: 'select', options: ['left', 'center', 'right'], }, }, parameters: { docs: { description: { component: 'A horizontal divider with optional label. Use `variant=\"gradient\"` for the spectral gradient line.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html`<sg-divider variant=${args.variant || 'glass'} label=${args.label || ''} label-position=${args.labelPosition || 'center'}></sg-divider>`, args: { variant: 'glass', label: '', labelPosition: 'center' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithLabel",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html`<sg-divider label=\"Section\"></sg-divider>`, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Gradient",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html`<sg-divider variant=\"gradient\" label=\"Spectra\"></sg-divider>`, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Variants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:24px;padding:1rem;\"> <sg-divider variant=\"solid\" label=\"Solid\"></sg-divider> <sg-divider variant=\"glass\" label=\"Glass\"></sg-divider> <sg-divider variant=\"gradient\" label=\"Gradient\"></sg-divider> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-divider.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-divider.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithLabel",
+          "declaration": {
+            "name": "WithLabel",
+            "module": "src/components/sg-divider.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Gradient",
+          "declaration": {
+            "name": "Gradient",
+            "module": "src/components/sg-divider.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Variants",
+          "declaration": {
+            "name": "Variants",
+            "module": "src/components/sg-divider.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-divider.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A horizontal divider with optional centred label.",
+          "name": "SgDivider",
+          "cssProperties": [
+            {
+              "description": "Line colour.",
+              "name": "--sg-divider-color",
+              "default": "var(--sg-glass-border)"
+            },
+            {
+              "description": "Label text colour.",
+              "name": "--sg-divider-label-color",
+              "default": "var(--sg-text-secondary)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "'solid' | 'glass' | 'gradient'"
+              },
+              "default": "'glass'",
+              "description": "Visual variant.",
+              "attribute": "variant"
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Optional label text shown in the centre (or left/right with `labelPosition`).",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "labelPosition",
+              "type": {
+                "text": "'left' | 'center' | 'right'"
+              },
+              "default": "'center'",
+              "description": "Label position.",
+              "attribute": "label-position"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "'solid' | 'glass' | 'gradient'"
+              },
+              "default": "'glass'",
+              "description": "Visual variant.",
+              "fieldName": "variant"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Optional label text shown in the centre (or left/right with `labelPosition`).",
+              "fieldName": "label"
+            },
+            {
+              "name": "label-position",
+              "type": {
+                "text": "'left' | 'center' | 'right'"
+              },
+              "default": "'center'",
+              "description": "Label position.",
+              "fieldName": "labelPosition"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-divider",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgDivider",
+          "declaration": {
+            "name": "SgDivider",
+            "module": "src/components/sg-divider.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-divider",
+          "declaration": {
+            "name": "SgDivider",
+            "module": "src/components/sg-divider.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-footer.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgFooter', component: 'sg-footer', argTypes: { columns: { control: { type: 'number', min: 1, max: 4 }, }, }, parameters: { docs: { description: { component: 'Multi-column footer with link columns, social icons slot, and copyright bar. Responsive — collapses from 4 to 2 to 1 columns.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-footer columns=${args.columns ?? 4}> <div slot=\"column-1\"> <h4>Product</h4> <a href=\"#\">Features</a> <a href=\"#\">Pricing</a> <a href=\"#\">Changelog</a> </div> <div slot=\"column-2\"> <h4>Company</h4> <a href=\"#\">About</a> <a href=\"#\">Blog</a> <a href=\"#\">Careers</a> </div> <div slot=\"column-3\"> <h4>Resources</h4> <a href=\"#\">Documentation</a> <a href=\"#\">API Reference</a> <a href=\"#\">Community</a> </div> <div slot=\"column-4\"> <h4>Legal</h4> <a href=\"#\">Privacy</a> <a href=\"#\">Terms</a> <a href=\"#\">Cookies</a> </div> <a slot=\"social\" href=\"#\" aria-label=\"Twitter\"><sg-icon name=\"external-link\" size=\"sm\"></sg-icon></a> <a slot=\"social\" href=\"#\" aria-label=\"GitHub\"><sg-icon name=\"external-link\" size=\"sm\"></sg-icon></a> <span slot=\"copyright\">&copy; 2026 Spectra Glass UI. All rights reserved.</span> </sg-footer> `, args: { columns: 4 }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-footer.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-footer.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-footer.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Multi-column footer with copyright bar and social links slot.",
+          "name": "SgFooter",
+          "cssProperties": [
+            {
+              "description": "Footer background.",
+              "name": "--sg-footer-bg",
+              "default": "var(--sg-glass-bg)"
+            },
+            {
+              "description": "Footer backdrop blur.",
+              "name": "--sg-footer-blur",
+              "default": "var(--sg-glass-blur)"
+            },
+            {
+              "description": "Column heading colour.",
+              "name": "--sg-footer-heading-color",
+              "default": "var(--sg-text-primary)"
+            },
+            {
+              "description": "Link colour.",
+              "name": "--sg-footer-link-color",
+              "default": "var(--sg-text-secondary)"
+            },
+            {
+              "description": "Link hover colour.",
+              "name": "--sg-footer-link-hover-color",
+              "default": "var(--sg-text-primary)"
+            },
+            {
+              "description": "Copyright text colour.",
+              "name": "--sg-footer-copyright-color",
+              "default": "var(--sg-text-tertiary)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "columns",
+              "type": {
+                "text": "1 | 2 | 3 | 4"
+              },
+              "default": "4",
+              "description": "Number of footer link columns.",
+              "attribute": "columns"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "columns",
+              "type": {
+                "text": "1 | 2 | 3 | 4"
+              },
+              "default": "4",
+              "description": "Number of footer link columns.",
+              "fieldName": "columns"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-footer",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgFooter",
+          "declaration": {
+            "name": "SgFooter",
+            "module": "src/components/sg-footer.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-footer",
+          "declaration": {
+            "name": "SgFooter",
+            "module": "src/components/sg-footer.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-header.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgHeader', component: 'sg-header', argTypes: { sticky: { control: 'boolean' }, menuOpen: { control: 'boolean' }, mobileBreakpoint: { control: 'text' }, }, parameters: { docs: { description: { component: 'Responsive navigation bar with sticky support, desktop nav slot, and mobile slide-out drawer with backdrop.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-header ?sticky=${args.sticky ?? true} mobile-breakpoint=${args.mobileBreakpoint || '768px'}> <span slot=\"logo\" style=\"font-weight:700;font-size:1.25rem;color:rgba(255,255,255,0.9);\"> Spectra </span> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Features</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Pricing</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Docs</a> <sg-button slot=\"cta\" variant=\"primary\" size=\"sm\">Get Started</sg-button> </sg-header> `, args: { sticky: true, mobileBreakpoint: '768px' }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-header.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-header.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-header.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Responsive navigation bar with sticky support and a mobile\nslide-out drawer.",
+          "name": "SgHeader",
+          "cssProperties": [
+            {
+              "description": "Header bar height.",
+              "name": "--sg-header-height",
+              "default": "64px"
+            },
+            {
+              "description": "Header background.",
+              "name": "--sg-header-bg",
+              "default": "var(--sg-glass-bg)"
+            },
+            {
+              "description": "Header backdrop blur.",
+              "name": "--sg-header-blur",
+              "default": "var(--sg-glass-blur)"
+            },
+            {
+              "description": "Header bottom border.",
+              "name": "--sg-header-border",
+              "default": "var(--sg-glass-border)"
+            },
+            {
+              "description": "Mobile drawer width.",
+              "name": "--sg-drawer-width",
+              "default": "280px"
+            },
+            {
+              "description": "Mobile drawer background.",
+              "name": "--sg-drawer-bg",
+              "default": "rgba(20,20,30,0.95)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "sticky",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "description": "Whether the header is sticky (stays at top on scroll).",
+              "attribute": "sticky",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "menuOpen",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether the mobile drawer is open.",
+              "attribute": "menu-open",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "mobileBreakpoint",
+              "type": {
+                "text": "string"
+              },
+              "default": "'768px'",
+              "description": "Breakpoint below which the mobile drawer shows.",
+              "attribute": "mobile-breakpoint"
+            },
+            {
+              "kind": "field",
+              "name": "_match",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_navSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_drawerBody",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_mq",
+              "type": {
+                "text": "MediaQueryList | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_mqHandler",
+              "type": {
+                "text": "() => void | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "#mirrorToDrawer",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Clone the desktop nav slot's assigned nodes into the drawer body."
+            },
+            {
+              "kind": "method",
+              "name": "#toggleMenu",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#closeMenu",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#dispatchMenuToggle",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#lockScroll",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#unlockScroll",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "menu-toggle",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when the mobile menu opens or closes. `event.detail` contains `{ open: boolean }`."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "sticky",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "description": "Whether the header is sticky (stays at top on scroll).",
+              "fieldName": "sticky"
+            },
+            {
+              "name": "menu-open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether the mobile drawer is open.",
+              "fieldName": "menuOpen"
+            },
+            {
+              "name": "mobile-breakpoint",
+              "type": {
+                "text": "string"
+              },
+              "default": "'768px'",
+              "description": "Breakpoint below which the mobile drawer shows.",
+              "fieldName": "mobileBreakpoint"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-header",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgHeader",
+          "declaration": {
+            "name": "SgHeader",
+            "module": "src/components/sg-header.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-header",
+          "declaration": {
+            "name": "SgHeader",
+            "module": "src/components/sg-header.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-hero.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgHero', component: 'sg-hero', argTypes: { align: { control: 'select', options: ['left', 'center'], }, overlay: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'Hero section with headline, subtitle, CTA slots, optional background media, and gradient overlay.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-hero align=${args.align || 'center'} ?overlay=${args.overlay ?? true}> <h1 slot=\"heading\">Build Something Great</h1> <p slot=\"subtitle\">A glass‑themed component library for modern web experiences.</p> <sg-button slot=\"cta-primary\" variant=\"primary\">Get Started</sg-button> <sg-button slot=\"cta-secondary\" variant=\"ghost\">Learn More</sg-button> </sg-hero> `, args: { align: 'center', overlay: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AlignLeft",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-hero align=\"left\"> <h1 slot=\"heading\">Left‑aligned Hero</h1> <p slot=\"subtitle\">Perfect for landing pages with lots of copy.</p> <sg-button slot=\"cta-primary\" variant=\"primary\">Action</sg-button> </sg-hero> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithBackgroundMedia",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-hero align=\"center\"> <img slot=\"media\" src=\"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80\" alt=\"\" style=\"width:100%;height:100%;object-fit:cover;\" /> <h1 slot=\"heading\">Over Background</h1> <p slot=\"subtitle\">The gradient overlay keeps text readable on any image.</p> <sg-button slot=\"cta-primary\" variant=\"primary\">Explore</sg-button> </sg-hero> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-hero.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-hero.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AlignLeft",
+          "declaration": {
+            "name": "AlignLeft",
+            "module": "src/components/sg-hero.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithBackgroundMedia",
+          "declaration": {
+            "name": "WithBackgroundMedia",
+            "module": "src/components/sg-hero.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-hero.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Hero section with headline, subtitle, CTA buttons, and optional\nbackground media.",
+          "name": "SgHero",
+          "cssProperties": [
+            {
+              "description": "Minimum height.",
+              "name": "--sg-hero-min-height",
+              "default": "80vh"
+            },
+            {
+              "description": "Gradient overlay colour.",
+              "name": "--sg-hero-overlay",
+              "default": "rgba(0,0,0,0.5)"
+            },
+            {
+              "description": "Heading font size.",
+              "name": "--sg-hero-heading-size",
+              "default": "clamp(2.5rem,6vw,4.5rem)"
+            },
+            {
+              "description": "Subtitle font size.",
+              "name": "--sg-hero-subtitle-size",
+              "default": "clamp(1rem,2vw,1.25rem)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "align",
+              "type": {
+                "text": "'left' | 'center'"
+              },
+              "default": "'center'",
+              "description": "Content alignment.",
+              "attribute": "align"
+            },
+            {
+              "kind": "field",
+              "name": "overlay",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "description": "Whether to show the gradient overlay on the background media.",
+              "attribute": "overlay"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "align",
+              "type": {
+                "text": "'left' | 'center'"
+              },
+              "default": "'center'",
+              "description": "Content alignment.",
+              "fieldName": "align"
+            },
+            {
+              "name": "overlay",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "description": "Whether to show the gradient overlay on the background media.",
+              "fieldName": "overlay"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-hero",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgHero",
+          "declaration": {
+            "name": "SgHero",
+            "module": "src/components/sg-hero.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-hero",
+          "declaration": {
+            "name": "SgHero",
+            "module": "src/components/sg-hero.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-icon.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgIcon', component: 'sg-icon', argTypes: { name: { control: 'select', options: ['menu', 'close', 'chevron-down', 'chevron-up', 'chevron-left', 'chevron-right', 'check', 'external-link'], }, size: { control: 'select', options: ['sm', 'md', 'lg'], }, }, parameters: { docs: { description: { component: 'Feather-style SVG icon wrapper. Use the `name` prop for built-in icons, or slot a custom SVG for ad-hoc icons.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html`<sg-icon name=${args.name || 'menu'} size=${args.size || 'md'}></sg-icon>`, args: { name: 'menu', size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllIcons",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:1rem;\"> ${['menu', 'close', 'chevron-down', 'chevron-up', 'chevron-left', 'chevron-right', 'check', 'external-link'].map( (name) => html` <div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;\"> <sg-icon name=${name} size=\"lg\"></sg-icon> <span style=\"font-size:0.75rem;color:rgba(255,255,255,0.5);\">${name}</span> </div> ` )} </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Sizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:16px;align-items:center;padding:1rem;\"> <sg-icon name=\"check\" size=\"sm\"></sg-icon> <sg-icon name=\"check\" size=\"md\"></sg-icon> <sg-icon name=\"check\" size=\"lg\"></sg-icon> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-icon.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-icon.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllIcons",
+          "declaration": {
+            "name": "AllIcons",
+            "module": "src/components/sg-icon.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Sizes",
+          "declaration": {
+            "name": "Sizes",
+            "module": "src/components/sg-icon.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-icon.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A simple SVG icon wrapper. Use `name` for built-in icons, or slot\na custom SVG for ad‑hoc icons.",
+          "name": "SgIcon",
+          "cssProperties": [
+            {
+              "description": "Icon colour (inherits text colour by default).",
+              "name": "--sg-icon-color",
+              "default": "currentColor"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Built-in icon name. See ICONS map for available names.\nIf omitted, renders the default slot (for custom SVGs).",
+              "attribute": "name"
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "'sm' | 'md' | 'lg'"
+              },
+              "default": "'md'",
+              "description": "Icon size.",
+              "attribute": "size"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "description": "Built-in icon name. See ICONS map for available names.\nIf omitted, renders the default slot (for custom SVGs).",
+              "fieldName": "name"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "'sm' | 'md' | 'lg'"
+              },
+              "default": "'md'",
+              "description": "Icon size.",
+              "fieldName": "size"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-icon",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgIcon",
+          "declaration": {
+            "name": "SgIcon",
+            "module": "src/components/sg-icon.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-icon",
+          "declaration": {
+            "name": "SgIcon",
+            "module": "src/components/sg-icon.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-input.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgInput', component: 'sg-input', argTypes: { variant: { control: 'select', options: ['outlined', 'ghost'] }, type: { control: 'select', options: ['text', 'email', 'password', 'number', 'search'] }, label: { control: 'text' }, placeholder: { control: 'text' }, value: { control: 'text' }, error: { control: 'text' }, disabled: { control: 'boolean' }, readonly: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glass-styled text input with a spectral gradient focus ring and optional prefix/suffix slots.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-input variant=${args.variant || 'outlined'} label=${args.label || ''} placeholder=${args.placeholder || 'Type something…'} .value=${args.value || ''} error=${args.error || ''} ?disabled=${args.disabled} ?readonly=${args.readonly} ></sg-input> `, args: { variant: 'outlined', label: 'Label', placeholder: 'Type something…', value: '', error: '', disabled: false, readonly: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithValue",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-input label=\"Full name\" placeholder=\"Enter your name\" value=\"Jane Doe\" ></sg-input> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Variants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-input label=\"Outlined\" placeholder=\"Outlined variant\"></sg-input> <sg-input label=\"Ghost\" placeholder=\"Ghost variant\" variant=\"ghost\"></sg-input> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Error",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-input label=\"Email\" placeholder=\"your@email.com\" value=\"invalid\" error=\"Please enter a valid email address\" ></sg-input> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Disabled",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-input label=\"Disabled\" placeholder=\"Can't edit this\" value=\"Read-only value\" disabled ></sg-input> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithSlots",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-input label=\"Search\" placeholder=\"Search…\" variant=\"outlined\"> <span slot=\"prefix\" style=\"font-size:0.875rem;\">🔍</span> <span slot=\"suffix\" style=\"font-size:0.75rem;cursor:pointer;\">✕</span> </sg-input> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithValue",
+          "declaration": {
+            "name": "WithValue",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Variants",
+          "declaration": {
+            "name": "Variants",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Error",
+          "declaration": {
+            "name": "Error",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Disabled",
+          "declaration": {
+            "name": "Disabled",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithSlots",
+          "declaration": {
+            "name": "WithSlots",
+            "module": "src/components/sg-input.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-input.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled text input with spectral focus ring.",
+          "name": "SgInput",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-input-radius",
+              "default": "var(--sg-radius-md, 12px)"
+            },
+            {
+              "description": "Input height.",
+              "name": "--sg-input-height",
+              "default": "40px"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Content before the input (e.g. icon).",
+              "name": "prefix"
+            },
+            {
+              "description": "Content after the input (e.g. clear button).",
+              "name": "suffix"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "placeholder"
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "type",
+              "type": {
+                "text": "InputType"
+              },
+              "default": "'text'",
+              "attribute": "type",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "InputVariant"
+              },
+              "default": "'outlined'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "readonly",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "error"
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name"
+            },
+            {
+              "kind": "method",
+              "name": "#handleInput",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "input",
+              "type": {
+                "text": "Event"
+              },
+              "description": "Native input event."
+            },
+            {
+              "name": "change",
+              "type": {
+                "text": "Event"
+              },
+              "description": "Native change event."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "placeholder"
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "type",
+              "type": {
+                "text": "InputType"
+              },
+              "default": "'text'",
+              "fieldName": "type"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "InputVariant"
+              },
+              "default": "'outlined'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "readonly"
+            },
+            {
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "error"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-input",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgInput",
+          "declaration": {
+            "name": "SgInput",
+            "module": "src/components/sg-input.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-input",
+          "declaration": {
+            "name": "SgInput",
+            "module": "src/components/sg-input.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-section.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgSection', component: 'sg-section', argTypes: { padding: { control: 'select', options: ['none', 'sm', 'md', 'lg', 'xl'], }, maxWidth: { control: 'select', options: ['sm', 'md', 'lg', 'full'], }, glass: { control: 'boolean' }, accent: { control: 'select', options: ['none', 'top', 'bottom', 'both'], }, }, parameters: { docs: { description: { component: 'Responsive layout container with consistent padding, max-width, optional glass background, and decorative gradient accent edges.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-section padding=${args.padding || 'lg'} max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? false} accent=${args.accent || 'none'} > <div style=\"padding:2rem;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center;\"> Section content </div> </sg-section> `, args: { padding: 'lg', maxWidth: 'lg', glass: false, accent: 'none' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Glass",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-section glass> <div style=\"padding:2rem;text-align:center;\">Glass section with blur</div> </sg-section> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithAccent",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-section accent=\"both\" padding=\"md\"> <div style=\"padding:2rem;text-align:center;\">Section with gradient top and bottom edges</div> </sg-section> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "PaddingCompare",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-section padding=\"sm\" glass> <div style=\"text-align:center;\">Small padding</div> </sg-section> <sg-section padding=\"xl\" glass> <div style=\"text-align:center;\">Extra-large padding</div> </sg-section> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-section.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-section.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Glass",
+          "declaration": {
+            "name": "Glass",
+            "module": "src/components/sg-section.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithAccent",
+          "declaration": {
+            "name": "WithAccent",
+            "module": "src/components/sg-section.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "PaddingCompare",
+          "declaration": {
+            "name": "PaddingCompare",
+            "module": "src/components/sg-section.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-section.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Responsive layout container with consistent spacing, optional glass\nbackground, and decorative gradient accent edges.",
+          "name": "SgSection",
+          "cssProperties": [
+            {
+              "description": "Small vertical padding.",
+              "name": "--sg-section-padding-sm",
+              "default": "2rem"
+            },
+            {
+              "description": "Medium vertical padding.",
+              "name": "--sg-section-padding-md",
+              "default": "4rem"
+            },
+            {
+              "description": "Large vertical padding.",
+              "name": "--sg-section-padding-lg",
+              "default": "6rem"
+            },
+            {
+              "description": "Extra-large vertical padding.",
+              "name": "--sg-section-padding-xl",
+              "default": "8rem"
+            },
+            {
+              "description": "Small max-width.",
+              "name": "--sg-max-width-sm",
+              "default": "640px"
+            },
+            {
+              "description": "Medium max-width.",
+              "name": "--sg-max-width-md",
+              "default": "800px"
+            },
+            {
+              "description": "Large max-width.",
+              "name": "--sg-max-width-lg",
+              "default": "1100px"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "padding",
+              "type": {
+                "text": "SectionPadding"
+              },
+              "default": "'lg'",
+              "description": "Vertical padding.",
+              "attribute": "padding"
+            },
+            {
+              "kind": "field",
+              "name": "maxWidth",
+              "type": {
+                "text": "SectionMaxWidth"
+              },
+              "default": "'lg'",
+              "description": "Inner content max-width.",
+              "attribute": "max-width"
+            },
+            {
+              "kind": "field",
+              "name": "glass",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether to apply the glass surface background.",
+              "attribute": "glass"
+            },
+            {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "SectionAccent"
+              },
+              "default": "'none'",
+              "description": "Decorative gradient accent edge(s).",
+              "attribute": "accent"
+            },
+            {
+              "kind": "field",
+              "name": "tag",
+              "type": {
+                "text": "string"
+              },
+              "default": "'section'",
+              "description": "Semantic HTML tag for the section element.",
+              "attribute": "tag"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "padding",
+              "type": {
+                "text": "SectionPadding"
+              },
+              "default": "'lg'",
+              "description": "Vertical padding.",
+              "fieldName": "padding"
+            },
+            {
+              "name": "max-width",
+              "type": {
+                "text": "SectionMaxWidth"
+              },
+              "default": "'lg'",
+              "description": "Inner content max-width.",
+              "fieldName": "maxWidth"
+            },
+            {
+              "name": "glass",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Whether to apply the glass surface background.",
+              "fieldName": "glass"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "SectionAccent"
+              },
+              "default": "'none'",
+              "description": "Decorative gradient accent edge(s).",
+              "fieldName": "accent"
+            },
+            {
+              "name": "tag",
+              "type": {
+                "text": "string"
+              },
+              "default": "'section'",
+              "description": "Semantic HTML tag for the section element.",
+              "fieldName": "tag"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-section",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgSection",
+          "declaration": {
+            "name": "SgSection",
+            "module": "src/components/sg-section.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-section",
+          "declaration": {
+            "name": "SgSection",
+            "module": "src/components/sg-section.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-spinner.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgSpinner', component: 'sg-spinner', argTypes: { size: { control: 'select', options: ['sm', 'md', 'lg'] }, variant: { control: 'select', options: ['spectral', 'glass'] }, }, parameters: { docs: { description: { component: 'An animated loading spinner. The `spectral` variant uses four different spectral border colours for a rainbow rotation effect.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Spectral",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-spinner size=${args.size || 'md'} variant=${args.variant || 'spectral'}></sg-spinner> `, args: { size: 'md', variant: 'spectral' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Glass",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-spinner size=${args.size || 'md'} variant=${args.variant || 'glass'}></sg-spinner> `, args: { size: 'md', variant: 'glass' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Sizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;align-items:center;gap:16px;\"> <sg-spinner size=\"sm\" variant=\"spectral\"></sg-spinner> <sg-spinner size=\"md\" variant=\"spectral\"></sg-spinner> <sg-spinner size=\"lg\" variant=\"spectral\"></sg-spinner> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Variants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;align-items:center;gap:16px;\"> <sg-spinner size=\"md\" variant=\"spectral\"></sg-spinner> <sg-spinner size=\"md\" variant=\"glass\"></sg-spinner> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-spinner.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Spectral",
+          "declaration": {
+            "name": "Spectral",
+            "module": "src/components/sg-spinner.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Glass",
+          "declaration": {
+            "name": "Glass",
+            "module": "src/components/sg-spinner.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Sizes",
+          "declaration": {
+            "name": "Sizes",
+            "module": "src/components/sg-spinner.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Variants",
+          "declaration": {
+            "name": "Variants",
+            "module": "src/components/sg-spinner.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-spinner.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "An animated loading spinner with spectral gradient ring.",
+          "name": "SgSpinner",
+          "cssProperties": [
+            {
+              "description": "Rotation duration.",
+              "name": "--sg-spinner-speed",
+              "default": "0.8s"
+            },
+            {
+              "description": "Small diameter.",
+              "name": "--sg-spinner-width-sm",
+              "default": "16px"
+            },
+            {
+              "description": "Medium diameter.",
+              "name": "--sg-spinner-width-md",
+              "default": "24px"
+            },
+            {
+              "description": "Large diameter.",
+              "name": "--sg-spinner-width-lg",
+              "default": "40px"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "SpinnerSize"
+              },
+              "default": "'md'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "SpinnerVariant"
+              },
+              "default": "'spectral'",
+              "attribute": "variant",
+              "reflects": true
+            }
+          ],
+          "attributes": [
+            {
+              "name": "size",
+              "type": {
+                "text": "SpinnerSize"
+              },
+              "default": "'md'",
+              "fieldName": "size"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "SpinnerVariant"
+              },
+              "default": "'spectral'",
+              "fieldName": "variant"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-spinner",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgSpinner",
+          "declaration": {
+            "name": "SgSpinner",
+            "module": "src/components/sg-spinner.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-spinner",
+          "declaration": {
+            "name": "SgSpinner",
+            "module": "src/components/sg-spinner.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-toggle.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgToggle', component: 'sg-toggle', argTypes: { checked: { control: 'boolean' }, disabled: { control: 'boolean' }, label: { control: 'text' }, labelPosition: { control: 'select', options: ['left', 'right'] }, }, parameters: { docs: { description: { component: 'A toggle switch with spectral gradient active track. Supports keyboard interaction (Space/Enter) and emits a `change` event.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Off",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toggle ?checked=${args.checked} ?disabled=${args.disabled} label=${args.label || 'Toggle me'} label-position=${args.labelPosition || 'right'} ></sg-toggle> `, args: { checked: false, disabled: false, label: 'Toggle me', labelPosition: 'right' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "On",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toggle ?checked=${args.checked} ?disabled=${args.disabled} label=${args.label || 'Active'} label-position=${args.labelPosition || 'right'} ></sg-toggle> `, args: { checked: true, disabled: false, label: 'Active', labelPosition: 'right' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "LabelPositions",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-toggle label=\"Label on right\" label-position=\"right\" checked></sg-toggle> <sg-toggle label=\"Label on left\" label-position=\"left\" checked></sg-toggle> <sg-toggle label=\"No label\"></sg-toggle> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "States",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;\"> <sg-toggle label=\"Unchecked\"></sg-toggle> <sg-toggle label=\"Checked\" checked></sg-toggle> <sg-toggle label=\"Disabled unchecked\" disabled></sg-toggle> <sg-toggle label=\"Disabled checked\" disabled checked></sg-toggle> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-toggle.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Off",
+          "declaration": {
+            "name": "Off",
+            "module": "src/components/sg-toggle.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "On",
+          "declaration": {
+            "name": "On",
+            "module": "src/components/sg-toggle.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LabelPositions",
+          "declaration": {
+            "name": "LabelPositions",
+            "module": "src/components/sg-toggle.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "States",
+          "declaration": {
+            "name": "States",
+            "module": "src/components/sg-toggle.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-toggle.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A toggle switch with spectral gradient active track.",
+          "name": "SgToggle",
+          "cssProperties": [
+            {
+              "description": "Track height.",
+              "name": "--sg-toggle-height",
+              "default": "24px"
+            },
+            {
+              "description": "Track width.",
+              "name": "--sg-toggle-width",
+              "default": "44px"
+            },
+            {
+              "description": "Knob diameter.",
+              "name": "--sg-toggle-knob-size",
+              "default": "18px"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "checked",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "labelPosition",
+              "type": {
+                "text": "'left' | 'right'"
+              },
+              "default": "'right'",
+              "attribute": "label-position"
+            },
+            {
+              "kind": "method",
+              "name": "#handleToggle",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#dispatchChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when toggled. `event.detail` contains the new checked state."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "checked"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "label-position",
+              "type": {
+                "text": "'left' | 'right'"
+              },
+              "default": "'right'",
+              "fieldName": "labelPosition"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-toggle",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgToggle",
+          "declaration": {
+            "name": "SgToggle",
+            "module": "src/components/sg-toggle.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-toggle",
+          "declaration": {
+            "name": "SgToggle",
+            "module": "src/components/sg-toggle.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

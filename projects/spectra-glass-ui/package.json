@@ -1,0 +1,57 @@
+{
+  "name": "spectra-glass-ui",
+  "version": "0.1.0",
+  "description": "A Web Component library with glassmorphism and spectral gradient aesthetics",
+  "type": "module",
+  "main": "./dist/spectra-glass-ui.js",
+  "module": "./dist/spectra-glass-ui.js",
+  "types": "./dist/spectra-glass-ui.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/spectra-glass-ui.d.ts",
+      "import": "./dist/spectra-glass-ui.js"
+    },
+    "./themes/glass.css": {
+      "import": "./dist/themes/glass.css"
+    },
+    "./custom-elements.json": {
+      "import": "./custom-elements.json"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "custom-elements.json"
+  ],
+  "scripts": {
+    "build": "vite build && node scripts/copy-assets.mjs && cem analyze --litelement --globs \"src/components/**/*.ts\" --outdir .",
+    "dev": "storybook dev -p 4812",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build-storybook": "storybook build",
+    "cem": "cem analyze --litelement --globs \"src/components/**/*.ts\" --outdir ."
+  },
+  "peerDependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "^0.11.0",
+    "@storybook/addon-links": "^10.4.6",
+    "@storybook/web-components-vite": "^10.4.6",
+    "@vitest/browser": "^4.1.9",
+    "@vitest/browser-playwright": "^4.1.9",
+    "lit": "^3.3.3",
+    "playwright": "^1.61.1",
+    "storybook": "^10.4.6",
+    "typescript": "~5.7.3",
+    "vite": "^6.3.2",
+    "vite-plugin-dts": "^4.5.3",
+    "vitest": "^4.1.9",
+    "vitest-browser-lit": "^1.0.1",
+    "@storybook/addon-docs": "^10.4.6"
+  },
+  "customElements": "custom-elements.json"
+}

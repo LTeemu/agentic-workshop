@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spectra Glass — Glass‑themed Web Components</title>
+    <meta
+      name="description"
+      content="A Web Component library with glassmorphism aesthetics and spectral gradients, built with Lit."
+    />
+
+    <!-- Preload Inter from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/src/style.css" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <!-- ════════════════════ Header ════════════════════ -->
+    <sg-header sticky>
+      <span slot="logo" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em">
+        ✦ Spectra
+      </span>
+      <a slot="nav" href="#features">Features</a>
+      <a slot="nav" href="#showcase">Components</a>
+      <a slot="nav" href="#faq">FAQ</a>
+      <sg-button slot="cta" id="header-cta" variant="primary" size="sm">Get Started</sg-button>
+    </sg-header>
+
+    <!-- ════════════════════ Hero ════════════════════ -->
+    <sg-hero align="center">
+      <h1 slot="heading">Crafted for the modern web</h1>
+      <p slot="subtitle">
+        A glass‑themed component library built with Lit. Semi‑transparent spectral gradients,
+        backdrop‑blur surfaces, and framework‑agnostic web components — use them anywhere.
+      </p>
+      <sg-button slot="cta-primary" variant="primary" id="hero-cta">Browse Components</sg-button>
+      <sg-button slot="cta-secondary" variant="ghost">View on GitHub</sg-button>
+    </sg-hero>
+
+    <!-- ════════════════════ Features ════════════════════ -->
+    <sg-section id="features" glass accent="top" padding="xl">
+      <div style="text-align: center; margin-bottom: 3rem">
+        <sg-badge variant="spectral" size="sm">Why Spectra</sg-badge>
+        <h2 style="margin-top: 1rem; font-size: clamp(1.75rem, 3vw, 2.5rem)">
+          Build beautiful interfaces faster
+        </h2>
+        <p
+          style="
+            color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+            margin-top: 0.5rem;
+            font-size: 1.0625rem;
+          "
+        >
+          Every component ships with the glass aesthetic built in.
+        </p>
+      </div>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 1.25rem;
+        "
+      >
+        <sg-card variant="elevated" padding="md">
+          <div slot="header">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+            </div>
+            <h3 style="font-size: 1.125rem">Framework Agnostic</h3>
+          </div>
+          <p
+            style="
+              color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+              font-size: 0.9375rem;
+              line-height: 1.7;
+            "
+          >
+            Web Components work everywhere — React, Vue, Angular, Svelte, or plain HTML. No
+            framework lock‑in.
+          </p>
+        </sg-card>
+
+        <sg-card variant="elevated" padding="md">
+          <div slot="header">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <h3 style="font-size: 1.125rem">Glass Aesthetic</h3>
+          </div>
+          <p
+            style="
+              color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+              font-size: 0.9375rem;
+              line-height: 1.7;
+            "
+          >
+            Backdrop‑blur surfaces, semi‑transparent stained‑glass gradients, and muted jewel tones
+            out of the box.
+          </p>
+        </sg-card>
+
+        <sg-card variant="elevated" padding="md">
+          <div slot="header">
+            <div class="feature-icon">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
+              </svg>
+            </div>
+            <h3 style="font-size: 1.125rem">Fully Themeable</h3>
+          </div>
+          <p
+            style="
+              color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+              font-size: 0.9375rem;
+              line-height: 1.7;
+            "
+          >
+            Every colour, radius, and transition is a CSS custom property. Override what you need,
+            keep the rest.
+          </p>
+        </sg-card>
+      </div>
+    </sg-section>
+
+    <!-- ════════════════════ Component Showcase ════════════════════ -->
+    <sg-section id="showcase" padding="xl">
+      <div style="text-align: center; margin-bottom: 3rem">
+        <sg-badge variant="spectral" size="sm">Components</sg-badge>
+        <h2 style="margin-top: 1rem; font-size: clamp(1.75rem, 3vw, 2.5rem)">
+          Everything you need
+        </h2>
+        <p
+          style="
+            color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+            margin-top: 0.5rem;
+            font-size: 1.0625rem;
+          "
+        >
+          15 components — interactive, accessible, and beautifully styled.
+        </p>
+      </div>
+
+      <!-- Row 1: Button variants + Badges -->
+      <div class="showcase-grid">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Buttons</h3>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sg-button variant="primary">Primary</sg-button>
+            <sg-button variant="secondary">Secondary</sg-button>
+            <sg-button variant="ghost">Ghost</sg-button>
+            <sg-button variant="primary" loading>Loading</sg-button>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px">
+            <sg-button variant="primary" size="sm">Small</sg-button>
+            <sg-button variant="primary" size="md">Medium</sg-button>
+            <sg-button variant="primary" size="lg">Large</sg-button>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Badges</h3>
+          <div class="badge-grid">
+            <sg-badge variant="default">Default</sg-badge>
+            <sg-badge variant="success">Success</sg-badge>
+            <sg-badge variant="warning">Warning</sg-badge>
+            <sg-badge variant="error">Error</sg-badge>
+            <sg-badge variant="info">Info</sg-badge>
+            <sg-badge variant="spectral">Spectral</sg-badge>
+          </div>
+          <div class="badge-grid" style="margin-top: 12px">
+            <sg-badge variant="spectral" removable>Dismiss me</sg-badge>
+            <sg-badge variant="success" removable>Done</sg-badge>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- Row 2: Input + Toggle + Spinner + Avatar -->
+      <div class="showcase-grid">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Input</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <sg-input label="Email" type="email" placeholder="you@example.com"></sg-input>
+            <sg-input
+              label="With error"
+              error="This field is required"
+              variant="outlined"
+            ></sg-input>
+            <sg-input label="Ghost variant" variant="ghost" placeholder="Ghost input"></sg-input>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Toggle, Spinner &amp; Avatar</h3>
+          <div style="display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; gap: 24px; align-items: center">
+              <sg-toggle label="Notifications"></sg-toggle>
+              <sg-toggle label="Dark mode" checked></sg-toggle>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center">
+              <sg-spinner size="sm"></sg-spinner>
+              <sg-spinner size="md"></sg-spinner>
+              <sg-spinner size="lg"></sg-spinner>
+              <sg-spinner variant="glass" size="md"></sg-spinner>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center">
+              <sg-avatar initials="SG" size="sm"></sg-avatar>
+              <sg-avatar initials="UI" size="md"></sg-avatar>
+              <sg-avatar initials="LG" size="lg"></sg-avatar>
+              <sg-avatar initials="XL" size="xl" status="online"></sg-avatar>
+            </div>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- Row 3: Card variants + Dialog -->
+      <div class="showcase-grid" style="margin-bottom: 0">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Card Variants</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <sg-card variant="elevated" padding="sm">
+              <span style="font-size: 0.875rem">Elevated — has shadow and depth</span>
+            </sg-card>
+            <sg-card variant="outlined" padding="sm">
+              <span style="font-size: 0.875rem">Outlined — subtle border only</span>
+            </sg-card>
+            <sg-card variant="ghost" padding="sm">
+              <span style="font-size: 0.875rem">Ghost — transparent, no border</span>
+            </sg-card>
+            <sg-card variant="elevated" padding="sm" accent selected>
+              <span style="font-size: 0.875rem">Selected with accent — gradient border</span>
+            </sg-card>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Dialog &amp; Divider</h3>
+          <div style="display: flex; flex-direction: column; gap: 16px">
+            <sg-button variant="primary" id="open-dialog-btn">Open Dialog</sg-button>
+            <sg-dialog id="demo-dialog">
+              <h3 slot="header" style="margin: 0; font-size: 1.125rem">Welcome</h3>
+              <p style="color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6))">
+                This is a modal dialog. Press Escape or click outside to close.
+              </p>
+              <sg-button slot="footer" id="close-dialog-btn" variant="primary">Got it</sg-button>
+            </sg-dialog>
+            <sg-divider label="Section divider" variant="gradient"></sg-divider>
+            <p
+              style="font-size: 0.875rem; color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6))"
+            >
+              Dividers help organise content visually.
+            </p>
+          </div>
+        </sg-card>
+      </div>
+    </sg-section>
+
+    <!-- ════════════════════ FAQ ════════════════════ -->
+    <sg-section id="faq" glass accent="bottom" padding="xl">
+      <div style="text-align: center; margin-bottom: 2.5rem">
+        <sg-badge variant="spectral" size="sm">FAQ</sg-badge>
+        <h2 style="margin-top: 1rem; font-size: clamp(1.75rem, 3vw, 2.5rem)">
+          Frequently asked questions
+        </h2>
+      </div>
+
+      <sg-accordion style="max-width: 700px; margin: 0 auto">
+        <sg-accordion-item heading="Can I use these components with React?">
+          Yes — Web Components work with any framework. Import the library and use the tags directly
+          in your JSX. TypeScript definitions are included for autocomplete.
+        </sg-accordion-item>
+        <sg-accordion-item heading="How do I customise the theme?">
+          Override CSS custom properties on your own <code>:root</code> block. Every colour, radius,
+          font, and transition has a <code>--sg-*</code> variable you can redeclare.
+        </sg-accordion-item>
+        <sg-accordion-item heading="Does it work without importing the theme?">
+          Yes. Every component has sensible fallback defaults so they look good even without loading
+          <code>themes/glass.css</code>. The theme just makes them consistent.
+        </sg-accordion-item>
+        <sg-accordion-item heading="Is it production‑ready?">
+          The library is fully tested (93+ tests across 15 components) and ships with TypeScript
+          types, a custom elements manifest, and an ESM build. Use with confidence.
+        </sg-accordion-item>
+      </sg-accordion>
+    </sg-section>
+
+    <!-- ════════════════════ Footer ════════════════════ -->
+    <sg-footer columns="4">
+      <div slot="column-1">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#showcase">Components</a>
+        <a href="#">Documentation</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div slot="column-2">
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Blog</a>
+        <a href="#">Careers</a>
+        <a href="#">Contact</a>
+      </div>
+      <div slot="column-3">
+        <h4>Resources</h4>
+        <a href="#">API Reference</a>
+        <a href="#">Examples</a>
+        <a href="#">Community</a>
+        <a href="#">GitHub</a>
+      </div>
+      <div slot="column-4">
+        <h4>Legal</h4>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Cookie Policy</a>
+      </div>
+      <div slot="social" class="footer-social">
+        <a href="#" aria-label="Twitter">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+            />
+          </svg>
+        </a>
+        <a href="#" aria-label="GitHub">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+            />
+          </svg>
+        </a>
+      </div>
+      <span slot="copyright">&copy; 2026 Spectra Glass UI. MIT License.</span>
+    </sg-footer>
+
+    <!-- Dialog event wiring (Lit @click doesn't work in plain HTML) -->
+    <script>
+      document.getElementById('open-dialog-btn').addEventListener('click', function () {
+        document.getElementById('demo-dialog').setAttribute('open', 'true');
+      });
+      document.getElementById('close-dialog-btn').addEventListener('click', function () {
+        document.getElementById('demo-dialog').removeAttribute('open');
+      });
+      document.getElementById('hero-cta').addEventListener('click', function () {
+        document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
+      });
+      document.getElementById('header-cta').addEventListener('click', function () {
+        document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
+      });
+    </script>
+  </body>
+</html>
