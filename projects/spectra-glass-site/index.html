@@ -181,7 +181,7 @@
             font-size: 1.0625rem;
           "
         >
-          15 components — interactive, accessible, and beautifully styled.
+          26 components — interactive, accessible, and beautifully styled.
         </p>
       </div>
 
@@ -199,6 +199,16 @@
             <sg-button variant="primary" size="sm">Small</sg-button>
             <sg-button variant="primary" size="md">Medium</sg-button>
             <sg-button variant="primary" size="lg">Large</sg-button>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px">
+            <sg-button variant="primary" border>Border</sg-button>
+            <sg-button variant="secondary" border>Border</sg-button>
+            <sg-button variant="ghost" border>Border</sg-button>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px">
+            <sg-button variant="primary" pill>Primary Pill</sg-button>
+            <sg-button variant="secondary" pill>Secondary Pill</sg-button>
+            <sg-button variant="ghost" pill>Ghost Pill</sg-button>
           </div>
         </sg-card>
 
@@ -231,6 +241,7 @@
               variant="outlined"
             ></sg-input>
             <sg-input label="Ghost variant" variant="ghost" placeholder="Ghost input"></sg-input>
+            <sg-input label="With accent" accent placeholder="Accented input"></sg-input>
           </div>
         </sg-card>
 
@@ -241,11 +252,32 @@
               <sg-toggle label="Notifications"></sg-toggle>
               <sg-toggle label="Dark mode" checked></sg-toggle>
             </div>
-            <div style="display: flex; gap: 12px; align-items: center">
-              <sg-spinner size="sm"></sg-spinner>
-              <sg-spinner size="md"></sg-spinner>
-              <sg-spinner size="lg"></sg-spinner>
-              <sg-spinner variant="glass" size="md"></sg-spinner>
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; gap: 12px; align-items: center">
+                <sg-spinner size="sm"></sg-spinner>
+                <sg-spinner size="md"></sg-spinner>
+                <sg-spinner size="lg"></sg-spinner>
+                <span
+                  style="
+                    font-size: 0.8125rem;
+                    color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+                    margin-left: 4px;
+                  "
+                  >Sizes</span
+                >
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center">
+                <sg-spinner size="md" variant="spectral"></sg-spinner>
+                <sg-spinner size="md" variant="glass"></sg-spinner>
+                <span
+                  style="
+                    font-size: 0.8125rem;
+                    color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+                    margin-left: 4px;
+                  "
+                  >Variants</span
+                >
+              </div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center">
               <sg-avatar initials="SG" size="sm"></sg-avatar>
@@ -258,7 +290,7 @@
       </div>
 
       <!-- Row 3: Card variants + Dialog -->
-      <div class="showcase-grid" style="margin-bottom: 0">
+      <div class="showcase-grid">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Card Variants</h3>
           <div style="display: flex; flex-direction: column; gap: 12px">
@@ -278,22 +310,241 @@
         </sg-card>
 
         <sg-card variant="outlined" padding="md">
-          <h3 slot="header" style="font-size: 1rem">Dialog &amp; Divider</h3>
-          <div style="display: flex; flex-direction: column; gap: 16px">
+          <h3 slot="header" style="font-size: 1rem">Dialog</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px">
             <sg-button variant="primary" id="open-dialog-btn">Open Dialog</sg-button>
-            <sg-dialog id="demo-dialog">
-              <h3 slot="header" style="margin: 0; font-size: 1.125rem">Welcome</h3>
+            <sg-dialog id="demo-dialog" accent>
+              <h3 slot="header" style="margin: 0; font-size: 1.125rem">Confirm Action</h3>
               <p style="color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6))">
-                This is a modal dialog. Press Escape or click outside to close.
+                This modal has the <strong>accent</strong> gradient border. Press
+                <kbd>Escape</kbd> or click the backdrop to close.
               </p>
-              <sg-button slot="footer" id="close-dialog-btn" variant="primary">Got it</sg-button>
+              <span slot="footer">
+                <sg-button id="close-dialog-btn" variant="ghost" size="sm">Cancel</sg-button>
+                <sg-button variant="primary" size="sm">Confirm</sg-button>
+              </span>
             </sg-dialog>
-            <sg-divider label="Section divider" variant="gradient"></sg-divider>
+            <p
+              style="
+                font-size: 0.875rem;
+                color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+                margin: 0;
+              "
+            >
+              Powered by <code>&lt;sg-dialog&gt;</code> with portal overlay, backdrop blur, and
+              focus trapping.
+            </p>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- ═══ Divider standalone ═══ -->
+      <div class="showcase-grid">
+        <sg-card variant="outlined" padding="md" style="grid-column: 1/-1">
+          <h3 slot="header" style="font-size: 1rem">Divider</h3>
+          <div class="demo-col">
+            <sg-divider variant="gradient" label="Gradient divider"></sg-divider>
             <p
               style="font-size: 0.875rem; color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6))"
             >
               Dividers help organise content visually.
             </p>
+            <sg-divider variant="solid"></sg-divider>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- ═══ Row 4: Form Suite — Textarea, Checkbox, Radio ═══ -->
+      <div class="showcase-grid">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Textarea</h3>
+          <div class="demo-col">
+            <sg-textarea label="Bio" placeholder="Tell us about yourself..." rows="3"></sg-textarea>
+            <sg-textarea
+              label="With error"
+              error="Please enter a valid description"
+              rows="2"
+            ></sg-textarea>
+            <sg-textarea
+              label="Clearable"
+              value="You can clear me"
+              clearable
+              rows="2"
+            ></sg-textarea>
+            <sg-textarea
+              label="With accent"
+              accent
+              placeholder="Accented textarea"
+              rows="2"
+            ></sg-textarea>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Checkbox &amp; Radio</h3>
+          <div class="demo-col">
+            <div class="demo-label">Checkboxes</div>
+            <div class="demo-row">
+              <sg-checkbox label="Default"></sg-checkbox>
+              <sg-checkbox label="Checked" checked></sg-checkbox>
+              <sg-checkbox label="Indeterminate" indeterminate></sg-checkbox>
+            </div>
+            <sg-divider variant="solid"></sg-divider>
+            <div class="demo-label">Radio Group</div>
+            <sg-radio-group id="demo-radio-group" value="option-b">
+              <sg-radio label="Option A" value="option-a"></sg-radio>
+              <sg-radio label="Option B" value="option-b"></sg-radio>
+              <sg-radio label="Option C" value="option-c"></sg-radio>
+            </sg-radio-group>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- ═══ Row 5: Select + Tabs ═══ -->
+      <div class="showcase-grid">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Select</h3>
+          <div class="demo-col">
+            <sg-select
+              id="demo-select"
+              label="Framework"
+              placeholder="Choose a framework"
+            ></sg-select>
+            <sg-select
+              id="demo-select-multi"
+              label="Multi-select (Ctrl+click)"
+              multiple
+              placeholder="Pick languages"
+            ></sg-select>
+            <sg-select
+              id="demo-select-accent"
+              label="Accented"
+              accent
+              placeholder="Accented select"
+            ></sg-select>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Tabs</h3>
+          <sg-tabs id="demo-tabs" variant="glass">
+            <div slot="preview" class="tab-demo-content">
+              This is the preview tab. Switch tabs to see different content panels.
+            </div>
+            <div slot="code" class="tab-demo-content">
+              <code
+                style="
+                  display: block;
+                  padding: 12px;
+                  background: rgba(0, 0, 0, 0.3);
+                  border-radius: 8px;
+                "
+                >&lt;sg-tabs variant="glass"&gt;&lt;/sg-tabs&gt;</code
+              >
+            </div>
+            <div slot="settings" class="tab-demo-content">
+              Settings panel (disabled tab — can't be selected).
+            </div>
+          </sg-tabs>
+        </sg-card>
+      </div>
+
+      <!-- ═══ Row 6: Progress + Skeleton + Breadcrumb ═══ -->
+      <div class="showcase-grid-3col">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Progress</h3>
+          <div class="demo-col">
+            <sg-progress value="42" label="Downloading..." show-value></sg-progress>
+            <sg-progress value="78" label="Processing" show-value variant="default"></sg-progress>
+            <sg-progress indeterminate label="Loading..." variant="spectral"></sg-progress>
+            <div class="demo-row" style="gap: 8px; margin-top: 4px">
+              <sg-progress value="25" size="sm"></sg-progress>
+              <sg-progress value="50" size="md"></sg-progress>
+              <sg-progress value="75" size="lg"></sg-progress>
+            </div>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Skeleton</h3>
+          <div class="demo-col">
+            <div class="demo-label">Text</div>
+            <sg-skeleton variant="text" lines="3"></sg-skeleton>
+            <sg-divider variant="solid"></sg-divider>
+            <div class="demo-row" style="gap: 16px">
+              <div>
+                <div class="demo-label">Circle</div>
+                <sg-skeleton variant="circle" width="40px" height="40px"></sg-skeleton>
+              </div>
+              <div style="flex: 1">
+                <div class="demo-label">Card</div>
+                <sg-skeleton variant="card"></sg-skeleton>
+              </div>
+            </div>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Breadcrumb</h3>
+          <div class="demo-col">
+            <sg-breadcrumb id="demo-breadcrumb-1"></sg-breadcrumb>
+            <sg-divider variant="solid"></sg-divider>
+            <sg-breadcrumb id="demo-breadcrumb-2" separator="›"></sg-breadcrumb>
+            <sg-divider variant="solid"></sg-divider>
+            <sg-breadcrumb id="demo-breadcrumb-3" separator="•"></sg-breadcrumb>
+          </div>
+        </sg-card>
+      </div>
+
+      <!-- ═══ Row 7: Toast + Tooltip + Pagination ═══ -->
+      <div class="showcase-grid-3col">
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Toast</h3>
+          <div class="demo-col">
+            <div class="demo-row">
+              <sg-button variant="primary" size="sm" id="toast-info-btn">Info</sg-button>
+              <sg-button variant="secondary" size="sm" id="toast-success-btn">Success</sg-button>
+              <sg-button variant="secondary" size="sm" id="toast-warning-btn">Warning</sg-button>
+              <sg-button variant="secondary" size="sm" id="toast-error-btn">Error</sg-button>
+            </div>
+            <sg-toast-container
+              position="bottom-right"
+              id="demo-toast-container"
+            ></sg-toast-container>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Tooltip</h3>
+          <div class="demo-col">
+            <div class="demo-row" style="gap: 24px; justify-content: center; padding: 20px 0">
+              <sg-tooltip label="Top tooltip" position="top">
+                <sg-button variant="secondary" size="sm">Top</sg-button>
+              </sg-tooltip>
+              <sg-tooltip label="Bottom tooltip" position="bottom">
+                <sg-button variant="secondary" size="sm">Bottom</sg-button>
+              </sg-tooltip>
+              <sg-tooltip label="Left tooltip" position="left">
+                <sg-button variant="secondary" size="sm">Left</sg-button>
+              </sg-tooltip>
+              <sg-tooltip label="Right tooltip" position="right">
+                <sg-button variant="secondary" size="sm">Right</sg-button>
+              </sg-tooltip>
+            </div>
+          </div>
+        </sg-card>
+
+        <sg-card variant="outlined" padding="md">
+          <h3 slot="header" style="font-size: 1rem">Pagination</h3>
+          <div class="demo-col">
+            <sg-pagination
+              id="demo-pagination"
+              total="10"
+              current="5"
+              show-first-last
+            ></sg-pagination>
+            <sg-divider variant="solid"></sg-divider>
+            <sg-pagination total="7" current="1" size="sm"></sg-pagination>
           </div>
         </sg-card>
       </div>
@@ -322,7 +573,7 @@
           <code>themes/glass.css</code>. The theme just makes them consistent.
         </sg-accordion-item>
         <sg-accordion-item heading="Is it production‑ready?">
-          The library is fully tested (93+ tests across 15 components) and ships with TypeScript
+          The library is fully tested (95+ tests across 26 components) and ships with TypeScript
           types, a custom elements manifest, and an ESM build. Use with confidence.
         </sg-accordion-item>
       </sg-accordion>
@@ -394,20 +645,136 @@
       <span slot="copyright">&copy; 2026 Spectra Glass UI. MIT License.</span>
     </sg-footer>
 
-    <!-- Dialog event wiring (Lit @click doesn't work in plain HTML) -->
+    <!-- Event wiring and property binding (Lit @click / .foo syntax doesn't work in plain HTML) -->
     <script>
-      document.getElementById('open-dialog-btn').addEventListener('click', function () {
-        document.getElementById('demo-dialog').setAttribute('open', 'true');
-      });
-      document.getElementById('close-dialog-btn').addEventListener('click', function () {
-        document.getElementById('demo-dialog').removeAttribute('open');
-      });
+      // ── Smooth scroll CTA ──
       document.getElementById('hero-cta').addEventListener('click', function () {
         document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
       });
       document.getElementById('header-cta').addEventListener('click', function () {
         document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
       });
+
+      // ── Dialog ──
+      var demoDialog = document.getElementById('demo-dialog');
+      document.getElementById('open-dialog-btn').addEventListener('click', function () {
+        demoDialog.open = true;
+      });
+      function closeDialog() {
+        demoDialog.open = false;
+      }
+      document.getElementById('close-dialog-btn').addEventListener('click', closeDialog);
+      // Confirm button also closes the dialog
+      var confirmBtn = demoDialog.querySelector('[slot="footer"] sg-button:last-child');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', closeDialog);
+      }
+
+      // ── Select options ──
+      (function () {
+        var sel = document.getElementById('demo-select');
+        sel.options = [
+          { value: 'react', label: 'React' },
+          { value: 'vue', label: 'Vue' },
+          { value: 'angular', label: 'Angular' },
+          { value: 'svelte', label: 'Svelte' },
+          { value: 'lit', label: 'Lit' },
+        ];
+        var selMulti = document.getElementById('demo-select-multi');
+        selMulti.options = [
+          { value: 'ts', label: 'TypeScript' },
+          { value: 'js', label: 'JavaScript' },
+          { value: 'py', label: 'Python' },
+          { value: 'rs', label: 'Rust' },
+        ];
+      })();
+
+      // ── Accent select ──
+      (function () {
+        var selAccent = document.getElementById('demo-select-accent');
+        if (selAccent) {
+          selAccent.options = [
+            { value: 'opt1', label: 'Option One' },
+            { value: 'opt2', label: 'Option Two' },
+            { value: 'opt3', label: 'Option Three' },
+          ];
+        }
+      })();
+
+      // ── Tabs ──
+      (function () {
+        var tabs = document.getElementById('demo-tabs');
+        tabs.tabs = [
+          { id: 'preview', label: 'Preview' },
+          { id: 'code', label: 'Code' },
+          { id: 'settings', label: 'Settings', disabled: true },
+        ];
+      })();
+
+      // ── Breadcrumbs ──
+      (function () {
+        document.getElementById('demo-breadcrumb-1').items = [
+          { label: 'Home', href: '#' },
+          { label: 'Products', href: '#' },
+          { label: 'Category', href: '#' },
+          { label: 'Item' },
+        ];
+        document.getElementById('demo-breadcrumb-2').items = [
+          { label: 'Dashboard', href: '#' },
+          { label: 'Settings' },
+        ];
+        document.getElementById('demo-breadcrumb-3').items = [
+          { label: 'Docs', href: '#' },
+          { label: 'API', href: '#' },
+          { label: 'Reference' },
+        ];
+      })();
+
+      // ── Toast demo ──
+      (function () {
+        var container = document.getElementById('demo-toast-container');
+        var infoBtn = document.getElementById('toast-info-btn');
+        var successBtn = document.getElementById('toast-success-btn');
+        var warningBtn = document.getElementById('toast-warning-btn');
+        var errorBtn = document.getElementById('toast-error-btn');
+
+        function showToast(variant, message) {
+          var toast = document.createElement('sg-toast');
+          toast.variant = variant;
+          toast.duration = 3000;
+          toast.dismissible = true;
+          toast.textContent = message;
+          container.appendChild(toast);
+          // Trigger open after the element is in the DOM
+          requestAnimationFrame(function () {
+            toast.open = true;
+          });
+        }
+
+        infoBtn.addEventListener('click', function () {
+          showToast('info', 'This is an informational message.');
+        });
+        successBtn.addEventListener('click', function () {
+          showToast('success', 'Operation completed successfully!');
+        });
+        warningBtn.addEventListener('click', function () {
+          showToast('warning', 'Please review your input before continuing.');
+        });
+        errorBtn.addEventListener('click', function () {
+          showToast('error', 'Something went wrong. Please try again.');
+        });
+      })();
+
+      // ── Pagination tracking ──
+      (function () {
+        var pagination = document.getElementById('demo-pagination');
+        var display = document.getElementById('pagination-page-display');
+        if (pagination && display) {
+          pagination.addEventListener('change', function (e) {
+            display.textContent = e.detail;
+          });
+        }
+      })();
     </script>
   </body>
 </html>

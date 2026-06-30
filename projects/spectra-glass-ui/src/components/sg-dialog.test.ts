@@ -9,6 +9,11 @@ async function waitForLit(el: Element) {
   if (litEl.updateComplete) await litEl.updateComplete;
 }
 
+/** Helper: wait for portal to appear in document.body. */
+async function waitForPortal() {
+  await new Promise(r => requestAnimationFrame(r));
+}
+
 test('is hidden by default', async () => {
   render(html`<sg-dialog title="Test">Content</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
@@ -24,20 +29,27 @@ test('shows when open attribute set', async () => {
 });
 
 test('renders title', async () => {
-  const screen = render(html`<sg-dialog open title="My Dialog">Body</sg-dialog>`);
-  await expect.element(screen.getByText('My Dialog')).toBeVisible();
+  render(html`<sg-dialog open title="My Dialog">Body</sg-dialog>`);
+  await waitForLit(document.body.querySelector('sg-dialog')!);
+  await waitForPortal();
+  const titleEl = document.body.querySelector('.header__title');
+  expect(titleEl?.textContent).toContain('My Dialog');
 });
 
 test('renders body content', async () => {
-  const screen = render(html`<sg-dialog open title="Test">Hello world</sg-dialog>`);
-  await expect.element(screen.getByText('Hello world')).toBeVisible();
+  render(html`<sg-dialog open title="Test">Hello world</sg-dialog>`);
+  await waitForLit(document.body.querySelector('sg-dialog')!);
+  await waitForPortal();
+  const bodyEl = document.body.querySelector('.body');
+  expect(bodyEl?.textContent).toContain('Hello world');
 });
 
 test('shows close button when closable', async () => {
   render(html`<sg-dialog open title="Test" closable>Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const closeBtn = el.shadowRoot?.querySelector('.header__close');
+  await waitForPortal();
+  const closeBtn = document.body.querySelector('.header__close');
   expect(closeBtn).toBeTruthy();
 });
 
@@ -45,7 +57,8 @@ test('hides close button when not closable', async () => {
   render(html`<sg-dialog open title="Test" .closable=${false}>Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const closeBtn = el.shadowRoot?.querySelector('.header__close');
+  await waitForPortal();
+  const closeBtn = document.body.querySelector('.header__close');
   expect(closeBtn).toBeNull();
 });
 
@@ -53,7 +66,8 @@ test('closes on close button click', async () => {
   render(html`<sg-dialog open title="Test" closable>Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const closeBtn = el.shadowRoot?.querySelector('.header__close') as HTMLElement;
+  await waitForPortal();
+  const closeBtn = document.body.querySelector('.header__close') as HTMLElement;
   closeBtn.click();
   expect(el.open).toBe(false);
 });
@@ -62,7 +76,8 @@ test('closes on backdrop click when backdropDismiss is true', async () => {
   render(html`<sg-dialog open title="Test" backdrop-dismiss>Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const backdrop = el.shadowRoot?.querySelector('.backdrop') as HTMLElement;
+  await waitForPortal();
+  const backdrop = document.body.querySelector('.backdrop') as HTMLElement;
   backdrop.click();
   expect(el.open).toBe(false);
 });
@@ -71,7 +86,8 @@ test('does not close on backdrop click when backdropDismiss is false', async () 
   render(html`<sg-dialog open title="Test" .backdropDismiss=${false}>Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const backdrop = el.shadowRoot?.querySelector('.backdrop') as HTMLElement;
+  await waitForPortal();
+  const backdrop = document.body.querySelector('.backdrop') as HTMLElement;
   backdrop.click();
   expect(el.open).toBe(true);
 });
@@ -83,7 +99,8 @@ test('fires close event on dismiss', async () => {
   `);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const closeBtn = el.shadowRoot?.querySelector('.header__close') as HTMLElement;
+  await waitForPortal();
+  const closeBtn = document.body.querySelector('.header__close') as HTMLElement;
   closeBtn.click();
   expect(fired).toBe(true);
 });
@@ -92,17 +109,21 @@ test('closes on Escape key', async () => {
   render(html`<sg-dialog open title="Test">Body</sg-dialog>`);
   const el = document.body.querySelector('sg-dialog')!;
   await waitForLit(el);
-  const backdrop = el.shadowRoot?.querySelector('.backdrop') as HTMLElement;
+  await waitForPortal();
+  const backdrop = document.body.querySelector('.backdrop') as HTMLElement;
   backdrop.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   expect(el.open).toBe(false);
 });
 
 test('renders footer slot content', async () => {
-  const screen = render(html`
+  render(html`
     <sg-dialog open title="Test">
       Body
       <span slot="footer">Actions</span>
     </sg-dialog>
   `);
-  await expect.element(screen.getByText('Actions')).toBeVisible();
+  await waitForLit(document.body.querySelector('sg-dialog')!);
+  await waitForPortal();
+  const footerEl = document.body.querySelector('.footer');
+  expect(footerEl?.textContent).toContain('Actions');
 });

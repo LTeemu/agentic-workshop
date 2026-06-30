@@ -49,12 +49,34 @@ export class SgSpinner extends LitElement {
     /* ─── Variants ─── */
 
     .spinner--spectral {
-      border-style: solid;
-      border-color: var(--sg-glass-border, rgba(255, 255, 255, 0.12));
-      border-top-color: var(--sg-spectral-rose, #d4869f);
-      border-right-color: var(--sg-spectral-gold, #c4a050);
-      border-bottom-color: var(--sg-spectral-sage, #7fa88d);
-      border-left-color: var(--sg-spectral-violet, #9a7ab5);
+      /* Conic gradient ring — matches the primary button's spectral palette */
+      border: none;
+      --sg-spinner-spectral-fb: conic-gradient(
+        from 0deg,
+        rgba(212, 134, 159, 0.5),
+        rgba(196, 160, 80, 0.5),
+        rgba(127, 168, 141, 0.5),
+        rgba(122, 128, 192, 0.5),
+        rgba(212, 134, 159, 0.5)
+      );
+      background: var(--sg-gradient-spectral, var(--sg-spinner-spectral-fb));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    .spinner--sm.spinner--spectral {
+      padding: 2px;
+    }
+
+    .spinner--md.spinner--spectral {
+      padding: 3px;
+    }
+
+    .spinner--lg.spinner--spectral {
+      padding: 4px;
     }
 
     .spinner--glass {

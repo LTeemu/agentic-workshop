@@ -85,14 +85,12 @@ export class SgButton extends LitElement {
     /* ─── Variants ─── */
 
     .btn--primary {
+      /* Dim spectral gradient (0.5 alpha) by default — matches badge aesthetic */
       background: var(
         --sg-button-primary-bg,
         var(
-          --sg-gradient-spectral-strong,
-          var(
-            --sg-gradient-spectral,
-            linear-gradient(135deg, rgba(212, 134, 159, 0.75), rgba(196, 160, 80, 0.75), rgba(127, 168, 141, 0.75), rgba(122, 128, 192, 0.75))
-          )
+          --sg-gradient-spectral,
+          linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
         )
       );
       color: #fff;
@@ -146,6 +144,43 @@ export class SgButton extends LitElement {
       background: var(--sg-glass-bg-active, rgba(255, 255, 255, 0.18));
     }
 
+    /* ─── Spectral gradient border ───
+       ::after with mask sits above content, only visible at the 1px
+       border edge — no size shift, works with all variants. */
+
+    .btn--border {
+      position: relative;
+    }
+
+    .btn--border::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      --sg-spectral-fb: linear-gradient(
+        135deg,
+        rgba(212, 134, 159, 0.5),
+        rgba(196, 160, 80, 0.5),
+        rgba(127, 168, 141, 0.5),
+        rgba(122, 128, 192, 0.5)
+      );
+      background: var(--sg-gradient-spectral, var(--sg-spectral-fb));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      /* no z-index — ::after stacks above content by default */
+    }
+
+    /* ─── Pill / fully rounded ─── */
+
+    .btn--pill {
+      border-radius: 9999px;
+    }
+
     /* ─── Loading ─── */
 
     .btn--loading {
@@ -178,6 +213,14 @@ export class SgButton extends LitElement {
   @property({ type: Boolean, reflect: true })
   loading: boolean = false;
 
+  /** When true, renders a 1.5px spectral gradient border around the button. */
+  @property({ type: Boolean, reflect: true })
+  border: boolean = false;
+
+  /** When true, makes the button fully rounded (pill/circular shape). */
+  @property({ type: Boolean, reflect: true })
+  pill: boolean = false;
+
   @property({ type: String })
   type: 'button' | 'submit' | 'reset' = 'button';
 
@@ -187,6 +230,8 @@ export class SgButton extends LitElement {
       [`btn--${this.variant}`]: true,
       [`btn--${this.size}`]: true,
       'btn--loading': this.loading,
+      'btn--border': this.border,
+      'btn--pill': this.pill,
     });
 
     return html`

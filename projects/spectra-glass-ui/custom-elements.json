@@ -794,6 +794,167 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/components/sg-breadcrumb.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgBreadcrumb', component: 'sg-breadcrumb', argTypes: { items: { control: 'object' }, separator: { control: 'text' }, }, parameters: { docs: { description: { component: 'A breadcrumb navigation trail with configurable separator.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home' }, { label: 'Products' }, { label: 'Category' }, { label: 'Item' }, ], separator: '/', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithLinks",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Documentation', href: '/docs' }, { label: 'Components', href: '/docs/components' }, { label: 'Breadcrumb' }, ], separator: '/', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Short",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Current Page' }, ], separator: '/', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Long",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Library', href: '/library' }, { label: 'Components', href: '/library/components' }, { label: 'Navigation' }, { label: 'Breadcrumb' }, { label: 'Examples' }, ], separator: '/', }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-breadcrumb.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-breadcrumb.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithLinks",
+          "declaration": {
+            "name": "WithLinks",
+            "module": "src/components/sg-breadcrumb.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Short",
+          "declaration": {
+            "name": "Short",
+            "module": "src/components/sg-breadcrumb.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Long",
+          "declaration": {
+            "name": "Long",
+            "module": "src/components/sg-breadcrumb.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-breadcrumb.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SgBreadcrumb",
+          "members": [
+            {
+              "kind": "field",
+              "name": "items",
+              "type": {
+                "text": "BreadcrumbItem[]"
+              },
+              "default": "[]",
+              "attribute": "items"
+            },
+            {
+              "kind": "field",
+              "name": "separator",
+              "type": {
+                "text": "string"
+              },
+              "default": "'/'",
+              "attribute": "separator"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "items",
+              "type": {
+                "text": "BreadcrumbItem[]"
+              },
+              "default": "[]",
+              "fieldName": "items"
+            },
+            {
+              "name": "separator",
+              "type": {
+                "text": "string"
+              },
+              "default": "'/'",
+              "fieldName": "separator"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-breadcrumb",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgBreadcrumb",
+          "declaration": {
+            "name": "SgBreadcrumb",
+            "module": "src/components/sg-breadcrumb.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-breadcrumb",
+          "declaration": {
+            "name": "SgBreadcrumb",
+            "module": "src/components/sg-breadcrumb.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/components/sg-button.stories.ts",
       "declarations": [
         {
@@ -975,6 +1136,28 @@
             },
             {
               "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
+              "attribute": "selected",
+              "reflects": true
+            },
+            {
+              "kind": "field",
               "name": "type",
               "type": {
                 "text": "'button' | 'submit' | 'reset'"
@@ -1021,6 +1204,24 @@
               },
               "default": "false",
               "fieldName": "loading"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "fieldName": "accent"
+            },
+            {
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
+              "fieldName": "selected"
             },
             {
               "name": "type",
@@ -1421,6 +1622,342 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/components/sg-checkbox.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgCheckbox', component: 'sg-checkbox', argTypes: { checked: { control: 'boolean' }, disabled: { control: 'boolean' }, indeterminate: { control: 'boolean' }, label: { control: 'text' }, }, parameters: { docs: { description: { component: 'A glass-styled checkbox with spectral gradient accent. Supports checked, indeterminate, and disabled states with keyboard interaction.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-checkbox ?checked=${args.checked ?? false} ?disabled=${args.disabled ?? false} ?indeterminate=${args.indeterminate ?? false} label=${args.label || 'Accept terms'} ></sg-checkbox> `, args: { checked: false, disabled: false, indeterminate: false, label: 'Accept terms' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Checked",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-checkbox label=\"I agree to the terms\" checked></sg-checkbox> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Indeterminate",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-checkbox label=\"Select all items\" indeterminate></sg-checkbox> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Disabled",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-checkbox label=\"Disabled option\" disabled></sg-checkbox> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "DisabledChecked",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-checkbox label=\"Already selected (read-only)\" disabled checked></sg-checkbox> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllStates",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:12px;\"> <sg-checkbox label=\"Unchecked\"></sg-checkbox> <sg-checkbox label=\"Checked\" checked></sg-checkbox> <sg-checkbox label=\"Indeterminate\" indeterminate></sg-checkbox> <sg-checkbox label=\"Disabled\" disabled></sg-checkbox> <sg-checkbox label=\"Disabled checked\" disabled checked></sg-checkbox> <sg-checkbox label=\"Disabled indeterminate\" disabled indeterminate></sg-checkbox> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Checked",
+          "declaration": {
+            "name": "Checked",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Indeterminate",
+          "declaration": {
+            "name": "Indeterminate",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Disabled",
+          "declaration": {
+            "name": "Disabled",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DisabledChecked",
+          "declaration": {
+            "name": "DisabledChecked",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllStates",
+          "declaration": {
+            "name": "AllStates",
+            "module": "src/components/sg-checkbox.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-checkbox.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled checkbox with spectral gradient when checked.",
+          "name": "SgCheckbox",
+          "cssProperties": [
+            {
+              "description": "Checkbox border radius.",
+              "name": "--sg-radius-xs",
+              "default": "4px"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "checked",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "indeterminate",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "indeterminate",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name"
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "checkIcon",
+              "type": {
+                "text": "TemplateResult"
+              },
+              "static": true,
+              "default": "html` <svg class=\"icon\" viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"> <path d=\"M2 6l3 3 5-5\" stroke=\"currentColor\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/> </svg> `"
+            },
+            {
+              "kind": "field",
+              "name": "minusIcon",
+              "type": {
+                "text": "TemplateResult"
+              },
+              "static": true,
+              "default": "html` <svg class=\"icon\" viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"> <path d=\"M2 6h8\" stroke=\"currentColor\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"/> </svg> `"
+            },
+            {
+              "kind": "method",
+              "name": "#handleClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#dispatchChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when toggled. `event.detail` contains `{ checked }`."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "checked"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "indeterminate",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "indeterminate"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-checkbox",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgCheckbox",
+          "declaration": {
+            "name": "SgCheckbox",
+            "module": "src/components/sg-checkbox.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-checkbox",
+          "declaration": {
+            "name": "SgCheckbox",
+            "module": "src/components/sg-checkbox.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/components/sg-dialog.stories.ts",
       "declarations": [
         {
@@ -1582,6 +2119,67 @@
               "attribute": "title"
             },
             {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
+              "attribute": "selected",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_dialogPanel",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_FOCUSABLE",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "static": true,
+              "readonly": true,
+              "default": "'a[href], button:not([disabled]), [tabindex]:not([tabindex=\"-1\"]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])'",
+              "description": "Selector for focusable elements inside the dialog."
+            },
+            {
+              "kind": "field",
+              "name": "_previousFocus",
+              "type": {
+                "text": "HTMLElement | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "method",
+              "name": "#focusFirst",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
               "kind": "method",
               "name": "#handleBackdropClick",
               "privacy": "private",
@@ -1671,6 +2269,24 @@
               },
               "default": "''",
               "fieldName": "title"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a 1px spectral gradient border overlay.",
+              "fieldName": "accent"
+            },
+            {
+              "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
+              "fieldName": "selected"
             }
           ],
           "superclass": {
@@ -2556,7 +3172,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "A simple SVG icon wrapper. Use `name` for built-in icons, or slot\na custom SVG for ad‑hoc icons.",
+          "description": "A simple SVG icon wrapper. Use `name` for built-in icons (30+ Feather-style\nicons), or slot a custom SVG for ad‑hoc icons.\n\nBuilt‑in icons: menu, close, chevron-down, chevron-up, chevron-left,\nchevron-right, check, external-link, search, arrow-left, arrow-right,\narrow-up, arrow-down, plus, minus, info, alert-circle, user, settings,\nmail, home, edit, trash-2, eye, eye-off, download, upload, copy,\nalert-triangle, x-circle, check-circle, sun, moon, bell, clock,\nmaximize-2, minimize-2.",
           "name": "SgIcon",
           "cssProperties": [
             {
@@ -2871,6 +3487,27 @@
               "attribute": "name"
             },
             {
+              "kind": "field",
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, shows a clear (×) button when the input has a value.",
+              "attribute": "clearable"
+            },
+            {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
               "kind": "method",
               "name": "#handleInput",
               "privacy": "private",
@@ -2905,6 +3542,16 @@
                   }
                 }
               ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleClear",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
             }
           ],
           "events": [
@@ -2995,6 +3642,24 @@
               },
               "default": "''",
               "fieldName": "name"
+            },
+            {
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, shows a clear (×) button when the input has a value.",
+              "fieldName": "clearable"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay.",
+              "fieldName": "accent"
             }
           ],
           "superclass": {
@@ -3020,6 +3685,1090 @@
           "declaration": {
             "name": "SgInput",
             "module": "src/components/sg-input.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-pagination.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgPagination', component: 'sg-pagination', argTypes: { total: { control: { type: 'number', min: 1 } }, current: { control: { type: 'number', min: 1 } }, siblingCount: { control: { type: 'number', min: 0, max: 5 } }, showFirstLast: { control: 'boolean' }, size: { control: 'select', options: ['sm', 'md'] }, }, parameters: { docs: { description: { component: 'A pagination control with page buttons, ellipsis, and navigation arrows.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 10} current=${args.current ?? 5} sibling-count=${args.siblingCount ?? 1} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 10, current: 5, siblingCount: 1, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "FirstPage",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 10} current=${args.current ?? 1} sibling-count=${args.siblingCount ?? 1} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 10, current: 1, siblingCount: 1, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "LastPage",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 10} current=${args.current ?? 10} sibling-count=${args.siblingCount ?? 1} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 10, current: 10, siblingCount: 1, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "ManyPages",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 20} current=${args.current ?? 10} sibling-count=${args.siblingCount ?? 2} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 20, current: 10, siblingCount: 2, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "FewPages",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 3} current=${args.current ?? 2} sibling-count=${args.siblingCount ?? 1} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 3, current: 2, siblingCount: 1, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "ShowFirstLast",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 10} current=${args.current ?? 5} sibling-count=${args.siblingCount ?? 1} ?show-first-last=${args.showFirstLast} size=${args.size || 'md'} ></sg-pagination> `, args: { total: 10, current: 5, siblingCount: 1, showFirstLast: true, size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Small",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-pagination total=${args.total ?? 10} current=${args.current ?? 5} sibling-count=${args.siblingCount ?? 1} size=\"sm\" ></sg-pagination> `, args: { total: 10, current: 5, siblingCount: 1 }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "FirstPage",
+          "declaration": {
+            "name": "FirstPage",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LastPage",
+          "declaration": {
+            "name": "LastPage",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ManyPages",
+          "declaration": {
+            "name": "ManyPages",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "FewPages",
+          "declaration": {
+            "name": "FewPages",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ShowFirstLast",
+          "declaration": {
+            "name": "ShowFirstLast",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Small",
+          "declaration": {
+            "name": "Small",
+            "module": "src/components/sg-pagination.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-pagination.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SgPagination",
+          "members": [
+            {
+              "kind": "field",
+              "name": "total",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "attribute": "total"
+            },
+            {
+              "kind": "field",
+              "name": "current",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "attribute": "current",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "siblingCount",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "attribute": "sibling-count"
+            },
+            {
+              "kind": "field",
+              "name": "showFirstLast",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "show-first-last"
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "PaginationSize"
+              },
+              "default": "'md'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "#pages",
+              "privacy": "private",
+              "type": {
+                "text": "(number | 'ellipsis')[]"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "#goTo",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "page",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "total",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "fieldName": "total"
+            },
+            {
+              "name": "current",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "fieldName": "current"
+            },
+            {
+              "name": "sibling-count",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "fieldName": "siblingCount"
+            },
+            {
+              "name": "show-first-last",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "showFirstLast"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "PaginationSize"
+              },
+              "default": "'md'",
+              "fieldName": "size"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-pagination",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgPagination",
+          "declaration": {
+            "name": "SgPagination",
+            "module": "src/components/sg-pagination.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-pagination",
+          "declaration": {
+            "name": "SgPagination",
+            "module": "src/components/sg-pagination.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-progress.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgProgress', component: 'sg-progress', argTypes: { value: { control: { type: 'number', min: 0, max: 100 } }, max: { control: { type: 'number', min: 1 } }, variant: { control: 'select', options: ['default', 'spectral'] }, size: { control: 'select', options: ['sm', 'md', 'lg'] }, indeterminate: { control: 'boolean' }, label: { control: 'text' }, showValue: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A progress bar with spectral gradient fill and optional label.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress value=${args.value ?? 60} max=${args.max ?? 100} variant=${args.variant || 'spectral'} size=${args.size || 'md'} ?indeterminate=${args.indeterminate} ></sg-progress> `, args: { value: 60, max: 100, variant: 'spectral', size: 'md', indeterminate: false }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithLabel",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress value=${args.value ?? 73} max=${args.max ?? 100} variant=${args.variant || 'spectral'} size=${args.size || 'md'} label=${args.label || 'Upload progress'} ?show-value=${args.showValue} ></sg-progress> `, args: { value: 73, max: 100, variant: 'spectral', size: 'md', label: 'Upload progress', showValue: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Small",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress value=${args.value ?? 60} max=${args.max ?? 100} variant=${args.variant || 'spectral'} size=\"sm\" ></sg-progress> `, args: { value: 60, max: 100, variant: 'spectral' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Large",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress value=${args.value ?? 60} max=${args.max ?? 100} variant=${args.variant || 'spectral'} size=\"lg\" ></sg-progress> `, args: { value: 60, max: 100, variant: 'spectral' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Determinate",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress value=${args.value ?? 42} max=${args.max ?? 100} variant=${args.variant || 'default'} size=${args.size || 'md'} ></sg-progress> `, args: { value: 42, max: 100, variant: 'default', size: 'md' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Indeterminate",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-progress variant=${args.variant || 'spectral'} size=${args.size || 'md'} ?indeterminate=${args.indeterminate} ></sg-progress> `, args: { variant: 'spectral', size: 'md', indeterminate: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllSizes",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;max-width:400px;\"> <sg-progress value=\"60\" max=\"100\" variant=\"spectral\" size=\"sm\"></sg-progress> <sg-progress value=\"60\" max=\"100\" variant=\"spectral\" size=\"md\"></sg-progress> <sg-progress value=\"60\" max=\"100\" variant=\"spectral\" size=\"lg\"></sg-progress> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Multiple",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:column;gap:16px;max-width:400px;\"> <sg-progress value=\"25\" max=\"100\" variant=\"spectral\" size=\"md\" label=\"Task 1\" show-value></sg-progress> <sg-progress value=\"50\" max=\"100\" variant=\"spectral\" size=\"md\" label=\"Task 2\" show-value></sg-progress> <sg-progress value=\"75\" max=\"100\" variant=\"spectral\" size=\"md\" label=\"Task 3\" show-value></sg-progress> <sg-progress value=\"100\" max=\"100\" variant=\"spectral\" size=\"md\" label=\"Task 4\" show-value></sg-progress> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithLabel",
+          "declaration": {
+            "name": "WithLabel",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Small",
+          "declaration": {
+            "name": "Small",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Large",
+          "declaration": {
+            "name": "Large",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Determinate",
+          "declaration": {
+            "name": "Determinate",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Indeterminate",
+          "declaration": {
+            "name": "Indeterminate",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllSizes",
+          "declaration": {
+            "name": "AllSizes",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Multiple",
+          "declaration": {
+            "name": "Multiple",
+            "module": "src/components/sg-progress.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-progress.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SgProgress",
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "number"
+              },
+              "default": "0",
+              "attribute": "value",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "max",
+              "type": {
+                "text": "number"
+              },
+              "default": "100",
+              "attribute": "max",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "ProgressVariant"
+              },
+              "default": "'spectral'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "ProgressSize"
+              },
+              "default": "'md'",
+              "attribute": "size",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "indeterminate",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "indeterminate",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "showValue",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "show-value"
+            },
+            {
+              "kind": "field",
+              "name": "#progress",
+              "privacy": "private",
+              "type": {
+                "text": "number"
+              },
+              "readonly": true
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value",
+              "type": {
+                "text": "number"
+              },
+              "default": "0",
+              "fieldName": "value"
+            },
+            {
+              "name": "max",
+              "type": {
+                "text": "number"
+              },
+              "default": "100",
+              "fieldName": "max"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "ProgressVariant"
+              },
+              "default": "'spectral'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "size",
+              "type": {
+                "text": "ProgressSize"
+              },
+              "default": "'md'",
+              "fieldName": "size"
+            },
+            {
+              "name": "indeterminate",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "indeterminate"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "show-value",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "showValue"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-progress",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgProgress",
+          "declaration": {
+            "name": "SgProgress",
+            "module": "src/components/sg-progress.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-progress",
+          "declaration": {
+            "name": "SgProgress",
+            "module": "src/components/sg-progress.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-radio-group.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A radio group container that manages selection state across child sg-radio elements.",
+          "name": "SgRadioGroup",
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_radios",
+              "type": {
+                "text": "SgRadio[]"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "_slotChangeHandler",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#syncRadios",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#updateRadiosName",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#updateRadiosChecked",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#updateRadiosDisabled",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "#onRadioChange",
+              "privacy": "private",
+              "readonly": true
+            }
+          ],
+          "events": [
+            {
+              "description": "Emitted when the selected value changes. `event.detail` contains `{ value }`.",
+              "name": "change"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-radio-group",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgRadioGroup",
+          "declaration": {
+            "name": "SgRadioGroup",
+            "module": "src/components/sg-radio-group.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-radio-group",
+          "declaration": {
+            "name": "SgRadioGroup",
+            "module": "src/components/sg-radio-group.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-radio.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgRadio', component: 'sg-radio', argTypes: { checked: { control: 'boolean' }, disabled: { control: 'boolean' }, label: { control: 'text' }, value: { control: 'text' }, }, parameters: { docs: { description: { component: 'A glass-styled radio button with spectral gradient accent. Use within an sg-radio-group for mutual exclusion.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "SingleRadio",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-radio ?checked=${args.checked ?? false} ?disabled=${args.disabled ?? false} label=${args.label || 'Option'} value=${args.value || 'option'} ></sg-radio> `, args: { checked: false, disabled: false, label: 'Single option', value: 'single' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "RadioGroup",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-radio-group name=\"fruit\"> <sg-radio label=\"Apple\" value=\"apple\"></sg-radio> <sg-radio label=\"Banana\" value=\"banana\"></sg-radio> <sg-radio label=\"Cherry\" value=\"cherry\"></sg-radio> </sg-radio-group> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Preselected",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-radio-group name=\"os\" value=\"linux\"> <sg-radio label=\"Windows\" value=\"windows\"></sg-radio> <sg-radio label=\"macOS\" value=\"macos\"></sg-radio> <sg-radio label=\"Linux\" value=\"linux\"></sg-radio> </sg-radio-group> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "DisabledGroup",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-radio-group name=\"frozen\" disabled> <sg-radio label=\"Option A\" value=\"a\"></sg-radio> <sg-radio label=\"Option B\" value=\"b\" checked></sg-radio> <sg-radio label=\"Option C\" value=\"c\"></sg-radio> </sg-radio-group> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllStates",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:row;gap:24px;align-items:center;\"> <sg-radio label=\"Unchecked\" value=\"unchecked\"></sg-radio> <sg-radio label=\"Checked\" value=\"checked\" checked></sg-radio> <sg-radio label=\"Disabled\" value=\"disabled\" disabled></sg-radio> <sg-radio label=\"Disabled checked\" value=\"disabled-checked\" disabled checked></sg-radio> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "SingleRadio",
+          "declaration": {
+            "name": "SingleRadio",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "RadioGroup",
+          "declaration": {
+            "name": "RadioGroup",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Preselected",
+          "declaration": {
+            "name": "Preselected",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "DisabledGroup",
+          "declaration": {
+            "name": "DisabledGroup",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllStates",
+          "declaration": {
+            "name": "AllStates",
+            "module": "src/components/sg-radio.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-radio.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled radio button with spectral gradient checked state.",
+          "name": "SgRadio",
+          "cssProperties": [
+            {
+              "description": "Diameter of the radio circle.",
+              "name": "--sg-radio-size",
+              "default": "18px"
+            },
+            {
+              "description": "Diameter of the inner filled dot.",
+              "name": "--sg-radio-dot-size",
+              "default": "8px"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "checked",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "method",
+              "name": "#handleClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#dispatchChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when selection changes. `event.detail` contains `{ checked, value }`."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "checked",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "checked"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-radio",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgRadio",
+          "declaration": {
+            "name": "SgRadio",
+            "module": "src/components/sg-radio.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-radio",
+          "declaration": {
+            "name": "SgRadio",
+            "module": "src/components/sg-radio.ts"
           }
         }
       ]
@@ -3285,6 +5034,957 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/components/sg-select.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgSelect', component: 'sg-select', argTypes: { label: { control: 'text' }, placeholder: { control: 'text' }, value: { control: 'text' }, error: { control: 'text' }, disabled: { control: 'boolean' }, multiple: { control: 'boolean' }, clearable: { control: 'boolean' }, options: { control: 'object' }, }, parameters: { docs: { description: { component: 'A glass-styled select dropdown with spectral gradient focus ring. Supports single and multiple selection, clearable, and error states.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-select label=${args.label || ''} placeholder=${args.placeholder || 'Select an option'} .value=${args.value || ''} error=${args.error || ''} .options=${args.options || []} ?disabled=${args.disabled} ?multiple=${args.multiple} ?clearable=${args.clearable} ></sg-select> `, args: { label: '', placeholder: 'Select an option', value: '', error: '', disabled: false, multiple: false, clearable: false, options: [ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ], }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithLabel",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" placeholder=\"Choose a fruit\" .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Preselected",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" value=\"banana\" .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Error",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Country\" placeholder=\"Select a country\" .value=${''} error=\"Please select a country\" .options=${[ { value: 'us', label: 'United States' }, { value: 'ca', label: 'Canada' }, { value: 'uk', label: 'United Kingdom' }, ]} ></sg-select> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Disabled",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Disabled\" placeholder=\"Cannot interact\" disabled .options=${[ { value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, ]} ></sg-select> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "MultiSelect",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Tags\" placeholder=\"Select tags…\" multiple .options=${[ { value: 'design', label: 'Design' }, { value: 'development', label: 'Development' }, { value: 'marketing', label: 'Marketing' }, { value: 'product', label: 'Product' }, ]} ></sg-select> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Clearable",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" value=\"apple\" clearable .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithLabel",
+          "declaration": {
+            "name": "WithLabel",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Preselected",
+          "declaration": {
+            "name": "Preselected",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Error",
+          "declaration": {
+            "name": "Error",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Disabled",
+          "declaration": {
+            "name": "Disabled",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MultiSelect",
+          "declaration": {
+            "name": "MultiSelect",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Clearable",
+          "declaration": {
+            "name": "Clearable",
+            "module": "src/components/sg-select.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-select.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled dropdown select with spectral gradient accents.\n\nUses a custom dropdown UI (not native `<select>`) for full styling control.",
+          "name": "SgSelect",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-select-radius",
+              "default": "var(--sg-radius-md, 12px)"
+            },
+            {
+              "description": "Trigger height.",
+              "name": "--sg-select-height",
+              "default": "40px"
+            },
+            {
+              "description": "Dropdown shadow.",
+              "name": "--sg-glass-shadow-lg",
+              "default": "0 8px 32px rgba(0,0,0,0.4)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "'Select an option'",
+              "attribute": "placeholder"
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "error"
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name"
+            },
+            {
+              "kind": "field",
+              "name": "options",
+              "type": {
+                "text": "SelectOption[]"
+              },
+              "default": "[]",
+              "attribute": "options"
+            },
+            {
+              "kind": "field",
+              "name": "multiple",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "multiple"
+            },
+            {
+              "kind": "field",
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "clearable"
+            },
+            {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay on the trigger.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_instances",
+              "privacy": "private",
+              "static": true,
+              "default": "new Set<SgSelect>()",
+              "description": "All sg-select instances alive in the DOM — used to close others on open."
+            },
+            {
+              "kind": "field",
+              "name": "_open",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_highlightedIndex",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "default": "-1"
+            },
+            {
+              "kind": "field",
+              "name": "_portalEl",
+              "type": {
+                "text": "HTMLDivElement | null"
+              },
+              "privacy": "private",
+              "default": "null",
+              "description": "Portal element (child of document.body) that hosts the dropdown list."
+            },
+            {
+              "kind": "field",
+              "name": "_selectedValues",
+              "type": {
+                "text": "string[]"
+              },
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "_displayText",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "_isSelected",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "val",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "#onDocumentClick",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "#onScroll",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "#onResize",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "#addScrollListeners",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#removeScrollListeners",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#ensurePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "HTMLDivElement"
+                }
+              },
+              "description": "Create or reuse the portal element at document.body."
+            },
+            {
+              "kind": "method",
+              "name": "#repositionPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Position the portal to appear just below the trigger, matching its width."
+            },
+            {
+              "kind": "method",
+              "name": "#renderPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Render the options list into the portal and show it."
+            },
+            {
+              "kind": "method",
+              "name": "#portalTemplate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "description": "Template for the portal-hosted dropdown."
+            },
+            {
+              "kind": "method",
+              "name": "#destroyPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Destroy the portal element."
+            },
+            {
+              "kind": "method",
+              "name": "_openDropdown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_close",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_toggle",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_selectOption",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "option",
+                  "type": {
+                    "text": "SelectOption"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_dispatchChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#onTriggerClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#onTriggerKeydown",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_highlightNext",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "_highlightPrevious",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#updatePortalContent",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Re-render the portal's options list (called after highlight/value changes)."
+            },
+            {
+              "kind": "method",
+              "name": "#scrollPortalToIndex",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "Scroll the portal's list so the highlighted option is visible."
+            },
+            {
+              "kind": "method",
+              "name": "#handleClear",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "CustomEvent with `detail.value` (comma-separated for multiple)."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "'Select an option'",
+              "fieldName": "placeholder"
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "error"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            },
+            {
+              "name": "options",
+              "type": {
+                "text": "SelectOption[]"
+              },
+              "default": "[]",
+              "fieldName": "options"
+            },
+            {
+              "name": "multiple",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "multiple"
+            },
+            {
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "clearable"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay on the trigger.",
+              "fieldName": "accent"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-select",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgSelect",
+          "declaration": {
+            "name": "SgSelect",
+            "module": "src/components/sg-select.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-select",
+          "declaration": {
+            "name": "SgSelect",
+            "module": "src/components/sg-select.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-skeleton.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgSkeleton', component: 'sg-skeleton', argTypes: { variant: { control: 'select', options: ['text', 'circle', 'rect', 'card'] }, width: { control: 'text' }, height: { control: 'text' }, lines: { control: { type: 'number', min: 1, max: 10 } }, }, parameters: { docs: { description: { component: 'A shimmer loading skeleton for placeholder content.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Text",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-skeleton variant=${args.variant || 'text'} width=${args.width || '280px'} .lines=${args.lines ?? 3} ></sg-skeleton> `, args: { variant: 'text', width: '280px', lines: 3 }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Circle",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-skeleton variant=${args.variant || 'circle'} width=${args.width || '40px'} height=${args.height || '40px'} ></sg-skeleton> `, args: { variant: 'circle', width: '40px', height: '40px' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Rect",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-skeleton variant=${args.variant || 'rect'} width=${args.width || '200px'} height=${args.height || '120px'} ></sg-skeleton> `, args: { variant: 'rect', width: '200px', height: '120px' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Card",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-skeleton variant=${args.variant || 'card'} width=${args.width || '280px'} .lines=${args.lines ?? 3} ></sg-skeleton> `, args: { variant: 'card', width: '280px', lines: 3 }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "TextLinesCustom",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-skeleton variant=\"text\" width=\"300px\" .lines=${5} last-line-width=\"40%\" ></sg-skeleton> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllVariants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;\"> <div> <div style=\"font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:8px;\">Text</div> <sg-skeleton variant=\"text\" width=\"160px\" .lines=${3}></sg-skeleton> </div> <div> <div style=\"font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:8px;\">Circle</div> <sg-skeleton variant=\"circle\" width=\"40px\" height=\"40px\"></sg-skeleton> </div> <div> <div style=\"font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:8px;\">Rect</div> <sg-skeleton variant=\"rect\" width=\"200px\" height=\"80px\"></sg-skeleton> </div> <div> <div style=\"font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:8px;\">Card</div> <sg-skeleton variant=\"card\" width=\"200px\" .lines=${2}></sg-skeleton> </div> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Text",
+          "declaration": {
+            "name": "Text",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Circle",
+          "declaration": {
+            "name": "Circle",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Rect",
+          "declaration": {
+            "name": "Rect",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Card",
+          "declaration": {
+            "name": "Card",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "TextLinesCustom",
+          "declaration": {
+            "name": "TextLinesCustom",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllVariants",
+          "declaration": {
+            "name": "AllVariants",
+            "module": "src/components/sg-skeleton.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-skeleton.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SgSkeleton",
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "SkeletonVariant"
+              },
+              "default": "'text'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "width",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "width",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "height",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "height",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "lines",
+              "type": {
+                "text": "number"
+              },
+              "default": "3",
+              "attribute": "lines",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "lastLineWidth",
+              "type": {
+                "text": "string"
+              },
+              "default": "'60%'",
+              "attribute": "last-line-width",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "#lineWidths",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string[]"
+                }
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "SkeletonVariant"
+              },
+              "default": "'text'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "width",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "width"
+            },
+            {
+              "name": "height",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "height"
+            },
+            {
+              "name": "lines",
+              "type": {
+                "text": "number"
+              },
+              "default": "3",
+              "fieldName": "lines"
+            },
+            {
+              "name": "last-line-width",
+              "type": {
+                "text": "string"
+              },
+              "default": "'60%'",
+              "fieldName": "lastLineWidth"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-skeleton",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgSkeleton",
+          "declaration": {
+            "name": "SgSkeleton",
+            "module": "src/components/sg-skeleton.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-skeleton",
+          "declaration": {
+            "name": "SgSkeleton",
+            "module": "src/components/sg-skeleton.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/components/sg-spinner.stories.ts",
       "declarations": [
         {
@@ -3464,6 +6164,1174 @@
           "declaration": {
             "name": "SgSpinner",
             "module": "src/components/sg-spinner.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-tabs.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgTabs', component: 'sg-tabs', argTypes: { tabs: { control: 'object' }, activeTab: { control: 'text' }, variant: { control: 'select', options: ['underline', 'pills', 'glass'] }, }, parameters: { docs: { description: { component: 'A tabbed container with glassmorphism styling.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-tabs .tabs=${args.tabs} .activeTab=${args.activeTab} variant=${args.variant || 'glass'} > <div slot=\"tab1\">Welcome to the dashboard. Here you'll find an overview of your recent activity and quick actions.</div> <div slot=\"tab2\">Your profile settings including preferences, notifications, and account details.</div> <div slot=\"tab3\">Security settings to manage your password, two-factor authentication, and session history.</div> </sg-tabs> `, args: { tabs: [ { id: 'tab1', label: 'Overview' }, { id: 'tab2', label: 'Settings' }, { id: 'tab3', label: 'Security' }, ], variant: 'glass', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Underline",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-tabs .tabs=${args.tabs} .activeTab=${args.activeTab} variant=\"underline\" > <div slot=\"tab1\">Underline style — simple and clean.</div> <div slot=\"tab2\">An underline indicator shows the active tab.</div> <div slot=\"tab3\">No glass background on the active tab.</div> </sg-tabs> `, args: { tabs: [ { id: 'tab1', label: 'Design' }, { id: 'tab2', label: 'Code' }, { id: 'tab3', label: 'Deploy' }, ], variant: 'underline', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Pills",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-tabs .tabs=${args.tabs} .activeTab=${args.activeTab} variant=\"pills\" > <div slot=\"tab1\">Pills variant with rounded active indicator.</div> <div slot=\"tab2\">Active tab has a solid background fill.</div> <div slot=\"tab3\">Great for filter-style navigation.</div> </sg-tabs> `, args: { tabs: [ { id: 'tab1', label: 'All' }, { id: 'tab2', label: 'Active' }, { id: 'tab3', label: 'Archived' }, ], variant: 'pills', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Preselected",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-tabs .tabs=${args.tabs} .activeTab=${args.activeTab} variant=\"glass\" > <div slot=\"general\">General settings panel.</div> <div slot=\"advanced\">Advanced configuration options for power users.</div> <div slot=\"admin\">Admin-only controls and system preferences.</div> </sg-tabs> `, args: { tabs: [ { id: 'general', label: 'General' }, { id: 'advanced', label: 'Advanced' }, { id: 'admin', label: 'Admin' }, ], activeTab: 'advanced', variant: 'glass', }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithDisabled",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-tabs .tabs=${args.tabs} .activeTab=${args.activeTab} variant=\"glass\" > <div slot=\"public\">Public profile visible to everyone.</div> <div slot=\"private\">Private information — requires authentication.</div> <div slot=\"hidden\">Hidden content only accessible via direct link.</div> </sg-tabs> `, args: { tabs: [ { id: 'public', label: 'Public' }, { id: 'private', label: 'Private', disabled: true }, { id: 'hidden', label: 'Hidden' }, ], variant: 'glass', }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Underline",
+          "declaration": {
+            "name": "Underline",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Pills",
+          "declaration": {
+            "name": "Pills",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Preselected",
+          "declaration": {
+            "name": "Preselected",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithDisabled",
+          "declaration": {
+            "name": "WithDisabled",
+            "module": "src/components/sg-tabs.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-tabs.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A tabbed container with glassmorphism styling.",
+          "name": "SgTabs",
+          "cssProperties": [
+            {
+              "description": "Font family.",
+              "name": "--sg-font-family"
+            },
+            {
+              "description": "Primary text color.",
+              "name": "--sg-text-primary"
+            },
+            {
+              "description": "Secondary text color.",
+              "name": "--sg-text-secondary"
+            },
+            {
+              "description": "Glass surface background.",
+              "name": "--sg-glass-bg"
+            },
+            {
+              "description": "Glass surface hover background.",
+              "name": "--sg-glass-bg-hover"
+            },
+            {
+              "description": "Glass border color.",
+              "name": "--sg-glass-border"
+            },
+            {
+              "description": "Spectral gradient for underline.",
+              "name": "--sg-gradient-spectral"
+            },
+            {
+              "description": "Focus ring color.",
+              "name": "--sg-spectral-gold"
+            },
+            {
+              "description": "Border radius for tabs.",
+              "name": "--sg-radius-sm"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "tabs",
+              "type": {
+                "text": "Tab[]"
+              },
+              "default": "[]",
+              "attribute": "tabs"
+            },
+            {
+              "kind": "field",
+              "name": "activeTab",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "activeTab",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "'underline' | 'pills' | 'glass'"
+              },
+              "default": "'glass'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "#onTabClick",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "tabId",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when the active tab changes. `event.detail` contains `{ tabId }`."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "tabs",
+              "type": {
+                "text": "Tab[]"
+              },
+              "default": "[]",
+              "fieldName": "tabs"
+            },
+            {
+              "name": "activeTab",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "activeTab"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "'underline' | 'pills' | 'glass'"
+              },
+              "default": "'glass'",
+              "fieldName": "variant"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-tabs",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgTabs",
+          "declaration": {
+            "name": "SgTabs",
+            "module": "src/components/sg-tabs.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-tabs",
+          "declaration": {
+            "name": "SgTabs",
+            "module": "src/components/sg-tabs.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-textarea.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgTextarea', component: 'sg-textarea', argTypes: { variant: { control: 'select', options: ['outlined', 'ghost'] }, resize: { control: 'select', options: ['none', 'vertical', 'both'] }, label: { control: 'text' }, placeholder: { control: 'text' }, value: { control: 'text' }, error: { control: 'text' }, disabled: { control: 'boolean' }, readonly: { control: 'boolean' }, rows: { control: 'number' }, maxlength: { control: 'number' }, clearable: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glass-styled textarea with spectral gradient focus ring, configurable resize behavior, and optional clearable functionality.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Default",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-textarea variant=${args.variant || 'outlined'} placeholder=${args.placeholder || 'Write something…'} .value=${args.value || ''} label=${args.label || ''} error=${args.error || ''} rows=${args.rows ?? 3} maxlength=${args.maxlength ?? 0} resize=${args.resize || 'vertical'} ?disabled=${args.disabled} ?readonly=${args.readonly} ?clearable=${args.clearable} ></sg-textarea> `, args: { variant: 'outlined', placeholder: 'Write something…', label: '', value: '', error: '', rows: 3, maxlength: 0, resize: 'vertical', disabled: false, readonly: false, clearable: false, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithLabel",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-textarea label=\"Description\" placeholder=\"Enter a detailed description…\" ></sg-textarea> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Ghost",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-textarea label=\"Notes\" placeholder=\"Ghost variant notes…\" variant=\"ghost\" ></sg-textarea> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "WithError",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-textarea label=\"Message\" placeholder=\"Type your message\" value=\"This is too short\" error=\"Message must be at least 20 characters\" ></sg-textarea> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Disabled",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-textarea label=\"Disabled\" placeholder=\"Cannot edit\" value=\"This textarea is disabled\" disabled ></sg-textarea> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Clearable",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-textarea label=\"Tags\" placeholder=\"Add tags…\" value=\"design, ui, components\" clearable ></sg-textarea> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Default",
+          "declaration": {
+            "name": "Default",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithLabel",
+          "declaration": {
+            "name": "WithLabel",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Ghost",
+          "declaration": {
+            "name": "Ghost",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "WithError",
+          "declaration": {
+            "name": "WithError",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Disabled",
+          "declaration": {
+            "name": "Disabled",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Clearable",
+          "declaration": {
+            "name": "Clearable",
+            "module": "src/components/sg-textarea.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-textarea.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled multi-line textarea with spectral focus ring.",
+          "name": "SgTextarea",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-textarea-radius",
+              "default": "var(--sg-radius-md, 12px)"
+            },
+            {
+              "description": "Minimum height.",
+              "name": "--sg-textarea-height",
+              "default": "120px"
+            },
+            {
+              "description": "Resize direction.",
+              "name": "--sg-textarea-resize",
+              "default": "vertical"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "placeholder"
+            },
+            {
+              "kind": "field",
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "value"
+            },
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "TextareaVariant"
+              },
+              "default": "'outlined'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "readonly",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "error"
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "name"
+            },
+            {
+              "kind": "field",
+              "name": "rows",
+              "type": {
+                "text": "number"
+              },
+              "default": "3",
+              "attribute": "rows"
+            },
+            {
+              "kind": "field",
+              "name": "maxlength",
+              "type": {
+                "text": "number"
+              },
+              "default": "0",
+              "attribute": "maxlength"
+            },
+            {
+              "kind": "field",
+              "name": "resize",
+              "type": {
+                "text": "TextareaResize"
+              },
+              "default": "'vertical'",
+              "attribute": "resize"
+            },
+            {
+              "kind": "field",
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "clearable"
+            },
+            {
+              "kind": "field",
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay.",
+              "attribute": "accent",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "#handleInput",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleChange",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleClear",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "input",
+              "type": {
+                "text": "Event"
+              },
+              "description": "Native input event."
+            },
+            {
+              "name": "change",
+              "type": {
+                "text": "Event"
+              },
+              "description": "Native change event."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "placeholder",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "placeholder"
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "value"
+            },
+            {
+              "name": "variant",
+              "type": {
+                "text": "TextareaVariant"
+              },
+              "default": "'outlined'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            },
+            {
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "readonly"
+            },
+            {
+              "name": "error",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "error"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "name"
+            },
+            {
+              "name": "rows",
+              "type": {
+                "text": "number"
+              },
+              "default": "3",
+              "fieldName": "rows"
+            },
+            {
+              "name": "maxlength",
+              "type": {
+                "text": "number"
+              },
+              "default": "0",
+              "fieldName": "maxlength"
+            },
+            {
+              "name": "resize",
+              "type": {
+                "text": "TextareaResize"
+              },
+              "default": "'vertical'",
+              "fieldName": "resize"
+            },
+            {
+              "name": "clearable",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "clearable"
+            },
+            {
+              "name": "accent",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, renders a spectral gradient border overlay.",
+              "fieldName": "accent"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-textarea",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgTextarea",
+          "declaration": {
+            "name": "SgTextarea",
+            "module": "src/components/sg-textarea.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-textarea",
+          "declaration": {
+            "name": "SgTextarea",
+            "module": "src/components/sg-textarea.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-toast-container.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A container that stacks sg-toast notifications in a fixed viewport corner.\n\nToasts are rendered into a portal at `document.body` so they always float\nabove all content, regardless of where this container is placed in the DOM.",
+          "name": "SgToastContainer",
+          "cssProperties": [
+            {
+              "description": "Gap between stacked toasts.",
+              "name": "--sg-toast-container-gap",
+              "default": "12px"
+            }
+          ],
+          "slots": [
+            {
+              "description": "sg-toast elements to display.",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "position",
+              "type": {
+                "text": "ToastPosition"
+              },
+              "default": "'bottom-right'",
+              "attribute": "position",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_portalEl",
+              "type": {
+                "text": "HTMLDivElement | null"
+              },
+              "privacy": "private",
+              "default": "null",
+              "description": "Portal element at document.body."
+            },
+            {
+              "kind": "field",
+              "name": "_syncing",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false",
+              "description": "True while syncing to prevent slotchange re-entry loops."
+            },
+            {
+              "kind": "method",
+              "name": "#ensurePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "HTMLDivElement"
+                }
+              },
+              "description": "Ensure the portal div exists at document.body."
+            },
+            {
+              "kind": "method",
+              "name": "#applyPortalPosition",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Position the portal at the chosen viewport corner and align toasts naturally."
+            },
+            {
+              "kind": "method",
+              "name": "#syncPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Move slotted sg-toast elements into the portal."
+            },
+            {
+              "kind": "method",
+              "name": "#destroyPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Remove the portal from the DOM."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "position",
+              "type": {
+                "text": "ToastPosition"
+              },
+              "default": "'bottom-right'",
+              "fieldName": "position"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-toast-container",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgToastContainer",
+          "declaration": {
+            "name": "SgToastContainer",
+            "module": "src/components/sg-toast-container.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-toast-container",
+          "declaration": {
+            "name": "SgToastContainer",
+            "module": "src/components/sg-toast-container.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-toast.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgToast', component: 'sg-toast', argTypes: { variant: { control: 'select', options: ['info', 'success', 'warning', 'error'] }, open: { control: 'boolean' }, dismissible: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glassmorphic toast notification with variant icons and optional dismiss.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Info",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toast variant=${args.variant || 'info'} ?open=${args.open} ?dismissible=${args.dismissible} duration=\"0\" > Your changes have been saved successfully. </sg-toast> `, args: { variant: 'info', open: true, dismissible: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Success",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toast variant=${args.variant || 'success'} ?open=${args.open} ?dismissible=${args.dismissible} duration=\"0\" > Operation completed successfully. </sg-toast> `, args: { variant: 'success', open: true, dismissible: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Warning",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toast variant=${args.variant || 'warning'} ?open=${args.open} ?dismissible=${args.dismissible} duration=\"0\" > Your session is about to expire. </sg-toast> `, args: { variant: 'warning', open: true, dismissible: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Error",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toast variant=${args.variant || 'error'} ?open=${args.open} ?dismissible=${args.dismissible} duration=\"0\" > Something went wrong. Please try again. </sg-toast> `, args: { variant: 'error', open: true, dismissible: true }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllVariants",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <sg-toast-container position=\"top-right\" style=\"position:relative;min-height:260px;\"> <sg-toast variant=\"info\" open duration=\"0\"> Your changes have been saved successfully. </sg-toast> <sg-toast variant=\"success\" open duration=\"0\"> Operation completed successfully. </sg-toast> <sg-toast variant=\"warning\" open duration=\"0\"> Your session is about to expire. </sg-toast> <sg-toast variant=\"error\" open duration=\"0\"> Something went wrong. Please try again. </sg-toast> </sg-toast-container> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "NotDismissible",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <sg-toast variant=${args.variant || 'info'} ?open=${args.open} ?dismissible=${args.dismissible} duration=\"0\" > This notification cannot be dismissed. </sg-toast> `, args: { variant: 'info', open: true, dismissible: false }, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Info",
+          "declaration": {
+            "name": "Info",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Success",
+          "declaration": {
+            "name": "Success",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Warning",
+          "declaration": {
+            "name": "Warning",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Error",
+          "declaration": {
+            "name": "Error",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllVariants",
+          "declaration": {
+            "name": "AllVariants",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "NotDismissible",
+          "declaration": {
+            "name": "NotDismissible",
+            "module": "src/components/sg-toast.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-toast.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glassmorphic toast notification.",
+          "name": "SgToast",
+          "cssProperties": [
+            {
+              "description": "Border radius.",
+              "name": "--sg-toast-radius",
+              "default": "var(--sg-radius-md, 12px)"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Message content.",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "variant",
+              "type": {
+                "text": "ToastVariant"
+              },
+              "default": "'info'",
+              "attribute": "variant",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "duration",
+              "type": {
+                "text": "number"
+              },
+              "default": "4000",
+              "attribute": "duration"
+            },
+            {
+              "kind": "field",
+              "name": "dismissible",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "attribute": "dismissible"
+            },
+            {
+              "kind": "field",
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "open",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_toastEl",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "_dismissTimer",
+              "type": {
+                "text": "ReturnType<typeof setTimeout> | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "method",
+              "name": "#startDismissTimer",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#clearDismissTimer",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#dismiss",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Promise<void>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#fireClose",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "close",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "Emitted when the toast is dismissed."
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "ToastVariant"
+              },
+              "default": "'info'",
+              "fieldName": "variant"
+            },
+            {
+              "name": "duration",
+              "type": {
+                "text": "number"
+              },
+              "default": "4000",
+              "fieldName": "duration"
+            },
+            {
+              "name": "dismissible",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "fieldName": "dismissible"
+            },
+            {
+              "name": "open",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "open"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-toast",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgToast",
+          "declaration": {
+            "name": "SgToast",
+            "module": "src/components/sg-toast.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-toast",
+          "declaration": {
+            "name": "SgToast",
+            "module": "src/components/sg-toast.ts"
           }
         }
       ]
@@ -3725,6 +7593,417 @@
           "declaration": {
             "name": "SgToggle",
             "module": "src/components/sg-toggle.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-tooltip.stories.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "meta",
+          "type": {
+            "text": "Meta"
+          },
+          "default": "{ title: 'Components/SgTooltip', component: 'sg-tooltip', argTypes: { label: { control: 'text' }, position: { control: 'select', options: ['top', 'bottom', 'left', 'right'] }, }, parameters: { docs: { description: { component: 'A glassmorphic tooltip that appears on hover or focus.', }, }, }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Top",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on top'} position=\"top\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on top', position: 'top' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Bottom",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on bottom'} position=\"bottom\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on bottom', position: 'bottom' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Left",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on left'} position=\"left\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on left', position: 'left' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Right",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on right'} position=\"right\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on right', position: 'right' }, }"
+        },
+        {
+          "kind": "variable",
+          "name": "AllPositions",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:grid;grid-template-columns:repeat(2,1fr);gap:80px;padding:80px 40px;max-width:500px;margin:0 auto;\"> <div style=\"display:flex;justify-content:center;\"> <sg-tooltip label=\"Top tooltip\" position=\"top\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Top</button> </sg-tooltip> </div> <div style=\"display:flex;justify-content:center;\"> <sg-tooltip label=\"Bottom tooltip\" position=\"bottom\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Bottom</button> </sg-tooltip> </div> <div style=\"display:flex;justify-content:center;\"> <sg-tooltip label=\"Left tooltip\" position=\"left\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Left</button> </sg-tooltip> </div> <div style=\"display:flex;justify-content:center;\"> <sg-tooltip label=\"Right tooltip\" position=\"right\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Right</button> </sg-tooltip> </div> </div> `, }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "meta",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Top",
+          "declaration": {
+            "name": "Top",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Bottom",
+          "declaration": {
+            "name": "Bottom",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Left",
+          "declaration": {
+            "name": "Left",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Right",
+          "declaration": {
+            "name": "Right",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AllPositions",
+          "declaration": {
+            "name": "AllPositions",
+            "module": "src/components/sg-tooltip.stories.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/sg-tooltip.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A glass-styled tooltip that appears on hover/focus.\n\nThe tooltip popup is rendered in a portal (`document.body`) so it always\nfloats above any overflow-clipped parent. When `position=\"auto\"` (default)\nit automatically picks the corner with the most available viewport space.",
+          "name": "SgTooltip",
+          "cssProperties": [
+            {
+              "description": "Gap between the trigger and the tooltip.",
+              "name": "--sg-tooltip-gap",
+              "default": "8px"
+            }
+          ],
+          "slots": [
+            {
+              "description": "The trigger element (must be inline-level).",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
+              "name": "position",
+              "type": {
+                "text": "TooltipPosition"
+              },
+              "default": "'auto'",
+              "attribute": "position",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "delay",
+              "type": {
+                "text": "number"
+              },
+              "default": "200",
+              "attribute": "delay"
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "attribute": "disabled",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "_visible",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "_resolvedPos",
+              "type": {
+                "text": "'top' | 'bottom' | 'left' | 'right'"
+              },
+              "privacy": "private",
+              "default": "'top'",
+              "description": "The actual position resolved after auto-detection."
+            },
+            {
+              "kind": "field",
+              "name": "_showTimeout",
+              "type": {
+                "text": "number | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "_portalEl",
+              "type": {
+                "text": "HTMLDivElement | null"
+              },
+              "privacy": "private",
+              "default": "null",
+              "description": "Portal element appended to document.body."
+            },
+            {
+              "kind": "field",
+              "name": "#onScroll",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "#onResize",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "#detectPosition",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "'top' | 'bottom' | 'left' | 'right'"
+                }
+              },
+              "description": "Detect the best corner for the tooltip."
+            },
+            {
+              "kind": "method",
+              "name": "#showPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Create and show the portal with the tooltip content."
+            },
+            {
+              "kind": "method",
+              "name": "#ensurePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "HTMLDivElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#portalTemplate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "slideX",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "slideY",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#hidePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Destroy the portal."
+            },
+            {
+              "kind": "method",
+              "name": "#handleMouseEnter",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleMouseLeave",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleFocusIn",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#handleFocusOut",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#scheduleShow",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#hide",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#clearShowTimeout",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
+            },
+            {
+              "name": "position",
+              "type": {
+                "text": "TooltipPosition"
+              },
+              "default": "'auto'",
+              "fieldName": "position"
+            },
+            {
+              "name": "delay",
+              "type": {
+                "text": "number"
+              },
+              "default": "200",
+              "fieldName": "delay"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "fieldName": "disabled"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "sg-tooltip",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SgTooltip",
+          "declaration": {
+            "name": "SgTooltip",
+            "module": "src/components/sg-tooltip.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sg-tooltip",
+          "declaration": {
+            "name": "SgTooltip",
+            "module": "src/components/sg-tooltip.ts"
           }
         }
       ]

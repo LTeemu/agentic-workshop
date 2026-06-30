@@ -116,7 +116,7 @@ export class SgAccordionItem extends LitElement {
     }
 
     .header:focus-visible {
-      outline: 2px solid var(--sg-spectral-gold, #c4a050);
+      outline: 2px solid var(--sg-focus-ring-color, var(--sg-spectral-gold, #c4a050));
       outline-offset: -2px;
     }
 

@@ -13,7 +13,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'An animated loading spinner. The `spectral` variant uses four different spectral border colours for a rainbow rotation effect.',
+          'An animated loading spinner. The `spectral` variant uses a conic-gradient ring that sweeps the spectral palette as it spins.',
       },
     },
   },

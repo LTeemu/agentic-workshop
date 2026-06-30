@@ -17,6 +17,8 @@ const meta: Meta = {
     },
     disabled: { control: 'boolean' },
     loading: { control: 'boolean' },
+    border: { control: 'boolean' },
+    pill: { control: 'boolean' },
   },
   parameters: {
     docs: {
@@ -38,11 +40,13 @@ export const Primary: Story = {
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
+      ?border=${args.border}
+      ?pill=${args.pill}
     >
       Button
     </sg-button>
   `,
-  args: { variant: 'primary', size: 'md', disabled: false, loading: false },
+  args: { variant: 'primary', size: 'md', disabled: false, loading: false, border: false, pill: false },
 };
 
 export const Secondary: Story = {
@@ -52,11 +56,13 @@ export const Secondary: Story = {
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
+      ?border=${args.border}
+      ?pill=${args.pill}
     >
       Button
     </sg-button>
   `,
-  args: { variant: 'secondary', size: 'md', disabled: false, loading: false },
+  args: { variant: 'secondary', size: 'md', disabled: false, loading: false, border: false, pill: false },
 };
 
 export const Ghost: Story = {
@@ -66,11 +72,13 @@ export const Ghost: Story = {
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
+      ?border=${args.border}
+      ?pill=${args.pill}
     >
       Button
     </sg-button>
   `,
-  args: { variant: 'ghost', size: 'md', disabled: false, loading: false },
+  args: { variant: 'ghost', size: 'md', disabled: false, loading: false, border: false, pill: false },
 };
 
 export const Sizes: Story = {
@@ -108,5 +116,25 @@ export const AllVariants: Story = {
 export const Loading: Story = {
   render: () => html`
     <sg-button variant="primary" size="md" loading>Processing</sg-button>
+  `,
+};
+
+export const Bordered: Story = {
+  render: () => html`
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <sg-button variant="primary" border>Primary + Border</sg-button>
+      <sg-button variant="secondary" border>Secondary + Border</sg-button>
+      <sg-button variant="ghost" border>Ghost + Border</sg-button>
+    </div>
+  `,
+};
+
+export const Pill: Story = {
+  render: () => html`
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <sg-button variant="primary" pill>Primary Pill</sg-button>
+      <sg-button variant="secondary" pill>Secondary Pill</sg-button>
+      <sg-button variant="ghost" pill>Ghost Pill</sg-button>
+    </div>
   `,
 };

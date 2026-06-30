@@ -1,5 +1,6 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
+import { focusRingCSS } from '../styles/shared.js';
 
 export type CardVariant = 'elevated' | 'outlined' | 'ghost';
 export type CardPadding = 'sm' | 'md' | 'lg';
@@ -33,35 +34,7 @@ export class SgCard extends LitElement {
     }
 
     /* ─── Gradient focus ring (keyboard only) ─── */
-    :host(:focus-visible)::after {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: calc(
-        var(--sg-card-radius, var(--sg-radius-lg, 20px)) + 3px
-      );
-      padding: 2px;
-      background: var(
-        --sg-focus-ring,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(
-            135deg,
-            rgba(212, 134, 159, 0.5),
-            rgba(196, 160, 80, 0.5),
-            rgba(127, 168, 141, 0.5),
-            rgba(122, 128, 192, 0.5)
-          )
-        )
-      );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: exclude;
-      pointer-events: none;
-      z-index: 1;
-    }
+    ${focusRingCSS('var(--sg-card-radius, var(--sg-radius-lg, 20px))')}
 
     /* ═══════════════════════════════════════════════════════
        Card body

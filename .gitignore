@@ -8,3 +8,5 @@ Thumbs.db
 .active-project
 _backups/
 .fallow/
+.vitest-attachments/
+storybook-static/

@@ -1,4 +1,4 @@
-import { css } from 'lit';
+import { css, unsafeCSS } from 'lit';
 
 /**
  * Shared Spectra Glass CSS patterns — compose these into component styles.
@@ -67,3 +67,41 @@ export const hoverGlow = css`
     0 0 20px rgba(218, 119, 242, 0.06),
     0 0 40px rgba(77, 171, 247, 0.04);
 `;
+
+/**
+ * Generate a focus ring with a custom border-radius expression.
+ * Use when the host's border-radius differs from the shared `focusRing` default.
+ *
+ * @example `focusRingCSS('var(--sg-card-radius, var(--sg-radius-lg, 20px))')`
+ */
+export function focusRingCSS(radiusVar: string): ReturnType<typeof css> {
+  return css`
+    :host(:focus-visible)::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: calc(${unsafeCSS(radiusVar)} + 3px);
+      padding: 2px;
+      background: var(
+        --sg-focus-ring,
+        var(
+          --sg-gradient-spectral,
+          linear-gradient(
+            135deg,
+            rgba(212, 134, 159, 0.5),
+            rgba(196, 160, 80, 0.5),
+            rgba(127, 168, 141, 0.5),
+            rgba(122, 128, 192, 0.5)
+          )
+        )
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+    }
+  `;
+}
