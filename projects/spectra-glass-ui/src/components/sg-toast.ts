@@ -10,19 +10,19 @@ export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
 const VARIANT_MAP: Record<ToastVariant, { icon: string; border: string }> = {
   info: {
     icon: 'info',
-    border: 'var(--sg-spectral-teal, #6fa0b5)',
+    border: 'var(--sg-spectral-color5, #6fa0b5)',
   },
   success: {
     icon: 'check-circle',
-    border: 'var(--sg-spectral-sage, #7fa88d)',
+    border: 'var(--sg-spectral-color4, #7fa88d)',
   },
   warning: {
     icon: 'alert-triangle',
-    border: 'var(--sg-spectral-gold, #c4a050)',
+    border: 'var(--sg-spectral-color3, #c4a050)',
   },
   error: {
     icon: 'x-circle',
-    border: 'var(--sg-spectral-rose, #d4869f)',
+    border: 'var(--sg-spectral-color1, #d4869f)',
   },
 };
 

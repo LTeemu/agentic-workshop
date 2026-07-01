@@ -1,5 +1,5 @@
 import type { Preview } from '@storybook/web-components';
-import '../src/themes/glass.css';
+import '../src/themes/sg-theme-spectra-default.css';
 
 /**
  * Global background gradient to showcase the glassmorphism effect.

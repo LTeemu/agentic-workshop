@@ -1,9 +1,8 @@
 /* ==========================================================================
-   Spectra Glass Theme — glassmorphism + spectral gradients
+   Spectra Glass Theme — default (spectra-default)
    ==========================================================================
-   Import this file or copy the `:root` block into your app to activate
-   the theme. All component custom properties have fallback defaults so
-   the library works without importing the theme.
+   Copy this :root block into your app or import via:
+     @import 'spectra-glass-ui/themes/sg-theme-spectra-default.css';
    ========================================================================== */
 
 :root {
@@ -19,18 +18,18 @@
   --sg-glass-blur: blur(20px);
   --sg-glass-blur-sm: blur(12px);
 
-  /* ─── Spectral colour palette (muted jewel tones) ───
+  /* ─── Spectral colour palette (neutral indexed slots) ───
      These are deliberately desaturated and deep — think dried
      roses, antique brass, moss, dusty teal, aged lavender.
-     The full "spectrum" sweeps warm → cool without the
-     high-saturation rainbow that reads as casual / pride.  */
-  --sg-spectral-rose: #d4869f;
-  --sg-spectral-coral: #d4956a;
-  --sg-spectral-gold: #c4a050;
-  --sg-spectral-sage: #7fa88d;
-  --sg-spectral-teal: #6fa0b5;
-  --sg-spectral-indigo: #7a80c0;
-  --sg-spectral-violet: #9a7ab5;
+     Themes can remap these to any hue; component styles reference
+     the variable name, not the colour name.  */
+  --sg-spectral-color1: #d4869f;
+  --sg-spectral-color2: #d4956a;
+  --sg-spectral-color3: #c4a050;
+  --sg-spectral-color4: #7fa88d;
+  --sg-spectral-color5: #6fa0b5;
+  --sg-spectral-color6: #7a80c0;
+  --sg-spectral-color7: #9a7ab5;
 
   /* 4-colour glass-stained gradient — semi-transparent rgba so the
      glass surface and background blur show through underneath.

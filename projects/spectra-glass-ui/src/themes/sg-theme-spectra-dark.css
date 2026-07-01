@@ -1,0 +1,91 @@
+/* ==========================================================================
+   Spectra Glass Theme — dark (spectra-dark)
+   ==========================================================================
+   A dark variant with muted jewel-tone spectral slots — less neon
+   than the original, more sophisticated. Glass surfaces are more
+   transparent to let the background gradient breathe.
+     @import 'spectra-glass-ui/themes/sg-theme-spectra-dark.css';
+   ========================================================================== */
+
+:root {
+  /* ─── Glass surfaces ───
+     Lighter backgrounds on a dark page = more contrast for glass
+     surfaces while preserving translucency.  */
+  --sg-glass-bg: rgba(255, 255, 255, 0.04);
+  --sg-glass-bg-hover: rgba(255, 255, 255, 0.1);
+  --sg-glass-bg-active: rgba(255, 255, 255, 0.15);
+  --sg-glass-border: rgba(255, 255, 255, 0.08);
+  --sg-glass-border-hover: rgba(255, 255, 255, 0.18);
+  --sg-glass-border-strong: rgba(255, 255, 255, 0.28);
+  --sg-glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --sg-glass-shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.35);
+  --sg-glass-blur: blur(20px);
+  --sg-glass-blur-sm: blur(12px);
+
+  /* ─── Spectral colour palette ───
+     Muted jewel tones — think dark amethyst, aged ruby, deep
+     teal. Lower saturation than the default so the dark variant
+     stays easy on the eyes while still feeling colourful.  */
+  --sg-spectral-color1: #c45a7a;
+  --sg-spectral-color2: #c48a5a;
+  --sg-spectral-color3: #bca04a;
+  --sg-spectral-color4: #5a9a7a;
+  --sg-spectral-color5: #5a8a9a;
+  --sg-spectral-color6: #7a7aba;
+  --sg-spectral-color7: #9a7ab0;
+
+  /* 4-colour glass-stained gradient at 35 % opacity — lower than
+     the default so the backdrop blur reads through clearly.  */
+  --sg-gradient-spectral: linear-gradient(
+    135deg,
+    rgba(196, 90, 122, 0.35),
+    rgba(188, 160, 74, 0.35),
+    rgba(90, 154, 122, 0.35),
+    rgba(122, 122, 186, 0.35)
+  );
+
+  --sg-gradient-spectral-warm: linear-gradient(
+    135deg,
+    rgba(196, 90, 122, 0.35),
+    rgba(196, 138, 90, 0.35),
+    rgba(188, 160, 74, 0.35)
+  );
+
+  --sg-gradient-spectral-cool: linear-gradient(
+    135deg,
+    rgba(90, 154, 122, 0.35),
+    rgba(90, 138, 154, 0.35),
+    rgba(122, 122, 186, 0.35)
+  );
+
+  /* Strong variant (60 % opacity) for interactive elements —
+     legible on dark backgrounds without overwhelming.  */
+  --sg-gradient-spectral-strong: linear-gradient(
+    135deg,
+    rgba(196, 90, 122, 0.6),
+    rgba(188, 160, 74, 0.6),
+    rgba(90, 154, 122, 0.6),
+    rgba(122, 122, 186, 0.6)
+  );
+
+  /* ─── Typography ───
+     Slightly dimmer primary text reduces eye strain on dark
+     backgrounds while staying clearly legible.  */
+  --sg-text-primary: rgba(255, 255, 255, 0.85);
+  --sg-text-secondary: rgba(255, 255, 255, 0.55);
+  --sg-text-tertiary: rgba(255, 255, 255, 0.35);
+  --sg-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ─── Spacing & radii ─── */
+  --sg-radius-xs: 4px;
+  --sg-radius-sm: 8px;
+  --sg-radius-md: 12px;
+  --sg-radius-lg: 20px;
+  --sg-radius-xl: 28px;
+  --sg-radius-full: 9999px;
+
+  /* ─── Motion ─── */
+  --sg-transition-fast: 150ms ease;
+  --sg-transition-base: 250ms ease;
+  --sg-transition-slow: 400ms ease;
+}

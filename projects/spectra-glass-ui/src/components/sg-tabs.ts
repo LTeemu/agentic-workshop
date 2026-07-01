@@ -21,7 +21,7 @@ export interface Tab {
  * @cssprop [--sg-glass-bg-hover] - Glass surface hover background.
  * @cssprop [--sg-glass-border] - Glass border color.
  * @cssprop [--sg-gradient-spectral] - Spectral gradient for underline.
- * @cssprop [--sg-spectral-gold] - Focus ring color.
+ * @cssprop [--sg-spectral-color3] - Focus ring color.
  * @cssprop [--sg-radius-sm] - Border radius for tabs.
  */
 export class SgTabs extends LitElement {
@@ -60,7 +60,7 @@ export class SgTabs extends LitElement {
     }
 
     .tab:focus-visible {
-      outline: 2px solid var(--sg-spectral-gold, #c4a050);
+      outline: 2px solid var(--sg-spectral-color3, #c4a050);
     }
 
     .tab--disabled {

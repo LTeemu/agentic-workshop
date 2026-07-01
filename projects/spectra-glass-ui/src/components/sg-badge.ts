@@ -63,22 +63,22 @@ export class SgBadge extends LitElement {
     }
 
     .badge--success {
-      background: color-mix(in srgb, var(--sg-spectral-sage, #7fa88d) 70%, transparent);
+      background: color-mix(in srgb, var(--sg-spectral-color4, #7fa88d) 70%, transparent);
       color: #fff;
     }
 
     .badge--warning {
-      background: color-mix(in srgb, var(--sg-spectral-gold, #c4a050) 70%, transparent);
+      background: color-mix(in srgb, var(--sg-spectral-color3, #c4a050) 70%, transparent);
       color: #1a1a1a;
     }
 
     .badge--error {
-      background: color-mix(in srgb, var(--sg-spectral-rose, #d4869f) 70%, transparent);
+      background: color-mix(in srgb, var(--sg-spectral-color1, #d4869f) 70%, transparent);
       color: #fff;
     }
 
     .badge--info {
-      background: color-mix(in srgb, var(--sg-spectral-teal, #6fa0b5) 70%, transparent);
+      background: color-mix(in srgb, var(--sg-spectral-color5, #6fa0b5) 70%, transparent);
       color: #fff;
     }
 
@@ -105,19 +105,19 @@ export class SgBadge extends LitElement {
     }
 
     .badge--success .badge__dot {
-      background: var(--sg-spectral-sage, #7fa88d);
+      background: var(--sg-spectral-color4, #7fa88d);
     }
 
     .badge--warning .badge__dot {
-      background: var(--sg-spectral-gold, #c4a050);
+      background: var(--sg-spectral-color3, #c4a050);
     }
 
     .badge--error .badge__dot {
-      background: var(--sg-spectral-rose, #d4869f);
+      background: var(--sg-spectral-color1, #d4869f);
     }
 
     .badge--info .badge__dot {
-      background: var(--sg-spectral-teal, #6fa0b5);
+      background: var(--sg-spectral-color5, #6fa0b5);
     }
 
     .badge--spectral .badge__dot {

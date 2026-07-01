@@ -11,8 +11,8 @@
       "types": "./dist/spectra-glass-ui.d.ts",
       "import": "./dist/spectra-glass-ui.js"
     },
-    "./themes/glass.css": {
-      "import": "./dist/themes/glass.css"
+    "./themes/*.css": {
+      "import": "./dist/themes/*.css"
     },
     "./custom-elements.json": {
       "import": "./custom-elements.json"

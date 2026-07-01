@@ -1,6 +1,6 @@
 # spectra-glass-site
 
-Landing page showcasing all components of the [spectra-glass-ui](https://github.com/teemutontti/agentic-workshop/tree/main/projects/spectra-glass-ui) library.
+Landing page showcasing all components of the [spectra-glass-ui](https://github.com/LTeemu/agentic-workshop/tree/main/projects/spectra-glass-ui) library.
 
 The page demonstrates every component in a single-page layout: header, hero, feature cards, component showcase grid (buttons with border/pill options, portal-based dialog, conic-gradient spinner, etc.), FAQ accordion, and footer with social links.
 

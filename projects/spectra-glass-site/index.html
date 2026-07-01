@@ -30,6 +30,10 @@
       <a slot="nav" href="#showcase">Components</a>
       <a slot="nav" href="#faq">FAQ</a>
       <sg-button slot="cta" id="header-cta" variant="primary" size="sm">Get Started</sg-button>
+      <select slot="cta" id="theme-switcher" class="theme-switcher" aria-label="Switch theme">
+        <option value="spectra-default">Spectra Default</option>
+        <option value="spectra-dark">Spectra Dark</option>
+      </select>
     </sg-header>
 
     <!-- ════════════════════ Hero ════════════════════ -->
@@ -570,7 +574,7 @@
         </sg-accordion-item>
         <sg-accordion-item heading="Does it work without importing the theme?">
           Yes. Every component has sensible fallback defaults so they look good even without loading
-          <code>themes/glass.css</code>. The theme just makes them consistent.
+          <code>sg-theme-spectra-default.css</code>. The theme just makes them consistent.
         </sg-accordion-item>
         <sg-accordion-item heading="Is it production‑ready?">
           The library is fully tested (95+ tests across 26 components) and ships with TypeScript

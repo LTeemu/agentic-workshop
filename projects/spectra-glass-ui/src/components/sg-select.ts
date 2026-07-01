@@ -76,7 +76,7 @@ export class SgSelect extends LitElement {
     }
 
     .trigger--error {
-      border-color: var(--sg-spectral-rose, #d4869f) !important;
+      border-color: var(--sg-spectral-color1, #d4869f) !important;
     }
 
     .trigger--disabled {
@@ -161,7 +161,7 @@ export class SgSelect extends LitElement {
       display: block;
       margin-top: 4px;
       font-size: 0.75rem;
-      color: var(--sg-spectral-rose, #d4869f);
+      color: var(--sg-spectral-color1, #d4869f);
     }
   `;
 
@@ -339,7 +339,7 @@ export class SgSelect extends LitElement {
               "
             >
               ${selected ? html`
-                <span style="width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sg-spectral-rose,#d4869f);">
+                <span style="width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sg-spectral-color1,#d4869f);">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>

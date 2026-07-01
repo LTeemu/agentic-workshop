@@ -2,7 +2,7 @@
    Imports the component library's design tokens and adds
    site‑level overrides. */
 
-@import 'spectra-glass-ui/themes/glass.css';
+@import 'spectra-glass-ui/themes/sg-theme-spectra-default.css';
 
 /* ═══ Global reset ═══ */
 
@@ -185,4 +185,39 @@ a[slot='nav'] {
 .toast-demo-area sg-toast-container {
   position: relative;
   z-index: 1;
+}
+
+/* ═══ Theme Switcher ═══ */
+
+.theme-switcher {
+  margin-left: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sg-radius-sm, 8px);
+  padding: 6px 28px 6px 10px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 6px;
+}
+
+.theme-switcher:hover {
+  color: var(--sg-text-primary, rgba(255, 255, 255, 0.9));
+  border-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-switcher option {
+  background: #1a1a2a;
+  color: rgba(255, 255, 255, 0.9);
 }

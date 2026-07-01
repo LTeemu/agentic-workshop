@@ -31,7 +31,7 @@ export const Default: Story = {
         Yes — Web Components work with any framework. Import the elements and use them as HTML tags.
       </sg-accordion-item>
       <sg-accordion-item heading="How do I customise the theme?">
-        Override CSS custom properties like <code>--sg-glass-bg</code> and <code>--sg-spectral-rose</code>.
+        Override CSS custom properties like <code>--sg-glass-bg</code> and <code>--sg-spectral-color1</code>.
       </sg-accordion-item>
     </sg-accordion>
   `,

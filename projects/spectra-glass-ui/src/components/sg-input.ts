@@ -89,7 +89,7 @@ export class SgInput extends LitElement {
     }
 
     .field--error {
-      border-color: var(--sg-spectral-rose, #d4869f) !important;
+      border-color: var(--sg-spectral-color1, #d4869f) !important;
     }
 
     .field--disabled {
@@ -133,7 +133,7 @@ export class SgInput extends LitElement {
       display: block;
       margin-top: 4px;
       font-size: 0.75rem;
-      color: var(--sg-spectral-rose, #d4869f);
+      color: var(--sg-spectral-color1, #d4869f);
     }
 
     /* ─── Clear button ─── */
