@@ -310,11 +310,23 @@ export class SgThemeBuilder extends LitElement {
       width: var(--tb-sidebar-width, 340px);
       min-width: var(--tb-sidebar-width, 340px);
       height: 100%;
-      display: flex;
+      display: block;
       flex-direction: column;
       background: rgba(20, 20, 30, 0.95);
       border-right: 1px solid rgba(255, 255, 255, 0.06);
-      overflow: hidden;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
     }
 
     .preview {
@@ -323,6 +335,18 @@ export class SgThemeBuilder extends LitElement {
       overflow-y: auto;
       padding: 24px;
       box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+    .preview::-webkit-scrollbar {
+      width: 4px;
+    }
+    .preview::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .preview::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
     }
 
     /* ─── Toolbar ─── */
@@ -439,6 +463,8 @@ export class SgThemeBuilder extends LitElement {
       flex: 1;
       overflow-y: auto;
       padding: 8px 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
     }
     .controls::-webkit-scrollbar {
       width: 4px;
@@ -998,6 +1024,18 @@ export class SgThemeBuilder extends LitElement {
       max-height: 160px;
       overflow-y: auto;
       padding: 0 8px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+    .history__body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .history__body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .history__body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
     }
     .history__body--closed {
       display: none;
