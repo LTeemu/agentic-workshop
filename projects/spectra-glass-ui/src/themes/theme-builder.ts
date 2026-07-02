@@ -17,6 +17,20 @@ import '../components/sg-divider.js';
 import '../components/sg-avatar.js';
 import '../components/sg-accordion.js';
 import '../components/sg-icon.js';
+import '../components/sg-breadcrumb.js';
+import '../components/sg-dialog.js';
+import '../components/sg-header.js';
+import '../components/sg-footer.js';
+import '../components/sg-hero.js';
+import '../components/sg-pagination.js';
+import '../components/sg-section.js';
+import '../components/sg-select.js';
+import '../components/sg-skeleton.js';
+import '../components/sg-tabs.js';
+import '../components/sg-textarea.js';
+import '../components/sg-tooltip.js';
+import '../components/sg-toast.js';
+import '../components/sg-toast-container.js';
 
 // ─── Types ───
 
@@ -37,6 +51,14 @@ interface PropertyDef {
 
 interface ThemePresets {
   [name: string]: Record<string, string>;
+}
+
+interface HistoryEntry {
+  properties: Record<string, string>;
+  gradientAngles: Record<string, number>;
+  gradientStops: Record<string, GradientStop[]>;
+  gradientPositions: Record<string, number[]>;
+  label: string;
 }
 
 // ─── Property Registry ───
@@ -141,6 +163,12 @@ const GRADIENT_DEFS: GradientDef[] = [
 const BUILTIN_SPECTRAL_VARS = PROPERTY_DEFS
   .filter(d => d.category === 'Spectral Colors')
   .map(d => d.name);
+
+/** All tracked property definitions (regular + gradient) for history diff labels. */
+const TRACKED_PROPS: { name: string; label: string }[] = [
+  ...PROPERTY_DEFS.map(d => ({ name: d.name, label: d.label })),
+  ...GRADIENT_DEFS.map(g => ({ name: g.name, label: g.label })),
+];
 
 const CATEGORIES = ['Glass Surfaces', 'Spectral Colors', 'Gradients', 'Typography', 'Spacing & Radii', 'Motion'];
 
@@ -259,6 +287,8 @@ export class SgThemeBuilder extends LitElement {
   static override styles = css`
     :host {
       display: flex;
+      position: fixed;
+      inset: 0;
       width: 100%;
       height: 100%;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -920,6 +950,104 @@ export class SgThemeBuilder extends LitElement {
       letter-spacing: 0.05em;
     }
 
+    /* ─── History panel ─── */
+
+    .history {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      flex-shrink: 0;
+    }
+
+    .history__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 150ms ease;
+    }
+    .history__header:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .history__title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.45);
+      margin: 0;
+    }
+
+    .history__count {
+      font-size: 0.625rem;
+      color: rgba(255, 255, 255, 0.3);
+      margin-left: 6px;
+    }
+
+    .history__chevron {
+      font-size: 0.5625rem;
+      color: rgba(255, 255, 255, 0.3);
+      transition: transform 200ms ease;
+    }
+    .history__chevron--open {
+      transform: rotate(180deg);
+    }
+
+    .history__body {
+      max-height: 160px;
+      overflow-y: auto;
+      padding: 0 8px 8px;
+    }
+    .history__body--closed {
+      display: none;
+    }
+
+    .history__entry {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.6875rem;
+      color: rgba(255, 255, 255, 0.55);
+      transition: background 120ms ease, color 120ms ease;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .history__entry:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .history__entry--current {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .history__entry--future {
+      opacity: 0.35;
+      font-style: italic;
+    }
+
+    .history__dot {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+    }
+    .history__dot--filled {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    .history__dot--future {
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .history__label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     /* ─── Toast notification ─── */
 
     .toast {
@@ -965,6 +1093,12 @@ export class SgThemeBuilder extends LitElement {
 
   private _toastTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Per-theme undo history (in-memory only, gone on close). */
+  @state() private _historyCollapsed: boolean = true;
+  private _historyByTheme: Record<string, HistoryEntry[]> = {};
+  private _historyIndexByTheme: Record<string, number> = {};
+  private _historyTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** Per-theme custom labels for spectral colors: themeName → varName → label. */
   private _allLabels: Record<string, Record<string, string>> = {};
   /** Custom labels for the active theme (varName → label). */
@@ -981,9 +1115,14 @@ export class SgThemeBuilder extends LitElement {
     this._allLabels = {};
     this._spectralLabels = {};
     this._properties = this._loadFromComputedStyles();
+    this._historyByTheme = {};
+    this._historyIndexByTheme = {};
 
     this._swapThemeClass();
     this._initGradients();
+    // Capture initial state as the first history entry
+    this._historyByTheme['Spectra Default'] = [this._captureEntry('Initial')];
+    this._historyIndexByTheme['Spectra Default'] = 0;
     this._loadAvailableThemes();
   }
 
@@ -1019,6 +1158,131 @@ export class SgThemeBuilder extends LitElement {
       props[def.name] = value || def.default;
     }
     return props;
+  }
+
+  /** Snapshot current gradient state into an entry. */
+  private _captureEntry(label: string): HistoryEntry {
+    return {
+      label,
+      properties: { ...this._properties },
+      gradientAngles: { ...this._gradientAngles },
+      gradientStops: JSON.parse(JSON.stringify(this._gradientStops)),
+      gradientPositions: { ...this._gradientPositions },
+    };
+  }
+
+  /** Diff two property sets to produce a human label. */
+  private _diffLabel(prev: Record<string, string> | undefined, next: Record<string, string>): string {
+    if (!prev) return 'Initial';
+    for (const def of TRACKED_PROPS) {
+      const a = prev[def.name];
+      const b = next[def.name];
+      if (a !== b) {
+        const val = (b ?? '').substring(0, 28);
+        return `${def.label}: ${val}`;
+      }
+    }
+    return 'Adjustment';
+  }
+
+  /** Find which --sg- property differs between two property sets, if any. */
+  private _findChangedProperty(a: Record<string, string> | undefined, b: Record<string, string> | undefined): string | null {
+    if (!a || !b) return null;
+    let changed: string | null = null;
+    for (const def of TRACKED_PROPS) {
+      if (a[def.name] !== b[def.name]) {
+        if (changed !== null) return null; // more than one changed
+        changed = def.name;
+      }
+    }
+    return changed;
+  }
+
+  /** Push current state as a new history entry for the active theme.
+   *  Truncates future entries if not at the end.
+   *  If the same single property changed as the previous entry, replaces
+   *  it in-place instead of stacking duplicates. */
+  private _pushHistory(): void {
+    if (this._historyTimer !== null) {
+      clearTimeout(this._historyTimer);
+      this._historyTimer = null;
+    }
+
+    const theme = this._activeTheme;
+    if (!this._historyByTheme[theme]) {
+      this._historyByTheme[theme] = [];
+      this._historyIndexByTheme[theme] = -1;
+    }
+
+    const history = this._historyByTheme[theme]!;
+    const idx = this._historyIndexByTheme[theme]!;
+
+    // Truncate future entries beyond current index
+    if (idx < history.length - 1) {
+      history.length = idx + 1;
+    }
+
+    // Skip if no change from the last entry
+    const lastEntry = history[history.length - 1];
+    if (lastEntry) {
+      const same = Object.keys(this._properties).length > 0 &&
+        Object.entries(this._properties).every(([k, v]) => lastEntry.properties[k] === v);
+      if (same) return;
+    }
+
+    // If the same single property changed as the previous change,
+    // replace the last entry in-place instead of stacking
+    if (history.length >= 2) {
+      const prevEntry = history[history.length - 2]!;
+      const lastChanged = this._findChangedProperty(prevEntry.properties, lastEntry!.properties);
+      const currentChanged = this._findChangedProperty(lastEntry!.properties, this._properties);
+      if (lastChanged && lastChanged === currentChanged) {
+        const label = this._diffLabel(prevEntry.properties, this._properties);
+        history[history.length - 1] = this._captureEntry(label);
+        this._historyIndexByTheme[theme] = history.length - 1;
+        return;
+      }
+    }
+
+    const label = this._diffLabel(lastEntry?.properties, this._properties);
+    history.push(this._captureEntry(label));
+    this._historyIndexByTheme[theme] = history.length - 1;
+  }
+
+  /** Push history with debounce so one gesture = one entry.
+   *  Only pushes when the timer fires, capturing the FINAL value
+   *  of the gesture (not the first intermediate value). */
+  private _debouncedPushHistory(): void {
+    if (this._historyTimer !== null) {
+      clearTimeout(this._historyTimer);
+    }
+    this._historyTimer = setTimeout(() => {
+      this._pushHistory();
+      this._historyTimer = null;
+      this.requestUpdate();
+    }, 300);
+  }
+
+  /** Restore a specific history entry by index. */
+  private _restoreHistory(index: number): void {
+    const theme = this._activeTheme;
+    const history = this._historyByTheme[theme];
+    if (!history || index < 0 || index >= history.length || index === this._historyIndexByTheme[theme]) return;
+
+    // Clear any pending debounced push
+    if (this._historyTimer !== null) {
+      clearTimeout(this._historyTimer);
+      this._historyTimer = null;
+    }
+
+    this._historyIndexByTheme[theme] = index;
+    const entry = history[index]!;
+    this._properties = { ...entry.properties };
+    this._gradientAngles = { ...entry.gradientAngles };
+    this._gradientStops = JSON.parse(JSON.stringify(entry.gradientStops));
+    this._gradientPositions = { ...entry.gradientPositions };
+    this._rebuildStylesheet();
+    this.requestUpdate();
   }
 
   private get _themeClassName(): string {
@@ -1096,6 +1360,9 @@ export class SgThemeBuilder extends LitElement {
     const presets = { ...this._presets };
     delete presets[name];
     this._presets = presets;
+    // Clean up history for the deleted theme
+    delete this._historyByTheme[name];
+    delete this._historyIndexByTheme[name];
     if (this._activeTheme === name) {
       this.selectTheme('Spectra Default');
     }
@@ -1107,14 +1374,28 @@ export class SgThemeBuilder extends LitElement {
     this._activeTheme = name;
     this._spectralLabels = this._allLabels[name] || {};
     this._swapThemeClass();
-    if (name === 'Spectra Default') {
-      // Reload from computed styles so file changes are reflected
-      this._properties = this._loadFromComputedStyles();
-    } else if (this._presets[name]) {
-      this._properties = { ...this._presets[name] };
-    }
 
-    this._initGradients();
+    if (this._historyByTheme[name]) {
+      // Restore the theme's last state from history
+      const idx = this._historyIndexByTheme[name] ?? this._historyByTheme[name]!.length - 1;
+      const entry = this._historyByTheme[name]![idx]!;
+      this._properties = { ...entry.properties };
+      this._gradientAngles = { ...entry.gradientAngles };
+      this._gradientStops = JSON.parse(JSON.stringify(entry.gradientStops));
+      this._gradientPositions = { ...entry.gradientPositions };
+      this._rebuildStylesheet();
+    } else {
+      // First visit: load from preset or computed styles
+      if (name === 'Spectra Default') {
+        this._properties = this._loadFromComputedStyles();
+      } else if (this._presets[name]) {
+        this._properties = { ...this._presets[name] };
+      }
+      this._initGradients();
+      // Capture as initial history entry
+      this._historyByTheme[name] = [this._captureEntry('Initial')];
+      this._historyIndexByTheme[name] = 0;
+    }
   }
 
   // ─── Event handlers ───
@@ -1144,6 +1425,7 @@ export class SgThemeBuilder extends LitElement {
 
   private _handleReset(): void {
     if (!confirm('Reset all properties to defaults?')) return;
+    this._pushHistory();
     if (this._activeTheme === 'Spectra Default') {
       this._properties = this._loadFromComputedStyles();
     } else if (this._presets[this._activeTheme]) {
@@ -1245,6 +1527,7 @@ export class SgThemeBuilder extends LitElement {
 
   private _setProperty(name: string, value: string): void {
     this._properties = { ...this._properties, [name]: value };
+    this._debouncedPushHistory();
 
     // Spectral color change → rebuild all linked gradients
     if (name.startsWith('--sg-spectral-')) {
@@ -1258,6 +1541,7 @@ export class SgThemeBuilder extends LitElement {
     const angle = parseFloat((e.target as HTMLInputElement).value);
     this._gradientAngles = { ...this._gradientAngles, [defName]: angle };
     this._rebuildGradients();
+    this._debouncedPushHistory();
   }
 
   // ─── Gradient bar drag ───
@@ -1312,6 +1596,7 @@ export class SgThemeBuilder extends LitElement {
     this._onKnobPointerMove = null;
     this._onKnobPointerUp = null;
     this._dragging = null;
+    this._pushHistory();
     this.requestUpdate();
   }
 
@@ -1341,6 +1626,7 @@ export class SgThemeBuilder extends LitElement {
     this._gradientPositions = { ...this._gradientPositions, [defName]: positions };
     this._isAdding = null;
     this._rebuildGradients();
+    this._debouncedPushHistory();
   }
 
   private _removeStop(defName: string, index: number): void {
@@ -1352,6 +1638,7 @@ export class SgThemeBuilder extends LitElement {
     this._gradientStops = { ...this._gradientStops, [defName]: stops };
     this._gradientPositions = { ...this._gradientPositions, [defName]: positions };
     this._rebuildGradients();
+    this._debouncedPushHistory();
   }
 
   private _onGradientStopColorChange(stopVar: string, e: Event): void {
@@ -1739,6 +2026,51 @@ export class SgThemeBuilder extends LitElement {
     `;
   }
 
+  private _renderHistoryPanel(): TemplateResult {
+    const history = this._historyByTheme[this._activeTheme] ?? [];
+    const idx = this._historyIndexByTheme[this._activeTheme] ?? history.length - 1;
+    const isOpen = !this._historyCollapsed;
+    const chevronClass = classMap({
+      'history__chevron': true,
+      'history__chevron--open': isOpen,
+    });
+    const bodyClass = classMap({
+      'history__body': true,
+      'history__body--closed': !isOpen,
+    });
+
+    return html`
+      <div class="history">
+        <div class="history__header" @click=${() => this._historyCollapsed = !this._historyCollapsed}>
+          <h4 class="history__title">History<span class="history__count">${history.length}</span></h4>
+          <span class=${chevronClass}>▼</span>
+        </div>
+        <div class=${bodyClass}>
+          ${history.map((entry, i) => {
+            const isCurrent = i === idx;
+            const isFuture = i > idx;
+            const entryClass = classMap({
+              'history__entry': true,
+              'history__entry--current': isCurrent,
+              'history__entry--future': isFuture,
+            });
+            const dotClass = classMap({
+              'history__dot': true,
+              'history__dot--filled': isCurrent,
+              'history__dot--future': isFuture,
+            });
+            return html`
+              <div class=${entryClass} @click=${() => this._restoreHistory(i)} title=${entry.label}>
+                <span class=${dotClass}></span>
+                <span class="history__label">${entry.label}</span>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderCategory(cat: string): TemplateResult {
     const defs = PROPERTY_DEFS.filter(d => d.category === cat);
     const isOpen = !this._collapsed[cat];
@@ -1769,6 +2101,8 @@ export class SgThemeBuilder extends LitElement {
   private _renderPreview(): TemplateResult {
     return html`
       <div class="preview__grid">
+        <!-- Compact: small/focused components first -->
+
         <!-- Buttons -->
         <div class="preview__section">
           <h5 class="preview__section-title">Buttons</h5>
@@ -1781,30 +2115,19 @@ export class SgThemeBuilder extends LitElement {
           </div>
         </div>
 
-        <!-- Cards -->
+        <!-- Icons & Divider -->
         <div class="preview__section">
-          <h5 class="preview__section-title">Cards</h5>
-          <div class="preview__row">
-            <div class="preview__card">
-              <sg-card variant="elevated">
-                <div slot="header">Elevated Card</div>
-                Glass surface with shadow and hover glow.
-                <div slot="footer"><sg-button variant="ghost" size="sm">Action</sg-button></div>
-              </sg-card>
-            </div>
-            <div class="preview__card">
-              <sg-card variant="outlined" accent>
-                <div slot="header">Outlined + Accent</div>
-                Transparent with accent border.
-                <div slot="footer"><sg-button variant="ghost" size="sm">Action</sg-button></div>
-              </sg-card>
-            </div>
-            <div class="preview__card">
-              <sg-card variant="ghost">
-                <div slot="header">Ghost Card</div>
-                Minimal, visible on hover.
-              </sg-card>
-            </div>
+          <h5 class="preview__section-title">Icons & Divider</h5>
+          <div class="preview__row" style="align-items:center">
+            <sg-icon name="heart" size="sm"></sg-icon>
+            <sg-icon name="star" size="md"></sg-icon>
+            <sg-icon name="settings" size="lg"></sg-icon>
+            <sg-icon name="external-link" size="md" color="rgba(255,255,255,0.5)"></sg-icon>
+          </div>
+          <sg-divider style="margin:8px 0"></sg-divider>
+          <div class="preview__row" style="align-items:center">
+            <sg-icon name="check-circle" size="sm"></sg-icon>
+            <span style="font-size:0.6875rem;color:rgba(255,255,255,0.4)">Divider separates content visually.</span>
           </div>
         </div>
 
@@ -1812,12 +2135,21 @@ export class SgThemeBuilder extends LitElement {
         <div class="preview__section">
           <h5 class="preview__section-title">Form Controls</h5>
           <div class="preview__row">
-            <sg-input placeholder="Input text..." style="width:180px"></sg-input>
-            <sg-toggle>Toggle me</sg-toggle>
-            <sg-checkbox>Check me</sg-checkbox>
-            <sg-radio-group name="demo-radio" value="a">
-              <sg-radio value="a">Option A</sg-radio>
-              <sg-radio value="b">Option B</sg-radio>
+            <sg-input placeholder="Input text..." style="width:160px"></sg-input>
+            <sg-select
+              label=""
+              placeholder="Select..."
+              options='[{"value":"a","label":"Option A"},{"value":"b","label":"Option B"},{"value":"c","label":"Option C"}]'
+              style="width:140px"
+            ></sg-select>
+            <sg-textarea placeholder="Textarea..." rows="2" style="width:200px"></sg-textarea>
+          </div>
+          <div class="preview__row" style="margin-top:8px">
+            <sg-toggle>Toggle</sg-toggle>
+            <sg-checkbox>Checkbox</sg-checkbox>
+            <sg-radio-group name="preview-radio" value="x">
+              <sg-radio value="x">Radio X</sg-radio>
+              <sg-radio value="y">Radio Y</sg-radio>
             </sg-radio-group>
           </div>
         </div>
@@ -1849,6 +2181,87 @@ export class SgThemeBuilder extends LitElement {
           </div>
         </div>
 
+        <!-- Tooltip -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Tooltip</h5>
+          <div class="preview__row">
+            <sg-tooltip text="This is a tooltip" placement="top">
+              <sg-button variant="ghost" size="sm">Hover me (top)</sg-button>
+            </sg-tooltip>
+            <sg-tooltip text="Tooltip on right" placement="right">
+              <sg-button variant="ghost" size="sm">Hover me (right)</sg-button>
+            </sg-tooltip>
+          </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Toast</h5>
+          <div class="preview__row">
+            <sg-button variant="secondary" size="sm" @click=${() => {
+              const container = this.shadowRoot?.querySelector('#preview-toast') as any;
+              if (container) container.addToast?.({ message: 'Action completed successfully!', variant: 'success' });
+            }}>Show Success Toast</sg-button>
+            <sg-button variant="ghost" size="sm" @click=${() => {
+              const container = this.shadowRoot?.querySelector('#preview-toast') as any;
+              if (container) container.addToast?.({ message: 'Something went wrong.', variant: 'error' });
+            }}>Show Error Toast</sg-button>
+          </div>
+          <sg-toast-container id="preview-toast" placement="bottom-left" style="position:relative;min-height:0"></sg-toast-container>
+        </div>
+
+        <!-- Breadcrumb & Pagination -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Breadcrumb & Pagination</h5>
+          <sg-breadcrumb
+            items='[{"label":"Home"},{"label":"Components"},{"label":"Theme Builder"}]'
+            separator="›"
+            style="margin-bottom:8px;display:block"
+          ></sg-breadcrumb>
+          <sg-pagination total="8" current="3" sibling-count="1" size="sm"></sg-pagination>
+        </div>
+
+        <!-- Big: layout-heavy components at the bottom -->
+
+        <!-- Cards -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Cards</h5>
+          <div class="preview__row">
+            <div class="preview__card">
+              <sg-card variant="elevated">
+                <div slot="header">Elevated Card</div>
+                Glass surface with shadow and hover glow.
+                <div slot="footer"><sg-button variant="ghost" size="sm">Action</sg-button></div>
+              </sg-card>
+            </div>
+            <div class="preview__card">
+              <sg-card variant="outlined" accent>
+                <div slot="header">Outlined + Accent</div>
+                Transparent with accent border.
+                <div slot="footer"><sg-button variant="ghost" size="sm">Action</sg-button></div>
+              </sg-card>
+            </div>
+            <div class="preview__card">
+              <sg-card variant="ghost">
+                <div slot="header">Ghost Card</div>
+                Minimal, visible on hover.
+              </sg-card>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Tabs</h5>
+          <sg-tabs style="max-width:500px"
+            tabs='[{"id":"tab1","label":"Overview"},{"id":"tab2","label":"Settings"},{"id":"tab3","label":"Security"}]'
+            variant="glass">
+            <div slot="tab1" style="font-size:0.75rem;color:rgba(255,255,255,0.5);padding:8px 0">Welcome to the dashboard.</div>
+            <div slot="tab2" style="font-size:0.75rem;color:rgba(255,255,255,0.5);padding:8px 0">Your profile settings.</div>
+            <div slot="tab3" style="font-size:0.75rem;color:rgba(255,255,255,0.5);padding:8px 0">Security settings.</div>
+          </sg-tabs>
+        </div>
+
         <!-- Accordion -->
         <div class="preview__section">
           <h5 class="preview__section-title">Accordion</h5>
@@ -1860,6 +2273,77 @@ export class SgThemeBuilder extends LitElement {
               Content for section two.
             </sg-accordion-item>
           </sg-accordion>
+        </div>
+
+        <!-- Dialog -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Dialog</h5>
+          <div class="preview__row">
+            <sg-button variant="secondary" size="sm" @click=${() => {
+              const dlg = this.shadowRoot?.querySelector('#preview-dialog') as any;
+              if (dlg) dlg.open = true;
+            }}>Open Dialog</sg-button>
+            <span style="font-size:0.6875rem;color:rgba(255,255,255,0.3)">Click to open a modal dialog</span>
+          </div>
+          <sg-dialog id="preview-dialog" title="Preview Dialog" closable backdrop-dismiss>
+            <p style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin:0">This dialog uses glass surface styling, configurable via theme variables.</p>
+            <span slot="footer">
+              <sg-button variant="ghost" size="sm" @click=${() => {
+                const dlg = this.shadowRoot?.querySelector('#preview-dialog') as any;
+                if (dlg) dlg.open = false;
+              }}>Cancel</sg-button>
+              <sg-button variant="primary" size="sm" @click=${() => {
+                const dlg = this.shadowRoot?.querySelector('#preview-dialog') as any;
+                if (dlg) dlg.open = false;
+              }}>Confirm</sg-button>
+            </span>
+          </sg-dialog>
+        </div>
+
+        <!-- Section & Skeleton -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Section & Skeleton</h5>
+          <sg-section glass accent="bottom" padding="md" style="border-radius:8px;overflow:hidden;margin-bottom:8px">
+            <p style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:0">Glass section with accent edge.</p>
+          </sg-section>
+          <div class="preview__row" style="gap:12px">
+            <sg-skeleton variant="circle" width="32px" height="32px"></sg-skeleton>
+            <sg-skeleton variant="text" width="160px" lines="3"></sg-skeleton>
+          </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Hero</h5>
+          <sg-hero align="left" overlay style="border-radius:8px;overflow:hidden">
+            <h1 slot="heading" style="font-size:1.1rem;margin:0">Build Something Great</h1>
+            <p slot="subtitle" style="font-size:0.75rem;margin:4px 0 0">A glass-themed component library.</p>
+            <sg-button slot="cta-primary" variant="primary" size="sm">Get Started</sg-button>
+            <sg-button slot="cta-secondary" variant="ghost" size="sm">Learn More</sg-button>
+          </sg-hero>
+        </div>
+
+        <!-- Header & Footer -->
+        <div class="preview__section">
+          <h5 class="preview__section-title">Header & Footer</h5>
+          <sg-header style="border-radius:8px;overflow:hidden">
+            <span slot="logo" style="font-weight:700;font-size:1.1rem;">Spectra</span>
+            <a slot="nav" href="#">Features</a>
+            <a slot="nav" href="#">Pricing</a>
+            <sg-button slot="cta" variant="primary" size="sm">Get Started</sg-button>
+          </sg-header>
+          <div style="height:8px"></div>
+          <sg-footer columns="2" style="border-radius:8px;overflow:hidden">
+            <div slot="column-1">
+              <h4 style="margin:0 0 4px;font-size:0.75rem;color:rgba(255,255,255,0.5)">Product</h4>
+              <a href="#" style="display:block;font-size:0.6875rem;color:rgba(255,255,255,0.3)">Features</a>
+            </div>
+            <div slot="column-2">
+              <h4 style="margin:0 0 4px;font-size:0.75rem;color:rgba(255,255,255,0.5)">Company</h4>
+              <a href="#" style="display:block;font-size:0.6875rem;color:rgba(255,255,255,0.3)">About</a>
+            </div>
+            <span slot="copyright" style="font-size:0.625rem;color:rgba(255,255,255,0.2)">&copy; 2026 Spectra</span>
+          </sg-footer>
         </div>
       </div>
     `;
@@ -1895,6 +2379,8 @@ export class SgThemeBuilder extends LitElement {
                <button class="tb-btn tb-btn--source" @click=${this._handleSaveToSource}>Save to Source</button>
             </div>
           </div>
+
+          ${this._renderHistoryPanel()}
 
           <div class="controls">
             ${CATEGORIES.map(cat => {
