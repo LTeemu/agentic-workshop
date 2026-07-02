@@ -6,22 +6,69 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Vite plugin that saves theme CSS files from the Theme Builder. */
-function saveThemePlugin(): Plugin {
+/** Derive a display name from a theme filename e.g. sg-theme-spectra-default.css → "Spectra Default". */
+function themeNameFromFile(filename: string): string {
+  return filename
+    .replace(/^sg-theme-/, '')
+    .replace(/\.css$/, '')
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** Parse --sg-* properties from a CSS :root block. */
+function parseRootProperties(content: string): Record<string, string> {
+  const properties: Record<string, string> = {};
+  const rootMatch = content.match(/:root\s*\{([^}]+)\}/);
+  if (!rootMatch) return properties;
+  const propRegex = /(--sg-[\w-]+)\s*:\s*([^;]+);/g;
+  let m;
+  while ((m = propRegex.exec(rootMatch[1]!)) !== null) {
+    properties[m[1]!] = m[2]!.trim();
+  }
+  return properties;
+}
+
+/** Vite plugin that saves/loads theme CSS files from the Theme Builder. */
+function themePlugin(): Plugin {
   const THEMES_DIR = path.resolve(__dirname, '..', 'src', 'themes');
 
   return {
-    name: 'save-theme',
+    name: 'theme-plugin',
     configureServer(server) {
+      // ── GET /api/themes — list all available theme files ──
+      server.middlewares.use('/api/themes', async (req, res) => {
+        if (req.method !== 'GET') {
+          res.statusCode = 405;
+          res.end('Method not allowed');
+          return;
+        }
+        try {
+          const files = fs.readdirSync(THEMES_DIR).filter(f => f.startsWith('sg-theme-') && f.endsWith('.css')).sort();
+          const themes: Array<{ name: string; properties: Record<string, string> }> = [];
+          for (const file of files) {
+            const content = fs.readFileSync(path.join(THEMES_DIR, file), 'utf-8');
+            const properties = parseRootProperties(content);
+            if (Object.keys(properties).length > 0) {
+              themes.push({ name: themeNameFromFile(file), properties });
+            }
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ themes }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+      });
+
+      // ── POST /api/save-theme — save a theme to a CSS file ──
       server.middlewares.use('/api/save-theme', async (req, res) => {
-        // Only accept POST
         if (req.method !== 'POST') {
           res.statusCode = 405;
           res.end('Method not allowed');
           return;
         }
 
-        // Read JSON body
         let body = '';
         req.on('data', (chunk: string) => { body += chunk; });
         req.on('end', () => {
@@ -33,12 +80,10 @@ function saveThemePlugin(): Plugin {
               return;
             }
 
-            // Sanitize name → filename
             const slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '') || 'untitled';
             const filename = `sg-theme-${slug}.css`;
             const filepath = path.join(THEMES_DIR, filename);
 
-            // Generate CSS
             const lines: string[] = [':root {'];
             for (const [key, value] of Object.entries(properties)) {
               if (key.startsWith('--sg-')) {
@@ -69,7 +114,7 @@ const config: StorybookConfig = {
     options: {},
   },
   async viteFinal(config) {
-    config.plugins?.push(saveThemePlugin());
+    config.plugins?.push(themePlugin());
     return config;
   },
 };

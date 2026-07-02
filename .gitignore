@@ -10,3 +10,4 @@ _backups/
 .fallow/
 .vitest-attachments/
 storybook-static/
+test-results/

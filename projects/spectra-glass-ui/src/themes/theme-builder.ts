@@ -143,17 +143,6 @@ const BUILTIN_SPECTRAL_VARS = PROPERTY_DEFS
   .map(d => d.name);
 
 const CATEGORIES = ['Glass Surfaces', 'Spectral Colors', 'Gradients', 'Typography', 'Spacing & Radii', 'Motion'];
-const STORAGE_KEY = 'sg-theme-builder-presets';
-const ACTIVE_KEY = 'sg-theme-builder-active';
-const LABELS_KEY = 'sg-theme-builder-labels';
-
-function loadThemeLabels(): Record<string, Record<string, string>> {
-  try { return JSON.parse(localStorage.getItem(LABELS_KEY) || '{}'); } catch { return {}; }
-}
-
-function saveThemeLabels(labels: Record<string, Record<string, string>>): void {
-  localStorage.setItem(LABELS_KEY, JSON.stringify(labels));
-}
 
 // ─── Helpers ───
 
@@ -242,27 +231,6 @@ function parseGradientStops(value: string, spectralValues: Record<string, string
 
 function defaultGradientPositions(stops: GradientStop[]): number[] {
   return stops.map((_, i) => (stops.length > 1 ? Math.round((i / (stops.length - 1)) * 100) : 0));
-}
-
-// ─── Theme Presets Manager ───
-
-function loadPresets(): ThemePresets {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-function savePresets(presets: ThemePresets): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
-}
-
-function loadActiveTheme(): string {
-  return localStorage.getItem(ACTIVE_KEY) || 'Spectra Default';
-}
-
-function saveActiveTheme(name: string): void {
-  localStorage.setItem(ACTIVE_KEY, name);
 }
 
 function propertiesToCSS(properties: Record<string, string>): string {
@@ -995,7 +963,6 @@ export class SgThemeBuilder extends LitElement {
   /** Theme class name currently on <html>. */
   private _currentThemeClass: string = '';
 
-  private _saveTimer: ReturnType<typeof setTimeout> | null = null;
   private _toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Per-theme custom labels for spectral colors: themeName → varName → label. */
@@ -1009,28 +976,47 @@ export class SgThemeBuilder extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this._presets = loadPresets();
-    this._activeTheme = loadActiveTheme();
-    this._allLabels = loadThemeLabels();
-    this._spectralLabels = this._allLabels[this._activeTheme] || {};
-    this._properties = this._getDefaultProperties();
-
-    // Apply saved preset if it exists and isn't default
-    if (this._activeTheme !== 'Spectra Default' && this._presets[this._activeTheme]) {
-      this._properties = { ...this._presets[this._activeTheme]! };
-    }
+    this._activeTheme = 'Spectra Default';
+    this._presets = {};
+    this._allLabels = {};
+    this._spectralLabels = {};
+    this._properties = this._loadFromComputedStyles();
 
     this._swapThemeClass();
-    // Init gradient state from current computed values
     this._initGradients();
-
-    // All categories start open by default
+    this._loadAvailableThemes();
   }
 
-  private _getDefaultProperties(): Record<string, string> {
+  /** Fetch available theme files from the dev server (Storybook only).
+   *  Populates _presets so all themes appear in the dropdown.
+   *  Silently falls back to just "Spectra Default" if unavailable. */
+  private async _loadAvailableThemes(): Promise<void> {
+    try {
+      const res = await fetch('/api/themes');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.themes || !Array.isArray(data.themes)) return;
+
+      const presets: ThemePresets = {};
+      for (const theme of data.themes) {
+        if (theme.name === 'Spectra Default') continue;
+        presets[theme.name] = theme.properties;
+      }
+      this._presets = presets;
+      this.requestUpdate();
+    } catch {
+      // API not available (production) — silently ignore
+    }
+  }
+
+  /** Read current `--sg-*` values from what's actually applied in the document.
+   *  This keeps the builder in sync with loaded CSS files (e.g. the default theme). */
+  private _loadFromComputedStyles(): Record<string, string> {
     const props: Record<string, string> = {};
+    const styles = getComputedStyle(document.documentElement);
     for (const def of PROPERTY_DEFS) {
-      props[def.name] = def.default;
+      const value = styles.getPropertyValue(def.name).trim();
+      props[def.name] = value || def.default;
     }
     return props;
   }
@@ -1096,22 +1082,20 @@ export class SgThemeBuilder extends LitElement {
 
   // ─── Public API ───
 
-  /** Add or overwrite a preset. */
+  /** Add or overwrite a preset (in-memory only, no localStorage). */
   addPreset(name: string, properties?: Record<string, string>): void {
     const presets = { ...this._presets };
     presets[name] = properties ? { ...properties } : { ...this._properties };
     this._presets = presets;
-    savePresets(presets);
     this.requestUpdate();
   }
 
-  /** Delete a preset programmatically. */
+  /** Delete a preset (in-memory only). */
   deletePreset(name: string): void {
     if (name === 'Spectra Default') return;
     const presets = { ...this._presets };
     delete presets[name];
     this._presets = presets;
-    savePresets(presets);
     if (this._activeTheme === name) {
       this.selectTheme('Spectra Default');
     }
@@ -1121,11 +1105,11 @@ export class SgThemeBuilder extends LitElement {
   /** Switch to a theme preset. */
   selectTheme(name: string): void {
     this._activeTheme = name;
-    saveActiveTheme(name);
     this._spectralLabels = this._allLabels[name] || {};
     this._swapThemeClass();
     if (name === 'Spectra Default') {
-      this._properties = this._getDefaultProperties();
+      // Reload from computed styles so file changes are reflected
+      this._properties = this._loadFromComputedStyles();
     } else if (this._presets[name]) {
       this._properties = { ...this._presets[name] };
     }
@@ -1160,7 +1144,11 @@ export class SgThemeBuilder extends LitElement {
 
   private _handleReset(): void {
     if (!confirm('Reset all properties to defaults?')) return;
-    this._properties = this._getDefaultProperties();
+    if (this._activeTheme === 'Spectra Default') {
+      this._properties = this._loadFromComputedStyles();
+    } else if (this._presets[this._activeTheme]) {
+      this._properties = { ...this._presets[this._activeTheme]! };
+    }
     this._initGradients();
     this._showToast('Reset to defaults');
   }
@@ -1264,8 +1252,6 @@ export class SgThemeBuilder extends LitElement {
     } else {
       this._rebuildStylesheet();
     }
-
-    this._debounceSave();
   }
 
   private _onGradientAngleChange(defName: string, e: Event): void {
@@ -1415,7 +1401,6 @@ export class SgThemeBuilder extends LitElement {
     if (trimmed) {
       this._spectralLabels = { ...this._spectralLabels, [varName]: trimmed };
       this._allLabels[this._activeTheme] = this._spectralLabels;
-      saveThemeLabels(this._allLabels);
     }
     this._editingLabel = null;
   }
@@ -1429,15 +1414,6 @@ export class SgThemeBuilder extends LitElement {
       this._properties = { ...this._properties, [grad.name]: value };
     }
     this._rebuildStylesheet();
-  }
-
-  private _debounceSave(): void {
-    if (this._saveTimer) clearTimeout(this._saveTimer);
-    this._saveTimer = setTimeout(() => {
-      if (this._activeTheme !== 'Spectra Default') {
-        this.addPreset(this._activeTheme);
-      }
-    }, 500);
   }
 
   // ─── Render helpers ───
