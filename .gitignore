@@ -11,3 +11,20 @@ _backups/
 .vitest-attachments/
 storybook-static/
 test-results/
+
+# IDE and editor
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Android
+local.properties
+*.class
+*.jar
+*.aar
+
+# OS
+$RECYCLE.BIN/

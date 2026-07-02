@@ -9,9 +9,14 @@ const projectStatusEl = document.getElementById('project-status');
 const projectTypeEl = document.getElementById('project-type');
 const projectUrlEl = document.getElementById('project-url');
 const openTabBtn = document.getElementById('open-tab');
+const autoStopCheckbox = document.getElementById('auto-stop');
+const stopAllBtn = document.getElementById('stop-all');
+const previewNotice = document.getElementById('preview-notice');
+const previewNoticeText = document.getElementById('preview-notice-text');
 
 let projects = [];
 let activeProject = null; // { name, url, runType }
+let autoStop = true;
 
 async function api(url, options = {}) {
   const res = await fetch(url, {
@@ -46,7 +51,9 @@ async function loadActive() {
 function renderProjectList() {
   projectList.innerHTML = '';
   projects.sort((a, b) => a.name.localeCompare(b.name));
+  let anyRunning = false;
   projects.forEach((p) => {
+    if (p.running) anyRunning = true;
     const item = document.createElement('div');
     item.className =
       'project-item' + (activeProject && activeProject.name === p.name ? ' active' : '');
@@ -55,7 +62,11 @@ function renderProjectList() {
     item.innerHTML = `<span class="dot ${dotClass}"></span><span>${p.name}${typeLabel}</span><button class="remove" data-name="${p.name}">×</button>`;
     item.addEventListener('click', (e) => {
       if (e.target.classList.contains('remove')) return;
-      selectProject(p.name);
+      if (p.running && activeProject && activeProject.name === p.name) {
+        stopProject(p.name);
+      } else {
+        selectProject(p.name);
+      }
     });
     item.querySelector('.remove').addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -69,6 +80,7 @@ function renderProjectList() {
     });
     projectList.appendChild(item);
   });
+  stopAllBtn.disabled = !anyRunning;
 }
 
 async function selectProject(name, start = true) {
@@ -81,6 +93,7 @@ async function selectProject(name, start = true) {
 
   activeProject = { name, url: null, runType: null };
   renderProjectList();
+  openTabBtn.disabled = true;
 
   projectNameEl.textContent = name;
   projectTypeEl.textContent = '';
@@ -90,8 +103,12 @@ async function selectProject(name, start = true) {
   projectUrlEl.textContent = '';
 
   if (start) {
-    const result = await api(`/api/projects/${name}/select`, { method: 'POST' });
-    projects.forEach((p) => (p.running = false));
+    const result = await api(`/api/projects/${name}/select?autoStop=${autoStop}`, {
+      method: 'POST',
+    });
+    if (autoStop) {
+      projects.forEach((p) => (p.running = false));
+    }
 
     if (result.url) {
       const p = projects.find((x) => x.name === name);
@@ -103,7 +120,9 @@ async function selectProject(name, start = true) {
       activeProject.runType = result.runType;
       projectUrlEl.textContent = result.url;
       projectTypeEl.textContent = result.runType || '';
+      openTabBtn.disabled = false;
 
+      hideNotice();
       if (result.starting) {
         // Project is spawning — start loading the iframe immediately.
         // System log events from the server will update the status text
@@ -117,10 +136,15 @@ async function selectProject(name, start = true) {
     } else {
       setStatus('stopped', result.error || 'stopped');
       activeProject.url = null;
+      openTabBtn.disabled = true;
+      previewFrame.src = '';
+      showNotice(result.error || 'This project cannot be started');
     }
   } else {
     const status = await api(`/api/projects/${name}/status`);
-    projects.forEach((p) => (p.running = false));
+    if (autoStop) {
+      projects.forEach((p) => (p.running = false));
+    }
     if (status.running) {
       const p = projects.find((x) => x.name === name);
       if (p) p.running = true;
@@ -138,9 +162,58 @@ async function selectProject(name, start = true) {
   renderProjectList();
 }
 
+async function stopProject(name) {
+  const result = await api(`/api/projects/${name}/stop`, { method: 'POST' });
+  if (result.stopped) {
+    if (activeProject && activeProject.name === name) {
+      activeProject.url = null;
+      openTabBtn.disabled = true;
+      setStatus('stopped', 'stopped');
+      projectUrlEl.textContent = '';
+      previewFrame.src = '';
+      showNotice('stopped');
+    }
+    const p = projects.find((x) => x.name === name);
+    if (p) p.running = false;
+    renderProjectList();
+  }
+}
+
+async function stopAll() {
+  const result = await api('/api/projects/stop-all', { method: 'POST' });
+  if (result.stopped) {
+    // Clear active if it was among stopped projects
+    if (activeProject) {
+      const wasStopped = result.stopped.includes(activeProject.name);
+      if (wasStopped) {
+        activeProject.url = null;
+        openTabBtn.disabled = true;
+        setStatus('stopped', 'stopped');
+        projectUrlEl.textContent = '';
+        previewFrame.src = '';
+      }
+    }
+    projects.forEach((p) => {
+      if (result.stopped.includes(p.name)) p.running = false;
+    });
+    renderProjectList();
+  }
+}
+
 function setStatus(className, label) {
   projectStatusEl.className = className;
   projectStatusEl.textContent = label;
+}
+
+function showNotice(text) {
+  previewNoticeText.textContent = text;
+  previewNotice.classList.remove('hidden');
+  previewFrame.classList.add('hidden');
+}
+
+function hideNotice() {
+  previewNotice.classList.add('hidden');
+  previewFrame.classList.remove('hidden');
 }
 
 function showPlaceholder() {
@@ -175,6 +248,24 @@ openTabBtn.addEventListener('click', () => {
   }
 });
 
+stopAllBtn.addEventListener('click', async () => {
+  const runningCount = projects.filter((p) => p.running).length;
+  if (runningCount === 0) return;
+  await stopAll();
+  // Also stop the focused project
+  if (activeProject && activeProject.url) {
+    await stopProject(activeProject.name);
+  }
+});
+
+autoStopCheckbox.addEventListener('change', () => {
+  autoStop = autoStopCheckbox.checked;
+  if (autoStop) {
+    // Stop all background projects — keep only the active one
+    stopAll();
+  }
+});
+
 // ── SSE Event Handling ──
 
 const evtSource = new EventSource('/api/events');
@@ -202,6 +293,8 @@ evtSource.onmessage = (e) => {
           previewFrame.src = data.url;
         } else if (data.status === 'timeout') {
           setStatus('stopped', 'not responding');
+          previewFrame.src = '';
+          showNotice('not responding');
         }
         // Update project list to reflect run state
         loadProjects();
@@ -229,6 +322,8 @@ evtSource.onmessage = (e) => {
         projectUrlEl.textContent = '';
         previewFrame.src = '';
         activeProject.url = null;
+        openTabBtn.disabled = true;
+        showNotice(`exited (${data.code})`);
         loadProjects();
       }
       break;

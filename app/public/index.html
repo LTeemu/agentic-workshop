@@ -16,6 +16,14 @@
           <input type="text" id="new-project-name" placeholder="project-name" />
           <button id="add-project">+ Add</button>
         </div>
+        <label id="auto-stop-label">
+          <input type="checkbox" id="auto-stop" checked />
+          <span class="toggle-track">
+            <span class="toggle-knob"></span>
+          </span>
+          Auto-stop on switch
+        </label>
+        <button id="stop-all" class="sidebar-btn danger">Stop All</button>
       </aside>
       <main id="main">
         <div id="placeholder">
@@ -31,6 +39,9 @@
             <button id="open-tab">Open in Tab</button>
           </div>
           <div id="preview-frame-container">
+            <div id="preview-notice" class="hidden">
+              <span id="preview-notice-text"></span>
+            </div>
             <iframe
               id="preview-frame"
               title="Project preview"

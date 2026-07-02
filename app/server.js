@@ -97,7 +97,8 @@ function killPortOwner(port) {
   }
 }
 
-let active = null;
+let active = null; // The currently-focused project (shown in iframe)
+let runningProjects = {}; // All projects with live processes: { name: { port, child } }
 let sseClients = [];
 let activeWatcher = null;
 let projectsWatcher = null;
@@ -112,6 +113,10 @@ function getProjects() {
   } catch {
     return [];
   }
+}
+
+function isProjectRunning(name) {
+  return !!(runningProjects[name] && runningProjects[name].child);
 }
 
 // Deterministic port for a project — stable across project add/remove.
@@ -344,6 +349,7 @@ async function stopActive() {
   active = null;
   if (!prev) return;
 
+  delete runningProjects[prev.name];
   broadcastSSE({ type: 'project-exit', project: prev.name, code: 'stopped' });
 
   if (typeof prev.process.close === 'function') {
@@ -409,7 +415,7 @@ function startStaticServer(projectPath, port) {
   return server;
 }
 
-async function startProject(name) {
+async function startProject(name, { autoStop = true } = {}) {
   try {
     const projectPath = path.join(PROJECTS_DIR, name);
     if (!fs.existsSync(projectPath)) return { error: 'not found' };
@@ -417,7 +423,9 @@ async function startProject(name) {
     const port = projectPort(name);
 
     const prevName = active ? active.name : null;
-    await stopActive();
+    if (autoStop) {
+      await stopActive();
+    }
 
     // When restarting the same project (same port), give the OS a moment
     // to release the socket after the process exited.
@@ -509,6 +517,7 @@ async function startProject(name) {
 
     child.on('error', (err) => {
       pushLog(name, 'system', `Process error: ${err.message}`);
+      delete runningProjects[name];
       broadcastSSE({ type: 'project-exit', project: name, code: -1, error: err.message });
       console.error(`[${name}] Process error: ${err.message}`);
       if (active && active.name === name) {
@@ -518,13 +527,16 @@ async function startProject(name) {
 
     child.on('exit', (code) => {
       pushLog(name, 'system', `Process exited with code ${code}`);
+      delete runningProjects[name];
       broadcastSSE({ type: 'project-exit', project: name, code });
       if (active && active.name === name) {
         active = null;
       }
     });
 
-    // Register immediately so the process is tracked
+    // Track in runningProjects (all live processes regardless of autoStop)
+    runningProjects[name] = { port, child };
+    // Register as the active (focused) project
     active = { name, process: child, port, url, runType: run.type };
 
     // Poll for liveness before reporting success
@@ -698,8 +710,9 @@ async function handleAPI(req, res) {
     return json(res, {
       uptime: Date.now() - startTime,
       memory: { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal },
-      projects: { total: projects.length, running: active ? 1 : 0 },
+      projects: { total: projects.length, running: Object.keys(runningProjects).length },
       active: active ? { name: active.name, url: active.url, runType: active.runType } : null,
+      runningProjects: Object.keys(runningProjects),
       templates: getTemplates(),
     });
   }
@@ -716,11 +729,12 @@ async function handleAPI(req, res) {
           const projectPath = path.join(PROJECTS_DIR, name);
           const stat = fs.statSync(projectPath);
           const isActive = active && active.name === name;
+          const running = isProjectRunning(name);
           const run = isActive ? null : detectRun(projectPath);
           return {
             name,
             modified: stat.mtimeMs,
-            running: !!isActive,
+            running,
             url: isActive ? active.url : null,
             runType: isActive ? active.runType : run ? run.type : null,
           };
@@ -750,6 +764,22 @@ async function handleAPI(req, res) {
     }
   }
 
+  // Special: stop all background projects
+  if (parts[0] === 'api' && parts[1] === 'projects' && parts[2] === 'stop-all') {
+    if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
+    const names = Object.keys(runningProjects);
+    for (const n of names) {
+      if (active && active.name === n) continue; // keep the focused project
+      const entry = runningProjects[n];
+      if (entry) {
+        await killProcessTree(entry.child.pid, entry.child);
+        delete runningProjects[n];
+        broadcastSSE({ type: 'project-exit', project: n, code: 'stopped' });
+      }
+    }
+    return json(res, { stopped: names.filter((n) => !active || active.name !== n) });
+  }
+
   if (parts[0] === 'api' && parts[1] === 'projects' && parts[2]) {
     const name = parts[2];
     const projectPath = path.join(PROJECTS_DIR, name);
@@ -771,19 +801,63 @@ async function handleAPI(req, res) {
       try {
         fs.writeFileSync(ACTIVE_FILE, `projects/${name}`, 'utf-8');
       } catch {}
-      const result = await startProject(name);
+      const autoStop = url.searchParams.get('autoStop') !== 'false';
+
+      // If project is already running in background, just focus it — don't restart
+      if (isProjectRunning(name) && (!active || active.name !== name)) {
+        if (autoStop) {
+          await stopActive();
+        }
+        const entry = runningProjects[name];
+        active = {
+          name,
+          process: entry.child,
+          port: entry.port,
+          url: `http://localhost:${entry.port}`,
+          runType: null,
+        };
+        watchProject(name);
+        broadcastSSE({
+          type: 'project-status',
+          project: name,
+          status: 'running',
+          url: `http://localhost:${entry.port}`,
+        });
+        return json(res, { url: `http://localhost:${entry.port}`, runType: entry.runType || null });
+      }
+
+      const result = await startProject(name, { autoStop });
       if (result && !result.error) watchProject(name);
       return json(res, result || { error: 'unknown error' }, result && result.error ? 400 : 200);
+    }
+
+    if (parts[3] === 'stop') {
+      if (isProjectRunning(name)) {
+        if (active && active.name === name) {
+          await stopActive();
+        } else {
+          // Stop a background project that isn't the focused one
+          const entry = runningProjects[name];
+          if (entry) {
+            await killProcessTree(entry.child.pid, entry.child);
+            delete runningProjects[name];
+            broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
+          }
+        }
+        return json(res, { stopped: name });
+      }
+      return json(res, { error: 'not running' }, 400);
     }
 
     if (parts[3] === 'status' || !parts[3]) {
       const run = detectRun(projectPath);
       const isActive = active && active.name === name;
+      const running = isProjectRunning(name);
       return json(res, {
         name,
         exists: fs.existsSync(projectPath),
         active: isActive,
-        running: isActive,
+        running,
         url: isActive ? active.url : null,
         runType: isActive ? active.runType : run ? run.type : null,
         modified: fs.existsSync(projectPath) ? fs.statSync(projectPath).mtimeMs : null,
@@ -869,15 +943,21 @@ server.listen(PORT, () => {
   }
 
   if (projectName) {
-    console.log(`Auto-starting project: ${projectName}`);
-    startProject(projectName).then((result) => {
-      if (result && !result.error) {
-        watchProject(projectName);
-        console.log(`Project ${projectName} is ready at ${result.url}`);
-      } else if (result && result.error) {
-        console.error(`Failed to auto-start ${projectName}: ${result.error}`);
-      }
-    });
+    const projectPath = path.join(PROJECTS_DIR, projectName);
+    const run = fs.existsSync(projectPath) ? detectRun(projectPath) : null;
+    if (!run) {
+      console.log(`Project ${projectName} has no runnable entry point — skipping auto-start.`);
+    } else {
+      console.log(`Auto-starting project: ${projectName}`);
+      startProject(projectName).then((result) => {
+        if (result && !result.error) {
+          watchProject(projectName);
+          console.log(`Project ${projectName} is ready at ${result.url}`);
+        } else if (result && result.error) {
+          console.error(`Failed to auto-start ${projectName}: ${result.error}`);
+        }
+      });
+    }
   } else {
     console.log('No projects found — nothing to auto-start.');
   }
