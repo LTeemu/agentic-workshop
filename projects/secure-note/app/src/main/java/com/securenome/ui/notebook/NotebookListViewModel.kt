@@ -57,4 +57,14 @@ class NotebookListViewModel @Inject constructor(
             notebookRepository.deleteNotebook(notebook)
         }
     }
+
+    /**
+     * Persist a new manual ordering of notebooks.
+     * Called when the user finishes a drag-and-drop reorder.
+     */
+    fun reorderNotebooks(notebookIds: List<Long>) {
+        viewModelScope.launch {
+            notebookRepository.reorderNotebooks(notebookIds)
+        }
+    }
 }

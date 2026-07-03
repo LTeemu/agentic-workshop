@@ -33,7 +33,11 @@ object DatabaseModule {
             SecureNoteDatabase::class.java,
             "secure_note.db"
         )
-            .fallbackToDestructiveMigration() // Development: resets database on migration
+            .addMigrations(
+                SecureNoteDatabase.MIGRATION_1_2,
+                SecureNoteDatabase.MIGRATION_2_3,
+                SecureNoteDatabase.MIGRATION_3_4
+            )
             .build()
     }
 

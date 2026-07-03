@@ -20,6 +20,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SHARE_SERVER_URL", "\"http://10.0.2.2:3001\"")
     }
 
     buildTypes {
@@ -43,7 +44,12 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -61,6 +67,9 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Drag-to-reorder
+    implementation("sh.calvin.reorderable:reorderable:3.1.0")
 
     // Activity + Lifecycle
     implementation("androidx.activity:activity-compose:1.9.0")
@@ -86,7 +95,6 @@ dependencies {
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

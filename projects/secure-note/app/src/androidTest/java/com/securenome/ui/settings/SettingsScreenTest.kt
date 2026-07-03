@@ -38,14 +38,14 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun `settings screen shows biometric toggle`() {
+    fun `settings screen shows PIN lock toggle`() {
         composeTestRule.setContent {
             SecureNoteTheme {
                 SettingsScreen(onBack = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Biometric lock")
-            .assertExists("Biometric lock toggle must exist")
+        composeTestRule.onNodeWithText("PIN lock")
+            .assertExists("PIN lock toggle must exist")
     }
 }

@@ -24,13 +24,21 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NotebookDao {
 
-    /** Get all notebooks, newest first */
-    @Query("SELECT * FROM notebooks ORDER BY createdAt DESC")
+    /** Get all notebooks, ordered by manual sortOrder */
+    @Query("SELECT * FROM notebooks ORDER BY sortOrder ASC")
     fun getAllNotebooks(): Flow<List<NotebookEntity>>
 
     /** Get a single notebook by id */
     @Query("SELECT * FROM notebooks WHERE id = :id")
     suspend fun getNotebookById(id: Long): NotebookEntity?
+
+    /** Get the highest sortOrder in the table */
+    @Query("SELECT COALESCE(MAX(sortOrder), 0) FROM notebooks")
+    suspend fun getMaxSortOrder(): Int
+
+    /** Update a notebook's sortOrder */
+    @Query("UPDATE notebooks SET sortOrder = :sortOrder WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, sortOrder: Int)
 
     /** Insert a new notebook. Returns the created id. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

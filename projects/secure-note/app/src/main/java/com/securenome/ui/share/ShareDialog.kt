@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.OfflineBolt
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ fun ShareDialog(
     noteId: Long,
     currentShareCode: String?,
     isServerReachable: Boolean,
+    sharingEnabled: Boolean,
     onToggleShare: (noteId: Long, currentShareCode: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -90,6 +92,30 @@ fun ShareDialog(
                     )
                 }
 
+                // Disabled warning
+                if (!sharingEnabled) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Sharing is disabled in Settings",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Share toggle
@@ -105,7 +131,7 @@ fun ShareDialog(
                     Switch(
                         checked = currentShareCode != null,
                         onCheckedChange = { enabled ->
-                            if (!isLoading) {
+                            if (!isLoading && sharingEnabled) {
                                 isLoading = true
                                 scope.launch {
                                     onToggleShare(noteId, if (enabled) null else currentShareCode)
@@ -113,6 +139,7 @@ fun ShareDialog(
                                 }
                             }
                         },
+                        enabled = sharingEnabled,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -144,24 +171,19 @@ fun ShareDialog(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Copy button
-                    IconButton(
+                    TextButton(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(currentShareCode))
                         },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.ContentCopy,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Copy",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "Copy")
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))

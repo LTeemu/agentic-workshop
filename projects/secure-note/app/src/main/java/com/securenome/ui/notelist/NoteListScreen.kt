@@ -2,6 +2,7 @@ package com.securenome.ui.notelist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,19 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,14 +40,18 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +61,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.securenome.data.local.entity.NoteType
 import com.securenome.ui.share.ShareDialog
+import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * Shows all notes in a specific notebook.
@@ -71,7 +88,30 @@ fun NoteListScreen(
     viewModel: NoteListViewModel = hiltViewModel()
 ) {
     val notes by viewModel.noteSummaries.collectAsStateWithLifecycle()
+    val sharingEnabled by viewModel.sharingEnabled.collectAsStateWithLifecycle()
+
+    // Local mutable snapshot of notes used by the reorderable library.
+    // Synced from the ViewModel flow when no drag is active.
+    var isDragging by remember { mutableStateOf(false) }
+    var reorderableNotes by remember { mutableStateOf(notes) }
+    LaunchedEffect(notes) {
+        if (!isDragging) reorderableNotes = notes
+    }
+
+    val lazyListState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        reorderableNotes = reorderableNotes.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+    }
+
     var showTypeMenu by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var noteToDelete by remember { mutableStateOf<Long?>(null) }
+    var importCode by remember { mutableStateOf("") }
+    var isImporting by remember { mutableStateOf(false) }
+    var importError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     // Share dialog state
     var shareDialogNoteId by remember { mutableStateOf<Long?>(null) }
@@ -88,11 +128,136 @@ fun NoteListScreen(
             noteId = noteId,
             currentShareCode = shareDialogCode,
             isServerReachable = shareDialogServerReachable,
+            sharingEnabled = sharingEnabled,
             onToggleShare = { id, code ->
                 viewModel.toggleShare(id, code)
             },
             onDismiss = {
                 shareDialogNoteId = null
+            }
+        )
+    }
+
+    // Delete confirmation dialog
+    noteToDelete?.let { id ->
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete note?") },
+            text = { Text("This cannot be undone.") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.deleteNote(id)
+                    noteToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Import dialog
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isImporting) {
+                    showImportDialog = false
+                    importCode = ""
+                    importError = null
+                }
+            },
+            title = { Text("Import note") },
+            text = {
+                Column {
+                    if (!sharingEnabled) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Sharing is disabled in Settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Enter the share code",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = importCode,
+                        onValueChange = { importCode = it.uppercase().take(20) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("e.g. A3F9-K2B1") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        enabled = !isImporting && sharingEnabled
+                    )
+                    if (importError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = importError!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                    Button(
+                        onClick = {
+                            val valid = importCode.matches(Regex("^[A-Z0-9]{4}-[A-Z0-9]{4}$"))
+                            if (!valid) {
+                                importError = "Enter a valid code (e.g. A3F9-K2B1)"
+                                return@Button
+                            }
+                        isImporting = true
+                        importError = null
+                        scope.launch {
+                            try {
+                                viewModel.importNote(notebookId, importCode)
+                                showImportDialog = false
+                                importCode = ""
+                            } catch (e: Exception) {
+                                importError = e.message ?: "Import failed"
+                            } finally {
+                                isImporting = false
+                            }
+                        }
+                    },
+                    enabled = importCode.length >= 8 && !isImporting && sharingEnabled
+                ) {
+                    if (isImporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Import")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImportDialog = false
+                        importCode = ""
+                        importError = null
+                    },
+                    enabled = !isImporting
+                ) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -128,9 +293,9 @@ fun NoteListScreen(
                         leadingIcon = { Icon(Icons.Default.Checklist, null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Photo") },
-                        onClick = { showTypeMenu = false; onNewNote(NoteType.PHOTO) },
-                        leadingIcon = { Icon(Icons.Default.Photo, null) }
+                        text = { Text("Import") },
+                        onClick = { showTypeMenu = false; showImportDialog = true },
+                        leadingIcon = { Icon(Icons.Default.Cloud, null) }
                     )
                 }
                 FloatingActionButton(
@@ -142,47 +307,76 @@ fun NoteListScreen(
             }
         }
     ) { padding ->
-        if (notes.isEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "No notes",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Create one with the + button",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(notes, key = { it.id }) { note ->
-                    NoteCard(
-                        type = note.type,
-                        preview = note.preview,
-                        hasChecklist = note.hasChecklist,
-                        photoCount = note.photoCount,
-                        shareCode = note.shareCode,
-                        onClick = { onNoteClick(note.id) },
-                        onShare = {
-                            shareDialogNoteId = note.id
-                            shareDialogServerReachable = false
-                        },
-                        onDelete = { viewModel.deleteNote(note.id) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            if (reorderableNotes.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "No notes",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = "Create one with the + button",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(reorderableNotes, key = { it.id }) { note ->
+                        ReorderableItem(reorderableState, key = note.id) { isItemDragging ->
+                            val reorderScope = this
+                            NoteCard(
+                                type = note.type,
+                                preview = note.preview,
+                                hasChecklist = note.hasChecklist,
+                                photoCount = note.photoCount,
+                                shareCode = note.shareCode,
+                                onClick = { onNoteClick(note.id) },
+                                onShare = {
+                                    shareDialogNoteId = note.id
+                                    shareDialogServerReachable = false
+                                },
+                                onDelete = { noteToDelete = note.id },
+                                isDragging = isItemDragging,
+                                dragHandle = {
+                                    with(reorderScope) {
+                                        IconButton(
+                                            onClick = {},
+                                            modifier = Modifier.longPressDraggableHandle(
+                                                onDragStarted = { isDragging = true },
+                                                onDragStopped = {
+                                                    isDragging = false
+                                                    viewModel.reorderNotes(
+                                                        reorderableNotes.map { it.id }
+                                                    )
+                                                },
+                                            )
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DragHandle,
+                                                contentDescription = "Drag to reorder",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -198,22 +392,34 @@ private fun NoteCard(
     shareCode: String?,
     onClick: () -> Unit,
     onShare: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDragging: Boolean = false,
+    dragHandle: @Composable (() -> Unit)? = null
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDragging) 8.dp else 0.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(start = 4.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Drag handle (shown on long-press, signals reorderability)
+            if (dragHandle != null) {
+                dragHandle()
+            }
+
             val icon = when (type) {
                 NoteType.TEXT -> Icons.Default.Description
                 NoteType.CHECKLIST -> Icons.Default.Checklist
@@ -226,11 +432,12 @@ private fun NoteCard(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
+                val photoSuffix = if (photoCount > 0) " ($photoCount)" else ""
                 Text(
                     text = when (type) {
-                        NoteType.TEXT -> "Text"
-                        NoteType.CHECKLIST -> "Checklist" + if (hasChecklist) " ✓" else ""
-                        NoteType.PHOTO -> "Photo" + if (photoCount > 0) " ($photoCount)" else ""
+                        NoteType.TEXT -> "Text$photoSuffix"
+                        NoteType.CHECKLIST -> "Checklist" + (if (hasChecklist) " ✓" else "") + photoSuffix
+                        NoteType.PHOTO -> "Photo$photoSuffix"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,

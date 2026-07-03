@@ -1,11 +1,9 @@
 package com.securenome.data.share
 
 import android.content.Context
-import com.securenome.data.local.datastore.SettingsDataStore
 import com.securenome.security.CryptoManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -36,15 +34,10 @@ import javax.inject.Singleton
 class ShareManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val cryptoManager: CryptoManager,
-    private val shareApi: ShareApi,
-    private val settingsDataStore: SettingsDataStore
+    private val shareApi: ShareApi
 ) {
     private val shareDir: File
         get() = File(context.filesDir, "shares").also { it.mkdirs() }
-
-    companion object {
-        private const val LOCAL_CODE_PREFIX = "LOCAL-"
-    }
 
     @Serializable
     data class ShareBlob(
@@ -59,26 +52,18 @@ class ShareManager @Inject constructor(
      * @return The share code, or null on failure.
      */
     suspend fun createShare(noteData: ByteArray): String? = withContext(Dispatchers.IO) {
-        val serverEnabled = settingsDataStore.shareServerEnabled.first()
-
-        if (serverEnabled) {
-            shareApi.baseUrl = settingsDataStore.shareServerUrl.first()
-        }
-
         // Encrypt the note data
         val encryptedData = cryptoManager.encrypt(noteData)
         val base64Data = Base64.getEncoder().encodeToString(encryptedData)
 
         // Try server relay first
-        if (serverEnabled) {
-            val result = shareApi.createShare(base64Data)
-            if (result.isSuccess) {
-                val code = result.getOrThrow()
-                println("[ShareManager] Created server share: $code")
-                return@withContext code
-            }
-            println("[ShareManager] Server unavailable, falling back to local export")
+        val result = shareApi.createShare(base64Data)
+        if (result.isSuccess) {
+            val code = result.getOrThrow()
+            println("[ShareManager] Created server share: $code")
+            return@withContext code
         }
+        println("[ShareManager] Server unavailable, falling back to local export")
 
         // Fallback: local .securenome file
         val localCode = generateLocalCode()
@@ -102,35 +87,21 @@ class ShareManager @Inject constructor(
      * @return Decrypted note data, or null if not found.
      */
     suspend fun importShare(code: String): ByteArray? = withContext(Dispatchers.IO) {
-        val serverEnabled = settingsDataStore.shareServerEnabled.first()
-
-        if (serverEnabled) {
-            shareApi.baseUrl = settingsDataStore.shareServerUrl.first()
-        }
-
         // Try server relay first
-        if (serverEnabled && !code.startsWith(LOCAL_CODE_PREFIX)) {
-            val result = shareApi.getShare(code)
-            if (result.isSuccess) {
-                val base64Data = result.getOrThrow()
-                val encryptedData = Base64.getDecoder().decode(base64Data)
-                val decrypted = cryptoManager.decrypt(encryptedData)
-                println("[ShareManager] Imported from server: $code")
-                return@withContext decrypted
-            }
-            println("[ShareManager] Server fetch failed, trying local files")
+        val result = shareApi.getShare(code)
+        if (result.isSuccess) {
+            val base64Data = result.getOrThrow()
+            val encryptedData = Base64.getDecoder().decode(base64Data)
+            val decrypted = cryptoManager.decrypt(encryptedData)
+            println("[ShareManager] Imported from server: $code")
+            return@withContext decrypted
         }
+        println("[ShareManager] Server fetch failed, trying local files")
 
         // Fallback: look for local .securenome file
         try {
             val file = File(shareDir, "$code.securenome")
-            if (!file.exists()) {
-                // Try with prefix
-                val prefixedFile = File(shareDir, "$LOCAL_CODE_PREFIX$code.securenome")
-                if (!prefixedFile.exists()) return@withContext null
-                val blob = Json.decodeFromString<ShareBlob>(prefixedFile.readText())
-                return@withContext cryptoManager.decrypt(blob.encryptedNoteData)
-            }
+            if (!file.exists()) return@withContext null
             val blob = Json.decodeFromString<ShareBlob>(file.readText())
             cryptoManager.decrypt(blob.encryptedNoteData)
         } catch (e: Exception) {
@@ -143,32 +114,22 @@ class ShareManager @Inject constructor(
      * Revoke a share. Tries server and local cleanup.
      */
     suspend fun revokeShare(code: String) = withContext(Dispatchers.IO) {
-        val serverEnabled = settingsDataStore.shareServerEnabled.first()
-
-        if (serverEnabled) {
-            shareApi.baseUrl = settingsDataStore.shareServerUrl.first()
-            shareApi.revokeShare(code)
-        }
-
-        // Also clean up local files
+        shareApi.revokeShare(code)
+        // Also clean up local file
         File(shareDir, "$code.securenome").delete()
-        File(shareDir, "$LOCAL_CODE_PREFIX$code.securenome").delete()
     }
 
     /**
      * Check if the share server is reachable.
      */
     suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
-        val serverEnabled = settingsDataStore.shareServerEnabled.first()
-        if (!serverEnabled) return@withContext false
-        shareApi.baseUrl = settingsDataStore.shareServerUrl.first()
         shareApi.healthCheck().getOrDefault(false)
     }
 
     private fun generateLocalCode(): String {
         val random = SecureRandom()
         val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        fun pick() = chars[random.nextInt(chars.length)]
-        return "$LOCAL_CODE_PREFIX${pick()}${pick()}${pick()}${pick()}-${pick()}${pick()}${pick()}${pick()}"
+        fun pair() = "${chars[random.nextInt(chars.length)]}${chars[random.nextInt(chars.length)]}"
+        return "${pair()}${pair()}-${pair()}${pair()}"
     }
 }

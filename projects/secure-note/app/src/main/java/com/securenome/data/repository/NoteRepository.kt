@@ -1,5 +1,7 @@
 package com.securenome.data.repository
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.securenome.data.local.db.NoteDao
 import com.securenome.data.local.entity.ChecklistItemEntity
 import com.securenome.data.local.entity.NoteEntity
@@ -8,6 +10,7 @@ import com.securenome.data.local.entity.NoteWithDetails
 import com.securenome.data.local.entity.PhotoEntity
 import com.securenome.security.CryptoManager
 import kotlinx.coroutines.flow.Flow
+import java.io.ByteArrayOutputStream
 import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +33,9 @@ class NoteRepository @Inject constructor(
     fun getNoteById(noteId: Long): Flow<NoteWithDetails?> =
         noteDao.getNoteById(noteId)
 
+    private suspend fun nextSortOrder(notebookId: Long): Int =
+        noteDao.getMaxSortOrder(notebookId) + 1
+
     suspend fun createTextNote(
         notebookId: Long,
         plainText: String
@@ -38,7 +44,8 @@ class NoteRepository @Inject constructor(
         val note = NoteEntity(
             notebookId = notebookId,
             type = NoteType.TEXT,
-            encryptedContent = encrypted
+            encryptedContent = encrypted,
+            sortOrder = nextSortOrder(notebookId)
         )
         return noteDao.insertNote(note)
     }
@@ -64,7 +71,8 @@ class NoteRepository @Inject constructor(
             NoteEntity(
                 notebookId = notebookId,
                 type = NoteType.CHECKLIST,
-                encryptedContent = encrypted
+                encryptedContent = encrypted,
+                sortOrder = nextSortOrder(notebookId)
             )
         )
         // Insert checklist items
@@ -79,14 +87,19 @@ class NoteRepository @Inject constructor(
         return noteId
     }
 
-    suspend fun addChecklistItem(noteId: Long, text: String): Long {
+    suspend fun addChecklistItem(noteId: Long, text: String, isDone: Boolean = false): Long {
         return noteDao.insertChecklistItem(
             ChecklistItemEntity(
                 noteId = noteId,
-                encryptedText = cryptoManager.encrypt(text.toByteArray())
+                encryptedText = cryptoManager.encrypt(text.toByteArray()),
+                isDone = isDone
             )
         )
     }
+
+    /** Get all checklist items for a note (one-shot, not a Flow). */
+    suspend fun getChecklistItemEntities(noteId: Long): List<ChecklistItemEntity> =
+        noteDao.getChecklistItemEntities(noteId)
 
     suspend fun toggleChecklistItem(item: ChecklistItemEntity) {
         noteDao.updateChecklistItem(item.copy(isDone = !item.isDone))
@@ -96,16 +109,30 @@ class NoteRepository @Inject constructor(
         noteDao.deleteChecklistItem(item)
     }
 
+    suspend fun getChecklistItemEntityById(itemId: Long): ChecklistItemEntity? =
+        noteDao.getChecklistItemById(itemId)
+
     suspend fun deleteAllChecklistItems(noteId: Long) {
         noteDao.deleteAllChecklistItems(noteId)
     }
 
-    suspend fun addPhoto(noteId: Long, imageBytes: ByteArray): Long {
+    suspend fun createPhotoNote(notebookId: Long): Long {
+        val note = NoteEntity(
+            notebookId = notebookId,
+            type = NoteType.PHOTO,
+            encryptedContent = cryptoManager.encrypt(byteArrayOf()),
+            sortOrder = nextSortOrder(notebookId)
+        )
+        return noteDao.insertNote(note)
+    }
+
+    suspend fun addPhoto(noteId: Long, imageBytes: ByteArray, thumbnailBytes: ByteArray? = null): Long {
+        val thumb = thumbnailBytes ?: createThumbnail(imageBytes)
         return noteDao.insertPhoto(
             PhotoEntity(
                 noteId = noteId,
                 encryptedImageBytes = cryptoManager.encrypt(imageBytes),
-                thumbnailBytes = cryptoManager.encrypt(createThumbnail(imageBytes))
+                thumbnailBytes = cryptoManager.encrypt(thumb)
             )
         )
     }
@@ -114,6 +141,14 @@ class NoteRepository @Inject constructor(
         noteDao.deletePhoto(photo)
     }
 
+    /** Get all photo entities for a note. */
+    suspend fun getPhotoEntities(noteId: Long): List<PhotoEntity> =
+        noteDao.getPhotoEntities(noteId)
+
+    /** Get a single photo entity by ID. */
+    suspend fun getPhotoEntityById(photoId: Long): PhotoEntity? =
+        noteDao.getPhotoEntityById(photoId)
+
     suspend fun deleteNote(note: NoteEntity) {
         noteDao.deleteNote(note)
     }
@@ -121,6 +156,16 @@ class NoteRepository @Inject constructor(
     /** Get a single note entity one-shot (not a Flow). */
     suspend fun getNoteEntityById(noteId: Long): NoteEntity? =
         noteDao.getNoteEntityById(noteId)
+
+    /**
+     * Reorder notes by assigning sequential sortOrder values.
+     * The list of note IDs defines the new order (first = lowest sortOrder).
+     */
+    suspend fun reorderNotes(noteIds: List<Long>) {
+        for ((index, noteId) in noteIds.withIndex()) {
+            noteDao.updateSortOrder(noteId, index)
+        }
+    }
 
     suspend fun revokeShareCode(noteId: Long) {
         noteDao.updateShareCode(noteId, null)
@@ -149,12 +194,44 @@ class NoteRepository @Inject constructor(
         return token
     }
 
-    private fun createThumbnail(imageBytes: ByteArray): ByteArray {
-        // Simple thumbnail: use original image at reduced size.
-        // In a real app, this would scale the Bitmap.
-        // On Android, this is done via BitmapFactory.decodeByteArray +
-        // Bitmap.createScaledBitmap + ByteArrayOutputStream.
-        // For simplicity, return the original imageBytes.
-        return imageBytes
+    /**
+     * Create a thumbnail by scaling the image to max 256px on the longest edge.
+     *
+     * Uses [BitmapFactory] to decode the original image and [Bitmap.createScaledBitmap]
+     * to downscale. Keeps aspect ratio. Returns JPEG-compressed bytes.
+     */
+    fun createThumbnail(imageBytes: ByteArray): ByteArray {
+        // First decode just the bounds to calculate scale
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
+
+        val origWidth = options.outWidth
+        val origHeight = options.outHeight
+        if (origWidth <= 0 || origHeight <= 0) return imageBytes
+
+        val maxThumbSize = 256
+        val scale = maxOf(origWidth, origHeight).toFloat() / maxThumbSize
+        val thumbWidth = (origWidth / scale).toInt().coerceAtLeast(1)
+        val thumbHeight = (origHeight / scale).toInt().coerceAtLeast(1)
+
+        // Decode full image
+        val fullBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            ?: return imageBytes
+
+        // Scale down
+        val thumbBitmap = Bitmap.createScaledBitmap(fullBitmap, thumbWidth, thumbHeight, true)
+
+        // Compress to JPEG
+        val outputStream = ByteArrayOutputStream()
+        thumbBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        val result = outputStream.toByteArray()
+
+        // Recycle to free memory
+        thumbBitmap.recycle()
+        fullBitmap.recycle()
+
+        return result
     }
 }

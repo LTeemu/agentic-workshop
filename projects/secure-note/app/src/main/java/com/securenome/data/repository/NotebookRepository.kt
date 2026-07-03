@@ -2,8 +2,6 @@ package com.securenome.data.repository
 
 import com.securenome.data.local.db.NotebookDao
 import com.securenome.data.local.entity.NotebookEntity
-import com.securenome.data.local.entity.NoteEntity
-import com.securenome.data.local.entity.NoteType
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,11 +28,22 @@ class NotebookRepository @Inject constructor(
     suspend fun getNotebook(id: Long): NotebookEntity? = notebookDao.getNotebookById(id)
 
     suspend fun createNotebook(title: String): Long {
-        val notebook = NotebookEntity(title = title)
+        val nextSortOrder = notebookDao.getMaxSortOrder() + 1
+        val notebook = NotebookEntity(title = title, sortOrder = nextSortOrder)
         return notebookDao.insert(notebook)
     }
 
     suspend fun updateNotebook(notebook: NotebookEntity) = notebookDao.update(notebook)
 
     suspend fun deleteNotebook(notebook: NotebookEntity) = notebookDao.delete(notebook)
+
+    /**
+     * Reorder notebooks to match the given list of IDs.
+     * Assigns sequential sortOrder values (0, 1, 2...) preserving the order of [notebookIds].
+     */
+    suspend fun reorderNotebooks(notebookIds: List<Long>) {
+        notebookIds.forEachIndexed { index, id ->
+            notebookDao.updateSortOrder(id, index)
+        }
+    }
 }

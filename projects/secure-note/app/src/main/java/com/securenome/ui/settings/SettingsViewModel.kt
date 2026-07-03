@@ -6,6 +6,7 @@ import com.securenome.data.local.datastore.SettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,21 +25,48 @@ class SettingsViewModel @Inject constructor(
     private val settingsDataStore: SettingsDataStore
 ) : ViewModel() {
 
-    val biometricRequired: StateFlow<Boolean> =
-        settingsDataStore.biometricRequired
+    val pinRequired: StateFlow<Boolean> =
+        settingsDataStore.pinRequired
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val pinHash: StateFlow<String?> =
+        settingsDataStore.pinHash
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val darkTheme: StateFlow<Boolean> =
         settingsDataStore.darkTheme
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    val shareServerEnabled: StateFlow<Boolean> =
-        settingsDataStore.shareServerEnabled
+    val sharingEnabled: StateFlow<Boolean> =
+        settingsDataStore.sharingEnabled
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    fun toggleBiometric(enabled: Boolean) {
+    /** Hash a PIN with SHA-256 and return hex string */
+    fun hashPin(pin: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        return digest.digest(pin.toByteArray()).joinToString("") { "%02x".format(it) }
+    }
+
+    /** Enable PIN lock and store the hash */
+    fun enablePinLock(pin: String) {
         viewModelScope.launch {
-            settingsDataStore.setBiometricRequired(enabled)
+            val hash = hashPin(pin)
+            settingsDataStore.setPinHash(hash)
+            settingsDataStore.setPinRequired(true)
+        }
+    }
+
+    /** Verify a PIN against the stored hash */
+    suspend fun verifyPin(pin: String): Boolean {
+        val hash = settingsDataStore.pinHash.first() ?: return false
+        return hashPin(pin) == hash
+    }
+
+    /** Disable PIN lock and clear hash */
+    fun disablePinLock() {
+        viewModelScope.launch {
+            settingsDataStore.clearPinHash()
+            settingsDataStore.setPinRequired(false)
         }
     }
 
@@ -48,9 +76,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun toggleShareServer(enabled: Boolean) {
+    fun toggleSharing(enabled: Boolean) {
         viewModelScope.launch {
-            settingsDataStore.setShareServerEnabled(enabled)
+            settingsDataStore.setSharingEnabled(enabled)
         }
     }
 }

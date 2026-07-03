@@ -1,12 +1,8 @@
 package com.securenome.security
 
-import android.app.Application
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.securenome.data.local.datastore.SettingsDataStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,70 +12,56 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Manages automatic app locking.
+ * Manages automatic app locking via PIN.
  *
  * ## How does this work?
  *
- * 1. Registers with ProcessLifecycleOwner to listen for lifecycle events
- * 2. When the app goes to background (onStop), sets `isLocked = true`
- * 3. When the app returns to foreground (onStart), checks:
- *    - Is biometric lock enabled in settings?
- *    - If yes → show BiometricPrompt
- *    - If no → open directly
+ * Observes the Activity lifecycle directly. On every `ON_STOP` (background
+ * or config change) the `authenticated` flag is cleared. On every `ON_RESUME`,
+ * if PIN lock is enabled and the user hasn't authenticated yet in this
+ * session, the PinEntryScreen should be shown.
  *
- * ## Why ProcessLifecycleOwner instead of Activity lifecycle?
- *
- * ProcessLifecycleOwner tracks the entire app process, not a single
- * Activity. This works correctly even when the user switches
- * to another app (not just another Activity).
+ * This means:
+ * - **Cold start**: `authenticated` starts false → prompt on first resume
+ * - **Background return**: `ON_STOP` clears flag → prompt on next resume
+ * - **Config change**: `ON_STOP` clears flag → prompt shows again (acceptable)
  *
  * ## Default: lock is OFF.
  *
  * The user enables it in settings (SettingsScreen).
  *
- * @see SettingsDataStore.biometricRequired
+ * @see SettingsDataStore.pinRequired
  */
 @Singleton
 class AppLockManager @Inject constructor(
-    @ApplicationContext private val context: android.content.Context,
-    private val settingsDataStore: SettingsDataStore,
-    private val biometricAuth: BiometricAuth
+    private val settingsDataStore: SettingsDataStore
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    /** Is the app currently locked? */
-    @Volatile
-    var isLocked: Boolean = false
-        private set
+    /** Has the user authenticated in this process session? */
+    private var authenticated: Boolean = false
 
     /** Callback set by UI: what to do when lock is required */
     var onLockRequired: (() -> Unit)? = null
 
-    /** Callback set by UI: what to do when lock is removed */
-    var onUnlocked: (() -> Unit)? = null
-
     /**
-     * Start lifecycle observation.
-     * Call this in Application.onCreate() or MainActivity.onCreate().
+     * Observe an Activity's lifecycle for lock/unlock events.
+     * Call this from the Activity's onCreate().
      */
-    fun startObserving() {
-        ProcessLifecycleOwner.get().lifecycle.addObserver(
-            LifecycleEventObserver { source: LifecycleOwner, event: Lifecycle.Event ->
+    fun observe(lifecycle: Lifecycle) {
+        lifecycle.addObserver(
+            LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_STOP -> {
-                        // App went to background
                         scope.launch {
-                            val biometricEnabled = settingsDataStore.biometricRequired.first()
-                            if (biometricEnabled) {
-                                isLocked = true
+                            if (settingsDataStore.pinRequired.first()) {
+                                authenticated = false
                             }
                         }
                     }
-                    Lifecycle.Event.ON_START -> {
-                        // App returned to foreground
+                    Lifecycle.Event.ON_RESUME -> {
                         scope.launch {
-                            val biometricEnabled = settingsDataStore.biometricRequired.first()
-                            if (biometricEnabled && isLocked) {
+                            if (!authenticated && settingsDataStore.pinRequired.first()) {
                                 onLockRequired?.invoke()
                             }
                         }
@@ -90,9 +72,8 @@ class AppLockManager @Inject constructor(
         )
     }
 
-    /** Mark the app as unlocked after successful authentication */
+    /** Mark the app as unlocked after successful PIN entry */
     fun unlock() {
-        isLocked = false
-        onUnlocked?.invoke()
+        authenticated = true
     }
 }

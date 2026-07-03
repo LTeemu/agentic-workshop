@@ -31,16 +31,21 @@ class SettingsDataStore @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     companion object {
-        val BIOMETRIC_REQUIRED = booleanPreferencesKey("biometric_required")
+        val PIN_REQUIRED = booleanPreferencesKey("pin_required")
+        val PIN_HASH = stringPreferencesKey("pin_hash")
         val DEFAULT_NOTEBOOK_NAME = stringPreferencesKey("default_notebook_name")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
-        val SHARE_SERVER_ENABLED = booleanPreferencesKey("share_server_enabled")
-        val SHARE_SERVER_URL = stringPreferencesKey("share_server_url")
+        val SHARING_ENABLED = booleanPreferencesKey("sharing_enabled")
     }
 
-    /** Is biometric authentication enabled. Default: false. */
-    val biometricRequired: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[BIOMETRIC_REQUIRED] ?: false
+    /** Is PIN lock enabled. Default: false. */
+    val pinRequired: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PIN_REQUIRED] ?: false
+    }
+
+    /** SHA-256 hash of the PIN (hex string). Null if not set. */
+    val pinHash: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[PIN_HASH]
     }
 
     /** Is dark mode enabled. Default: false = follows system. */
@@ -48,14 +53,9 @@ class SettingsDataStore @Inject constructor(
         prefs[DARK_THEME] ?: false
     }
 
-    /** Share via server relay. Default: true. */
-    val shareServerEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[SHARE_SERVER_ENABLED] ?: true
-    }
-
-    /** Custom share server URL. Default: localhost for development. */
-    val shareServerUrl: Flow<String> = dataStore.data.map { prefs ->
-        prefs[SHARE_SERVER_URL] ?: "http://10.0.2.2:3001" // Android emulator -> host localhost
+    /** Master sharing toggle. Default: true. When off, all sharing is blocked. */
+    val sharingEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[SHARING_ENABLED] ?: true
     }
 
     /** Default notebook name. */
@@ -63,10 +63,24 @@ class SettingsDataStore @Inject constructor(
         prefs[DEFAULT_NOTEBOOK_NAME] ?: "My notebook"
     }
 
-    /** Enable/disable biometric authentication */
-    suspend fun setBiometricRequired(enabled: Boolean) {
+    /** Enable/disable PIN lock */
+    suspend fun setPinRequired(enabled: Boolean) {
         dataStore.edit { prefs ->
-            prefs[BIOMETRIC_REQUIRED] = enabled
+            prefs[PIN_REQUIRED] = enabled
+        }
+    }
+
+    /** Store the SHA-256 hash of the PIN */
+    suspend fun setPinHash(hash: String) {
+        dataStore.edit { prefs ->
+            prefs[PIN_HASH] = hash
+        }
+    }
+
+    /** Clear the stored PIN hash */
+    suspend fun clearPinHash() {
+        dataStore.edit { prefs ->
+            prefs.remove(PIN_HASH)
         }
     }
 
@@ -77,17 +91,10 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
-    /** Enable/disable server relay sharing */
-    suspend fun setShareServerEnabled(enabled: Boolean) {
+    /** Enable/disable the master sharing toggle */
+    suspend fun setSharingEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
-            prefs[SHARE_SERVER_ENABLED] = enabled
-        }
-    }
-
-    /** Set custom share server URL */
-    suspend fun setShareServerUrl(url: String) {
-        dataStore.edit { prefs ->
-            prefs[SHARE_SERVER_URL] = url
+            prefs[SHARING_ENABLED] = enabled
         }
     }
 

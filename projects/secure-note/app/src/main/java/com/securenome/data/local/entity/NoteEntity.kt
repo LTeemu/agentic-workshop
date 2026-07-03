@@ -52,5 +52,7 @@ data class NoteEntity(
     val encryptedContent: ByteArray,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val shareCode: String? = null
+    val shareCode: String? = null,
+    /** User-defined sort order (0-based, lower = first). Defaults to 0. */
+    val sortOrder: Int = 0
 )

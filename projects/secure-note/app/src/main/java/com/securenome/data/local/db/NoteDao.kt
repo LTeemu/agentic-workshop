@@ -22,9 +22,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NoteDao {
 
-    /** Get all notes in a notebook, most recently updated first */
+    /** Get all notes in a notebook, ordered by user-defined sort order */
     @Transaction
-    @Query("SELECT * FROM notes WHERE notebookId = :notebookId ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM notes WHERE notebookId = :notebookId ORDER BY sortOrder ASC")
     fun getNotesByNotebook(notebookId: Long): Flow<List<NoteWithDetails>>
 
     /** Get a single note with all its details */
@@ -55,10 +55,26 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :noteId")
     suspend fun getNoteEntityById(noteId: Long): NoteEntity?
 
+    // --- Sorting ---
+
+    /** Get the highest sortOrder for a notebook. */
+    @Query("SELECT COALESCE(MAX(sortOrder), -1) FROM notes WHERE notebookId = :notebookId")
+    suspend fun getMaxSortOrder(notebookId: Long): Int
+
+    /** Update a single note's sortOrder. */
+    @Query("UPDATE notes SET sortOrder = :sortOrder WHERE id = :noteId")
+    suspend fun updateSortOrder(noteId: Long, sortOrder: Int)
+
     // --- Checklist CRUD ---
 
     @Query("SELECT * FROM checklist_items WHERE noteId = :noteId")
     fun getChecklistItems(noteId: Long): Flow<List<ChecklistItemEntity>>
+
+    @Query("SELECT * FROM checklist_items WHERE id = :itemId")
+    suspend fun getChecklistItemById(itemId: Long): ChecklistItemEntity?
+
+    @Query("SELECT * FROM checklist_items WHERE noteId = :noteId")
+    suspend fun getChecklistItemEntities(noteId: Long): List<ChecklistItemEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChecklistItem(item: ChecklistItemEntity): Long
@@ -76,6 +92,12 @@ interface NoteDao {
 
     @Query("SELECT * FROM photos WHERE noteId = :noteId")
     fun getPhotos(noteId: Long): Flow<List<PhotoEntity>>
+
+    @Query("SELECT * FROM photos WHERE noteId = :noteId")
+    suspend fun getPhotoEntities(noteId: Long): List<PhotoEntity>
+
+    @Query("SELECT * FROM photos WHERE id = :photoId")
+    suspend fun getPhotoEntityById(photoId: Long): PhotoEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: PhotoEntity): Long

@@ -1,5 +1,6 @@
 package com.securenome.data.share
 
+import com.securenome.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -46,9 +47,8 @@ class ShareApi @Inject constructor() {
     private val json = Json { ignoreUnknownKeys = true }
     private val mediaType = "application/json".toMediaType()
 
-    /** Base URL for the share server. Updated by ShareManager from settings. */
-    @Volatile
-    var baseUrl: String = "http://10.0.2.2:3001" // emulator → host default
+    /** Base URL for the share server. Set at compile time via BuildConfig. */
+    private val baseUrl: String = BuildConfig.SHARE_SERVER_URL
 
     /**
      * Upload an encrypted blob and get a share code.

@@ -1,23 +1,35 @@
 package com.securenome.ui.editor
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -40,21 +53,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.securenome.data.local.entity.NoteType
+import java.io.File
 
 /**
  * Note editor.
  *
  * Adapts the UI based on noteType:
- * - TEXT → OutlinedTextField for free text
- * - CHECKLIST → interactive checklist with add/toggle/delete
- * - PHOTO → text field placeholder (image capture not yet implemented)
+ * - TEXT → OutlinedTextField for free text + photo capture/grid
+ * - CHECKLIST → interactive checklist + photo capture/grid
+ * - PHOTO (legacy) → text field + photo capture/grid
+ *
+ * Photos can be added to any note type — there's no standalone PHOTO type.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,38 +103,16 @@ fun NoteEditorScreen(
         }
     }
 
-    var textContent by remember { mutableStateOf(state.content) }
-    // Sync content from state when loading
-    LaunchedEffect(state.content) {
-        if (state.content.isNotEmpty() && textContent.isEmpty()) {
-            textContent = state.content
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(noteId?.let { "Edit" } ?: "New note") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        viewModel.saveOnBack()
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            viewModel.saveTextNote(textContent)
-                        },
-                        enabled = !state.isSaving
-                    ) {
-                        if (state.isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.height(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(Icons.Default.Save, contentDescription = "Save")
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -135,16 +135,33 @@ fun NoteEditorScreen(
         } else {
             when (state.noteType) {
                 NoteType.TEXT -> TextEditor(
-                    content = textContent,
-                    onContentChange = { textContent = it },
+                    content = state.content,
+                    onContentChange = { viewModel.onTextChanged(it) },
+                    photos = state.photos,
+                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
+                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
+                    onDeletePhoto = { id -> viewModel.deletePhoto(id) },
                     modifier = Modifier.padding(padding)
                 )
-                NoteType.PHOTO -> PhotoPlaceholder(modifier = Modifier.padding(padding))
                 NoteType.CHECKLIST -> ChecklistEditor(
                     items = state.checklistItems,
                     onAddItem = viewModel::addChecklistItem,
                     onToggleItem = viewModel::toggleChecklistItem,
                     onDeleteItem = viewModel::deleteChecklistItem,
+                    photos = state.photos,
+                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
+                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
+                    onDeletePhoto = { id -> viewModel.deletePhoto(id) },
+                    modifier = Modifier.padding(padding)
+                )
+                // Legacy PHOTO notes — show as text editor with photos
+                NoteType.PHOTO -> TextEditor(
+                    content = state.content,
+                    onContentChange = { viewModel.onTextChanged(it) },
+                    photos = state.photos,
+                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
+                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
+                    onDeletePhoto = { id -> viewModel.deletePhoto(id) },
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -156,11 +173,16 @@ fun NoteEditorScreen(
 private fun TextEditor(
     content: String,
     onContentChange: (String) -> Unit,
+    photos: List<PhotoUi>,
+    onCapturePhoto: (Uri) -> Unit,
+    onPickPhoto: (Uri) -> Unit,
+    onDeletePhoto: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         OutlinedTextField(
@@ -168,9 +190,20 @@ private fun TextEditor(
             onValueChange = onContentChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .heightIn(min = 200.dp),
             placeholder = { Text("Write your note...") },
             textStyle = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+
+        PhotoSection(
+            photos = photos,
+            onCapturePhoto = onCapturePhoto,
+            onPickPhoto = onPickPhoto,
+            onDeletePhoto = onDeletePhoto
         )
     }
 }
@@ -181,6 +214,10 @@ private fun ChecklistEditor(
     onAddItem: (String) -> Unit,
     onToggleItem: (Long) -> Unit,
     onDeleteItem: (Long) -> Unit,
+    photos: List<PhotoUi>,
+    onCapturePhoto: (Uri) -> Unit,
+    onPickPhoto: (Uri) -> Unit,
+    onDeletePhoto: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var newItemText by remember { mutableStateOf("") }
@@ -188,6 +225,7 @@ private fun ChecklistEditor(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         // Add new item row
@@ -217,7 +255,7 @@ private fun ChecklistEditor(
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider()
 
-        // Item list
+        // Item list (non-lazy — small count fits in scrollable column)
         if (items.isEmpty()) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
@@ -227,11 +265,8 @@ private fun ChecklistEditor(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(items, key = { it.id }) { item ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items.forEach { item ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -263,34 +298,178 @@ private fun ChecklistEditor(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+
+        PhotoSection(
+            photos = photos,
+            onCapturePhoto = onCapturePhoto,
+            onPickPhoto = onPickPhoto,
+            onDeletePhoto = onDeletePhoto
+        )
     }
 }
 
+/**
+ * Photo capture buttons + thumbnail grid, meant to be embedded inside
+ * other editors (text, checklist) so any note can have both content and photos.
+ */
 @Composable
-private fun PhotoPlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.Photo,
-                contentDescription = null,
-                modifier = Modifier.height(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+private fun PhotoSection(
+    photos: List<PhotoUi>,
+    onCapturePhoto: (Uri) -> Unit,
+    onPickPhoto: (Uri) -> Unit,
+    onDeletePhoto: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraPermissionDenied by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && currentPhotoUri != null) {
+            onCapturePhoto(currentPhotoUri!!)
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraPermissionDenied = false
+            val file = File(
+                context.filesDir,
+                "photos/${System.currentTimeMillis()}.jpg"
+            ).apply { parentFile?.mkdirs() }
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            currentPhotoUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            cameraPermissionDenied = true
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onPickPhoto(it) }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Action buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    if (cameraPermissionDenied) return@OutlinedButton
+                    val permission = Manifest.permission.CAMERA
+                    if (ContextCompat.checkSelfPermission(context, permission) ==
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        val file = File(
+                            context.filesDir,
+                            "photos/${System.currentTimeMillis()}.jpg"
+                        ).apply { parentFile?.mkdirs() }
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file
+                        )
+                        currentPhotoUri = uri
+                        cameraLauncher.launch(uri)
+                    } else {
+                        cameraPermissionLauncher.launch(permission)
+                    }
+                },
+                enabled = !cameraPermissionDenied,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Camera")
+            }
+            Button(
+                onClick = { galleryLauncher.launch("image/*") },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gallery")
+            }
+        }
+
+        if (cameraPermissionDenied) {
             Text(
-                text = "Photo notes",
-                style = MaterialTheme.typography.titleMedium
+                text = "Camera permission denied — enable it in Settings",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Photo capture is not yet supported.\nUse the text editor for now.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+        }
+
+        // Photo grid (non-lazy to avoid nested scrolling issues)
+        if (photos.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                photos.chunked(2).forEach { rowPhotos ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowPhotos.forEach { photo ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                            ) {
+                                val bitmap = remember(photo.thumbnailBytes) {
+                                    BitmapFactory.decodeByteArray(
+                                        photo.thumbnailBytes,
+                                        0,
+                                        photo.thumbnailBytes.size
+                                    )
+                                }
+                                if (bitmap != null) {
+                                    androidx.compose.foundation.Image(
+                                        bitmap = bitmap.asImageBitmap(),
+                                        contentDescription = "Photo",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { onDeletePhoto(photo.id) },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete photo",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+                        // Fill empty slot in the last row if odd count
+                        if (rowPhotos.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
         }
     }
 }
