@@ -26,14 +26,14 @@ class SettingsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `settings screen shows turvallisuus section`() {
+    fun `settings screen shows security section`() {
         composeTestRule.setContent {
             SecureNoteTheme {
                 SettingsScreen(onBack = {})
             }
         }
 
-        composeTestRule.onNodeWithText("Turvallisuus")
+        composeTestRule.onNodeWithText("Security")
             .assertExists("Security section title must be displayed")
     }
 
@@ -45,7 +45,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Biometrinen lukitus")
+        composeTestRule.onNodeWithText("Biometric lock")
             .assertExists("Biometric lock toggle must exist")
     }
 }

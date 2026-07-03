@@ -99,7 +99,7 @@ class CryptoManager @Inject constructor() {
     fun encrypt(data: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
-        val iv = cipher.iv  // 12 tavua
+        val iv = cipher.iv  // 12 bytes
         val encrypted = cipher.doFinal(data) // contains data + tag (GCM)
         return iv + encrypted
     }
