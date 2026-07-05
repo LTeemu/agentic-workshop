@@ -291,6 +291,7 @@ evtSource.onmessage = (e) => {
           setStatus('running', 'running');
           projectUrlEl.textContent = data.url;
           previewFrame.src = data.url;
+          hideNotice();
         } else if (data.status === 'timeout') {
           setStatus('stopped', 'not responding');
           previewFrame.src = '';
@@ -302,17 +303,24 @@ evtSource.onmessage = (e) => {
       break;
 
     case 'log':
-      // Show system log lines as real-time status during transitional states.
-      // Don't overwrite definitive terminal states (running, stopped).
-      if (
-        activeProject &&
-        activeProject.name === data.project &&
-        data.stream === 'system' &&
-        projectStatusEl.className !== 'running' &&
-        projectStatusEl.className !== 'stopped'
-      ) {
+      // Show system log lines as real-time progress during startup.
+      // Display them prominently in the notice area (large centered overlay)
+      // and also in the compact status badge.
+      if (activeProject && activeProject.name === data.project && data.stream === 'system') {
         const lastLine = data.lines[data.lines.length - 1];
-        if (lastLine) projectStatusEl.textContent = lastLine;
+        if (lastLine) {
+          if (projectStatusEl.className !== 'running' && projectStatusEl.className !== 'stopped') {
+            // Update the compact status badge
+            projectStatusEl.textContent = lastLine;
+            // Show progress in the large central notice area during startup
+            previewNoticeText.textContent = lastLine;
+            previewNotice.classList.remove('hidden');
+            previewFrame.classList.add('hidden');
+          } else if (projectStatusEl.className === 'running') {
+            // Project is running — just update the badge for post-startup logs
+            projectStatusEl.textContent = lastLine;
+          }
+        }
       }
       break;
 

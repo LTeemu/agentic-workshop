@@ -204,6 +204,97 @@ function runNpmInstall(projectPath, name) {
   });
 }
 
+/**
+ * Runs `npm run build` in the given project directory, streaming output to logs.
+ * @param {string} projectPath
+ * @param {string} name - project name for log tagging
+ * @returns {Promise<void>}
+ */
+function runNpmBuild(projectPath, name) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('npm', ['run', 'build'], { cwd: projectPath, stdio: 'pipe', shell: true });
+    child.stdout.on('data', (d) => pushLog(name, 'stdout', d.toString()));
+    child.stderr.on('data', (d) => pushLog(name, 'stderr', d.toString()));
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`npm run build exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
+/**
+ * Returns true if common build output directories exist for the project.
+ * Used to determine if a project needs to be built before starting.
+ *
+ * Covers:
+ *   - dist/  — standard for most bundlers (Vite, webpack, etc.)
+ *   - build/ — common alternative (create-react-app, etc.)
+ *   - .next/BUILD_ID — Next.js production build only (next dev creates
+ *     .next/ without BUILD_ID; next start needs the production artifact)
+ * @param {string} projectPath
+ * @returns {boolean}
+ */
+function hasBuildOutput(projectPath) {
+  if (fs.existsSync(path.join(projectPath, 'dist'))) return true;
+  if (fs.existsSync(path.join(projectPath, 'build'))) return true;
+  // Only count .next/ as build output when BUILD_ID exists (production build)
+  if (fs.existsSync(path.join(projectPath, '.next', 'BUILD_ID'))) return true;
+  return false;
+}
+
+/**
+ * Returns workspace file: dependencies from a package.json.
+ * These are `file:`-protocol deps that point to another project in the
+ * projects/ directory. They must be built before the main project can start.
+ * Also scans devDependencies and peerDependencies for completeness.
+ * @param {string} projectPath
+ * @param {object} pkg - parsed package.json
+ * @returns {Array<{name: string, path: string}>}
+ */
+function getFileDependencies(projectPath, pkg) {
+  const result = [];
+  const seen = new Set();
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
+  for (const [depName, depVersion] of Object.entries(deps)) {
+    if (typeof depVersion === 'string' && depVersion.startsWith('file:')) {
+      if (seen.has(depName)) continue;
+      seen.add(depName);
+      const depPath = path.resolve(projectPath, depVersion.slice(5));
+      if (depPath.startsWith(PROJECTS_DIR)) {
+        result.push({ name: depName, path: depPath });
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Try to find the binary for a simple npm script in node_modules/.bin/.
+ * For simple scripts like "next dev" or "vite" this returns the full path
+ * to the .cmd file, allowing direct invocation that bypasses npm's PATH
+ * management. This is more reliable on Windows when node_modules has been
+ * moved (e.g. after unzipping) because .cmd files use %~dp0 which is
+ * relative to their own location.
+ *
+ * Returns null for complex scripts containing shell operators (&&, |, ;)
+ * or when the .cmd file doesn't exist.
+ *
+ * @param {string} projectPath
+ * @param {string} script - the npm script content (e.g. "next dev")
+ * @returns {string|null} full path to .cmd file, or null
+ */
+function tryResolveBin(projectPath, script) {
+  const parts = script.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return null;
+  // Only handle simple binary invocations — skip if there are shell operators
+  if (/[&|;<>]/.test(script)) return null;
+  const binName = parts[0];
+  const cmdPath = path.join(projectPath, 'node_modules', '.bin', `${binName}.cmd`);
+  if (fs.existsSync(cmdPath)) return cmdPath;
+  return null;
+}
+
 function pushLog(name, stream, text) {
   if (!projectLogs[name]) projectLogs[name] = [];
   const lines = text.split('\n').filter(Boolean);
@@ -466,6 +557,92 @@ async function startProject(name, { autoStop = true } = {}) {
         } catch (err) {
           pushLog(name, 'system', `npm install failed: ${err.message}`);
           return { error: `npm install failed: ${err.message}` };
+        }
+      }
+    }
+
+    // Ensure build prerequisites for clean-state startup.
+    // After npm install, check if the project (or its file: deps) need building.
+    if (run.type === 'npm') {
+      let pkg;
+      try {
+        pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
+      } catch (err) {
+        pushLog(name, 'system', `Failed to parse package.json: ${err.message}`);
+        return { error: `Failed to parse package.json for ${name}: ${err.message}` };
+      }
+
+      // Step 1: Build any workspace file: dependencies first
+      const fileDeps = getFileDependencies(projectPath, pkg);
+      for (const dep of fileDeps) {
+        const depPkgPath = path.join(dep.path, 'package.json');
+        if (!fs.existsSync(depPkgPath)) continue;
+        let depPkg;
+        try {
+          depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf-8'));
+        } catch {
+          pushLog(name, 'system', `Skipping dependency "${dep.name}" — unreadable package.json`);
+          continue;
+        }
+        const depNeedsBuild = depPkg.scripts && depPkg.scripts.build && !hasBuildOutput(dep.path);
+        const depNeedsInstall = !fs.existsSync(path.join(dep.path, 'node_modules'));
+        if (depNeedsInstall || depNeedsBuild) {
+          pushLog(name, 'system', `Preparing file: dependency "${dep.name}"...`);
+          if (depNeedsInstall) {
+            try {
+              // Tag logs with a compound name so users can identify dep vs main project output
+              await runNpmInstall(dep.path, `${name}:${dep.name}`);
+            } catch (err) {
+              pushLog(
+                name,
+                'system',
+                `npm install failed for dependency "${dep.name}": ${err.message}`,
+              );
+              return { error: `Failed to install dependency "${dep.name}": ${err.message}` };
+            }
+          }
+          if (depNeedsBuild) {
+            try {
+              await runNpmBuild(dep.path, `${name}:${dep.name}`);
+              pushLog(name, 'system', `Dependency "${dep.name}" built successfully`);
+            } catch (err) {
+              pushLog(name, 'system', `Failed to build dependency "${dep.name}": ${err.message}`);
+              return { error: `Failed to build dependency "${dep.name}": ${err.message}` };
+            }
+          }
+        }
+      }
+
+      // Step 2: If using 'start' but build output is missing, handle it.
+      // Prefer falling back to 'dev' (fast startup) over running a full build.
+      // Only switch to dev when the original start was an npm-run command
+      // (not a node-direct script like "start": "node server.js").
+      const usesStart = !!(pkg.scripts && pkg.scripts.start);
+      if (usesStart && !hasBuildOutput(projectPath)) {
+        const isNpmRunStart = run.cmd === 'npm' && run.args[0] === 'run' && run.args[1] === 'start';
+        if (isNpmRunStart && pkg.scripts && pkg.scripts.dev) {
+          const devScript = pkg.scripts.dev;
+          // Try running the dev binary directly from node_modules/.bin/
+          // instead of going through npm run. This avoids PATH issues on
+          // Windows where .cmd files can have broken paths after unzipping.
+          const binPath = tryResolveBin(projectPath, devScript);
+          if (binPath) {
+            pushLog(name, 'system', 'Build output not found — starting in dev mode');
+            run.cmd = binPath;
+            run.args = devScript.split(/\s+/).filter(Boolean).slice(1);
+          } else {
+            pushLog(name, 'system', 'Build output not found — starting in dev mode (npm run)');
+            run.args = ['run', 'dev'];
+          }
+        } else if (pkg.scripts && pkg.scripts.build) {
+          pushLog(name, 'system', 'Build output not found — running npm run build...');
+          try {
+            await runNpmBuild(projectPath, name);
+            pushLog(name, 'system', 'Build completed');
+          } catch (err) {
+            pushLog(name, 'system', `Build failed: ${err.message}`);
+            return { error: `Build failed: ${err.message}` };
+          }
         }
       }
     }
