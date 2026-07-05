@@ -93,6 +93,55 @@ test('clicking a nav clone closes the drawer', async () => {
   expect(el.menuOpen).toBe(false);
 });
 
+test('CTA items are mirrored into drawer body as clones', async () => {
+  render(html`
+    <sg-header>
+      <a slot="nav" href="#home">Home</a>
+      <sg-button slot="cta" variant="primary" size="sm">Get Started</sg-button>
+      <select slot="cta" aria-label="Theme">
+        <option value="default">Default</option>
+        <option value="dark">Dark</option>
+      </select>
+    </sg-header>
+  `);
+  const el = document.body.querySelector('sg-header')!;
+  await waitForLit(el);
+
+  const drawerBody = el.shadowRoot?.querySelector('.drawer-body')!;
+  // 1 nav link + 1 separator sg-divider + 2 CTA items = 4 data-nav-clone elements
+  const clones = drawerBody.querySelectorAll('[data-nav-clone]');
+  expect(clones).toHaveLength(4);
+  expect(clones[0].textContent).toContain('Home');        // nav clone
+  expect(clones[1].tagName).toBe('SG-DIVIDER');            // separator
+  expect(clones[2].tagName).toBe('SG-BUTTON');             // button clone
+  expect(clones[2].textContent).toContain('Get Started');
+  expect(clones[3].tagName).toBe('SELECT');                // select clone
+  expect(clones[3].querySelector('option[value="dark"]')).toBeTruthy();
+});
+
+test('clicking a CTA button clone closes the drawer', async () => {
+  render(html`
+    <sg-header>
+      <sg-button slot="cta" variant="primary" size="sm">Get Started</sg-button>
+    </sg-header>
+  `);
+  const el = document.body.querySelector('sg-header')!;
+  await waitForLit(el);
+
+  // Open the drawer
+  const hamburger = el.shadowRoot?.querySelector('.hamburger') as HTMLElement;
+  hamburger.click();
+  await waitForLit(el);
+  expect(el.menuOpen).toBe(true);
+
+  // Click the button clone inside the drawer body
+  const btnClone = el.shadowRoot?.querySelector('sg-button[data-nav-clone]') as HTMLElement;
+  expect(btnClone).toBeTruthy();
+  btnClone.click();
+  await waitForLit(el);
+  expect(el.menuOpen).toBe(false);
+});
+
 test('close button in drawer closes menu', async () => {
   render(html`<sg-header></sg-header>`);
   const el = document.body.querySelector('sg-header')!;

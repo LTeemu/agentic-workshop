@@ -92,21 +92,6 @@ a[slot='nav'] {
   margin: 0 6px;
 }
 
-/* ═══ Showcase grid — 2 columns on desktop, 1 on mobile ═══ */
-
-.showcase-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-@media (max-width: 640px) {
-  .showcase-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .feature-icon {
   width: 44px;
   height: 44px;
@@ -121,24 +106,31 @@ a[slot='nav'] {
   color: var(--sg-spectral-gold, #c4a050);
 }
 
-/* ═══ 3-column showcase grid for dense layouts ═══ */
+/* ═══ Showcase masonry — one container, natural-height flow ═══
+     CSS columns give a masonry-like layout: all 17 cards share one
+     container and flow into columns at their natural height, so
+     shorter cards pack without Y gaps. */
 
-.showcase-grid-3col {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1.25rem;
+.showcase-masonry {
+  column-count: 3;
+  column-gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
-@media (max-width: 860px) {
-  .showcase-grid-3col {
-    grid-template-columns: 1fr 1fr;
+.showcase-masonry > * {
+  break-inside: avoid;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .showcase-masonry {
+    column-count: 2;
   }
 }
 
-@media (max-width: 560px) {
-  .showcase-grid-3col {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  .showcase-masonry {
+    column-count: 1;
   }
 }
 

@@ -181,6 +181,12 @@ export class SgButton extends LitElement {
       border-radius: 9999px;
     }
 
+    /* ─── Block / full-width ─── */
+
+    .btn--block {
+      width: 100%;
+    }
+
     /* ─── Loading ─── */
 
     .btn--loading {
@@ -221,6 +227,10 @@ export class SgButton extends LitElement {
   @property({ type: Boolean, reflect: true })
   pill: boolean = false;
 
+  /** When true, the button fills the full width of its container. */
+  @property({ type: Boolean, reflect: true })
+  block: boolean = false;
+
   @property({ type: String })
   type: 'button' | 'submit' | 'reset' = 'button';
 
@@ -232,6 +242,7 @@ export class SgButton extends LitElement {
       'btn--loading': this.loading,
       'btn--border': this.border,
       'btn--pill': this.pill,
+      'btn--block': this.block,
     });
 
     return html`

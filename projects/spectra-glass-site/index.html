@@ -189,8 +189,7 @@
         </p>
       </div>
 
-      <!-- Row 1: Button variants + Badges -->
-      <div class="showcase-grid">
+      <div class="showcase-masonry">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Buttons</h3>
           <div style="display: flex; gap: 8px; flex-wrap: wrap">
@@ -231,10 +230,7 @@
             <sg-badge variant="success" removable>Done</sg-badge>
           </div>
         </sg-card>
-      </div>
 
-      <!-- Row 2: Input + Toggle + Spinner + Avatar -->
-      <div class="showcase-grid">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Input</h3>
           <div style="display: flex; flex-direction: column; gap: 12px">
@@ -291,10 +287,7 @@
             </div>
           </div>
         </sg-card>
-      </div>
 
-      <!-- Row 3: Card variants + Dialog -->
-      <div class="showcase-grid">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Card Variants</h3>
           <div style="display: flex; flex-direction: column; gap: 12px">
@@ -340,11 +333,8 @@
             </p>
           </div>
         </sg-card>
-      </div>
 
-      <!-- ═══ Divider standalone ═══ -->
-      <div class="showcase-grid">
-        <sg-card variant="outlined" padding="md" style="grid-column: 1/-1">
+        <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Divider</h3>
           <div class="demo-col">
             <sg-divider variant="gradient" label="Gradient divider"></sg-divider>
@@ -356,10 +346,7 @@
             <sg-divider variant="solid"></sg-divider>
           </div>
         </sg-card>
-      </div>
 
-      <!-- ═══ Row 4: Form Suite — Textarea, Checkbox, Radio ═══ -->
-      <div class="showcase-grid">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Textarea</h3>
           <div class="demo-col">
@@ -402,10 +389,7 @@
             </sg-radio-group>
           </div>
         </sg-card>
-      </div>
 
-      <!-- ═══ Row 5: Select + Tabs ═══ -->
-      <div class="showcase-grid">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Select</h3>
           <div class="demo-col">
@@ -451,10 +435,7 @@
             </div>
           </sg-tabs>
         </sg-card>
-      </div>
 
-      <!-- ═══ Row 6: Progress + Skeleton + Breadcrumb ═══ -->
-      <div class="showcase-grid-3col">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Progress</h3>
           <div class="demo-col">
@@ -498,10 +479,7 @@
             <sg-breadcrumb id="demo-breadcrumb-3" separator="•"></sg-breadcrumb>
           </div>
         </sg-card>
-      </div>
 
-      <!-- ═══ Row 7: Toast + Tooltip + Pagination ═══ -->
-      <div class="showcase-grid-3col">
         <sg-card variant="outlined" padding="md">
           <h3 slot="header" style="font-size: 1rem">Toast</h3>
           <div class="demo-col">
@@ -651,12 +629,19 @@
 
     <!-- Event wiring and property binding (Lit @click / .foo syntax doesn't work in plain HTML) -->
     <script>
-      // ── Smooth scroll CTA ──
-      document.getElementById('hero-cta').addEventListener('click', function () {
-        document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
-      });
-      document.getElementById('header-cta').addEventListener('click', function () {
-        document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
+      // ── Smooth scroll CTA (via delegation — works on originals and drawer clones) ──
+      document.addEventListener('click', function (e) {
+        const path = e.composedPath();
+        if (
+          path.some(function (el) {
+            return el && el.id === 'header-cta';
+          }) ||
+          path.some(function (el) {
+            return el && el.id === 'hero-cta';
+          })
+        ) {
+          document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
+        }
       });
 
       // ── Dialog ──

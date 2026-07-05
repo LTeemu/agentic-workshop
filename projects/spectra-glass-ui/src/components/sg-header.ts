@@ -171,6 +171,7 @@ export class SgHeader extends LitElement {
       font-weight: 500;
       padding: 12px 8px;
       border-radius: var(--sg-radius-sm, 8px);
+      box-sizing: border-box;
       transition: background var(--sg-transition-fast, 150ms ease);
     }
 
@@ -182,10 +183,44 @@ export class SgHeader extends LitElement {
       background: var(--sg-glass-bg-hover, rgba(255, 255, 255, 0.14));
     }
 
-    .drawer-cta {
-      padding: 1rem;
-      border-top: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12));
-      flex-shrink: 0;
+    /* The divider and button shouldn't get nav-link padding — they have their own */
+    .drawer-body sg-divider[data-nav-clone] {
+      padding: 0;
+    }
+    .drawer-body sg-button[data-nav-clone] {
+      padding: 0;
+      text-align: center;
+    }
+
+    /* Inside the shadow DOM, global stylesheets don't apply, so the
+       .theme-switcher class from the page CSS has no effect here.
+       Provide explicit styling for cloned selects in the drawer. */
+    .drawer-body select[data-nav-clone] {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+      border: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12));
+      border-radius: var(--sg-radius-sm, 8px);
+      padding: 10px 28px 10px 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 10px 6px;
+    }
+
+    .drawer-body select[data-nav-clone]:hover {
+      color: var(--sg-text-primary, rgba(255, 255, 255, 0.9));
+      border-color: rgba(255, 255, 255, 0.25);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .drawer-body select[data-nav-clone] option {
+      background: #1a1a2a;
+      color: rgba(255, 255, 255, 0.9);
     }
 
     /* ─── Responsive ─── */
@@ -223,6 +258,9 @@ export class SgHeader extends LitElement {
   @query('.desktop-nav slot[name="nav"]')
   private _navSlot!: HTMLSlotElement;
 
+  @query('.desktop-cta slot[name="cta"]')
+  private _ctaSlot!: HTMLSlotElement;
+
   @query('.drawer-body')
   private _drawerBody!: HTMLElement;
 
@@ -251,6 +289,20 @@ export class SgHeader extends LitElement {
   override firstUpdated(): void {
     this.#mirrorToDrawer();
     this._navSlot.addEventListener('slotchange', () => this.#mirrorToDrawer());
+    this._ctaSlot.addEventListener('slotchange', () => this.#mirrorToDrawer());
+
+    // The native `change` event has `composed: false`, so it's trapped
+    // inside the shadow DOM. Re-dispatch as a composed event so the
+    // page's delegation listener can catch it.
+    this._drawerBody.addEventListener('change', (e: Event) => {
+      if (!e.isTrusted) return; // prevent loop from our own re-dispatch
+      const target = e.target as Element;
+      if (target.matches('.theme-switcher')) {
+        target.dispatchEvent(
+          new Event('change', { bubbles: true, composed: true })
+        );
+      }
+    });
   }
 
   override updated(changed: Map<string, unknown>): void {
@@ -307,23 +359,56 @@ export class SgHeader extends LitElement {
           </button>
         </div>
         <div class="drawer-body"></div>
-        <div class="drawer-cta"><slot name="cta"></slot></div>
       </aside>
     `;
   }
 
-  /** Clone the desktop nav slot's assigned nodes into the drawer body. */
+  /** Clone the desktop nav and CTA slot nodes into the drawer body. */
   #mirrorToDrawer(): void {
-    const assigned = this._navSlot.assignedElements({ flatten: true });
-
     // Remove stale clones
     this._drawerBody.querySelectorAll<Element>('[data-nav-clone]').forEach((el) => el.remove());
 
-    // Insert fresh clones with close-on-click behaviour
-    assigned.forEach((el) => {
-      const clone = el.cloneNode(true) as Element;
+    const navAssigned = this._navSlot.assignedElements({ flatten: true });
+    const ctaAssigned = this._ctaSlot.assignedElements({ flatten: true });
+
+    // Clone nav links — each closes the drawer on click
+    navAssigned.forEach((el, i) => {
+      const clone = el.cloneNode(true) as HTMLElement;
       clone.setAttribute('data-nav-clone', '');
       clone.addEventListener('click', () => this.#closeMenu());
+      if (i < navAssigned.length - 1 || ctaAssigned.length > 0) {
+        clone.style.marginBottom = '4px';
+      }
+      this._drawerBody.appendChild(clone);
+    });
+
+    if (ctaAssigned.length === 0) return;
+
+    // Visual separator before CTA items using the library's own divider
+    const sep = document.createElement('sg-divider');
+    sep.setAttribute('variant', 'solid');
+    sep.setAttribute('data-nav-clone', '');
+    (sep as HTMLElement).style.margin = '12px 0';
+    this._drawerBody.appendChild(sep);
+
+    ctaAssigned.forEach((el, i) => {
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.setAttribute('data-nav-clone', '');
+      const isButton = clone.matches('button, sg-button, a');
+      if (isButton) {
+        clone.addEventListener('click', () => this.#closeMenu());
+        if (clone.matches('sg-button')) {
+          // Upgrade size and make it full-width for the drawer
+          clone.setAttribute('size', 'md');
+          clone.setAttribute('block', '');
+        }
+      }
+      // Full-width in the drawer
+      clone.style.width = '100%';
+      clone.style.boxSizing = 'border-box';
+      if (i < ctaAssigned.length - 1) {
+        clone.style.marginBottom = '12px';
+      }
       this._drawerBody.appendChild(clone);
     });
   }

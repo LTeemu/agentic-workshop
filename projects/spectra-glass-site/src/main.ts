@@ -41,13 +41,29 @@ function applyTheme(name: string): void {
 
 function initThemeSwitcher(): void {
   const saved = getSavedTheme();
-  const switcher = document.getElementById('theme-switcher') as HTMLSelectElement | null;
-  if (switcher) {
-    switcher.value = saved;
-    switcher.addEventListener('change', () => applyTheme(switcher.value));
-  }
+  // Set value on all .theme-switcher selects in light DOM
+  document.querySelectorAll<HTMLSelectElement>('.theme-switcher').forEach((el) => {
+    el.value = saved;
+  });
+  // Also update clones inside component shadow roots (document.querySelectorAll
+  // doesn't penetrate shadow DOM)
+  document.querySelectorAll('sg-header').forEach((header) => {
+    const clone = header.shadowRoot?.querySelector<HTMLSelectElement>('select[data-nav-clone]');
+    if (clone) clone.value = saved;
+  });
   applyTheme(saved);
 }
+
+// Use event delegation for theme changes — works on both original (light DOM)
+// and cloned (shadow DOM) selects.  We use composedPath() instead of e.target
+// because e.target is retargeted to the shadow host when crossing shadow boundaries.
+document.addEventListener('change', (e: Event) => {
+  const path = e.composedPath();
+  const select = path.find((el) => (el as Element)?.matches?.('.theme-switcher')) as HTMLSelectElement | undefined;
+  if (select) {
+    applyTheme(select.value);
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initThemeSwitcher);

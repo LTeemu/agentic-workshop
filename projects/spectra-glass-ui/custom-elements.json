@@ -20,7 +20,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-accordion ?multiple=${args.multiple ?? false} style=\"max-width:600px;\"> <sg-accordion-item heading=\"What is Spectra Glass?\"> A Web Component library with glassmorphism aesthetics and spectral gradients, built with Lit. </sg-accordion-item> <sg-accordion-item heading=\"Can I use it with React?\"> Yes — Web Components work with any framework. Import the elements and use them as HTML tags. </sg-accordion-item> <sg-accordion-item heading=\"How do I customise the theme?\"> Override CSS custom properties like <code>--sg-glass-bg</code> and <code>--sg-spectral-rose</code>. </sg-accordion-item> </sg-accordion> `, args: { multiple: false }, }"
+          "default": "{ render: (args) => html` <sg-accordion ?multiple=${args.multiple ?? false} style=\"max-width:600px;\"> <sg-accordion-item heading=\"What is Spectra Glass?\"> A Web Component library with glassmorphism aesthetics and spectral gradients, built with Lit. </sg-accordion-item> <sg-accordion-item heading=\"Can I use it with React?\"> Yes — Web Components work with any framework. Import the elements and use them as HTML tags. </sg-accordion-item> <sg-accordion-item heading=\"How do I customise the theme?\"> Override CSS custom properties like <code>--sg-glass-bg</code> and <code>--sg-spectral-color1</code>. </sg-accordion-item> </sg-accordion> `, args: { multiple: false }, }"
         },
         {
           "kind": "variable",
@@ -963,7 +963,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgButton', component: 'sg-button', argTypes: { variant: { control: 'select', options: ['primary', 'secondary', 'ghost'], }, size: { control: 'select', options: ['sm', 'md', 'lg'], }, disabled: { control: 'boolean' }, loading: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glassmorphic button with spectral gradient background (primary), glass surface (secondary), or minimal style (ghost).', }, }, }, }"
+          "default": "{ title: 'Components/SgButton', component: 'sg-button', argTypes: { variant: { control: 'select', options: ['primary', 'secondary', 'ghost'], }, size: { control: 'select', options: ['sm', 'md', 'lg'], }, disabled: { control: 'boolean' }, loading: { control: 'boolean' }, border: { control: 'boolean' }, pill: { control: 'boolean' }, }, parameters: { docs: { description: { component: 'A glassmorphic button with spectral gradient background (primary), glass surface (secondary), or minimal style (ghost).', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -971,7 +971,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'primary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'primary', size: 'md', disabled: false, loading: false }, }"
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'primary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} ?border=${args.border} ?pill=${args.pill} > Button </sg-button> `, args: { variant: 'primary', size: 'md', disabled: false, loading: false, border: false, pill: false }, }"
         },
         {
           "kind": "variable",
@@ -979,7 +979,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'secondary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'secondary', size: 'md', disabled: false, loading: false }, }"
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'secondary'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} ?border=${args.border} ?pill=${args.pill} > Button </sg-button> `, args: { variant: 'secondary', size: 'md', disabled: false, loading: false, border: false, pill: false }, }"
         },
         {
           "kind": "variable",
@@ -987,7 +987,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'ghost'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} > Button </sg-button> `, args: { variant: 'ghost', size: 'md', disabled: false, loading: false }, }"
+          "default": "{ render: (args) => html` <sg-button variant=${args.variant || 'ghost'} size=${args.size || 'md'} ?disabled=${args.disabled} ?loading=${args.loading} ?border=${args.border} ?pill=${args.pill} > Button </sg-button> `, args: { variant: 'ghost', size: 'md', disabled: false, loading: false, border: false, pill: false }, }"
         },
         {
           "kind": "variable",
@@ -1012,6 +1012,22 @@
             "text": "Story"
           },
           "default": "{ render: () => html` <sg-button variant=\"primary\" size=\"md\" loading>Processing</sg-button> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Bordered",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:12px;flex-wrap:wrap;\"> <sg-button variant=\"primary\" border>Primary + Border</sg-button> <sg-button variant=\"secondary\" border>Secondary + Border</sg-button> <sg-button variant=\"ghost\" border>Ghost + Border</sg-button> </div> `, }"
+        },
+        {
+          "kind": "variable",
+          "name": "Pill",
+          "type": {
+            "text": "Story"
+          },
+          "default": "{ render: () => html` <div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:center;\"> <sg-button variant=\"primary\" pill>Primary Pill</sg-button> <sg-button variant=\"secondary\" pill>Secondary Pill</sg-button> <sg-button variant=\"ghost\" pill>Ghost Pill</sg-button> </div> `, }"
         }
       ],
       "exports": [
@@ -1068,6 +1084,22 @@
           "name": "Loading",
           "declaration": {
             "name": "Loading",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Bordered",
+          "declaration": {
+            "name": "Bordered",
+            "module": "src/components/sg-button.stories.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Pill",
+          "declaration": {
+            "name": "Pill",
             "module": "src/components/sg-button.stories.ts"
           }
         }
@@ -1136,24 +1168,35 @@
             },
             {
               "kind": "field",
-              "name": "accent",
+              "name": "border",
               "type": {
                 "text": "boolean"
               },
               "default": "false",
-              "description": "When true, renders a 1px spectral gradient border overlay.",
-              "attribute": "accent",
+              "description": "When true, renders a 1.5px spectral gradient border around the button.",
+              "attribute": "border",
               "reflects": true
             },
             {
               "kind": "field",
-              "name": "selected",
+              "name": "pill",
               "type": {
                 "text": "boolean"
               },
               "default": "false",
-              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
-              "attribute": "selected",
+              "description": "When true, makes the button fully rounded (pill/circular shape).",
+              "attribute": "pill",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "block",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, the button fills the full width of its container.",
+              "attribute": "block",
               "reflects": true
             },
             {
@@ -1206,22 +1249,31 @@
               "fieldName": "loading"
             },
             {
-              "name": "accent",
+              "name": "border",
               "type": {
                 "text": "boolean"
               },
               "default": "false",
-              "description": "When true, renders a 1px spectral gradient border overlay.",
-              "fieldName": "accent"
+              "description": "When true, renders a 1.5px spectral gradient border around the button.",
+              "fieldName": "border"
             },
             {
-              "name": "selected",
+              "name": "pill",
               "type": {
                 "text": "boolean"
               },
               "default": "false",
-              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
-              "fieldName": "selected"
+              "description": "When true, makes the button fully rounded (pill/circular shape).",
+              "fieldName": "pill"
+            },
+            {
+              "name": "block",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "When true, the button fills the full width of its container.",
+              "fieldName": "block"
             },
             {
               "name": "type",
@@ -2050,7 +2102,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "A glassmorphic modal dialog with backdrop blur.",
+          "description": "A glassmorphic modal dialog rendered in a portal (`document.body`)\nso it always overflows any container.",
           "name": "SgDialog",
           "cssProperties": [
             {
@@ -2080,6 +2132,15 @@
             }
           ],
           "members": [
+            {
+              "kind": "field",
+              "name": "_portalCSS",
+              "privacy": "private",
+              "static": true,
+              "readonly": true,
+              "default": "` .backdrop { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity var(--sg-transition-base, 250ms ease); } .backdrop--open { opacity: 1; pointer-events: auto; } .dialog { position: relative; width: 100%; max-width: var(--sg-dialog-max-width, 480px); max-height: 85vh; margin: 16px; display: flex; flex-direction: column; border-radius: var(--sg-dialog-radius, var(--sg-radius-lg, 20px)); padding: var(--sg-dialog-padding, 24px); color: var(--sg-text-primary, rgba(255, 255, 255, 0.9)); background: var(--sg-glass-bg, rgba(255, 255, 255, 0.08)); backdrop-filter: var(--sg-glass-blur, blur(20px)); -webkit-backdrop-filter: var(--sg-glass-blur, blur(20px)); border: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12)); box-shadow: var(--sg-glass-shadow-lg, 0 8px 48px rgba(0, 0, 0, 0.18)); overflow-y: auto; transform: scale(0.95) translateY(8px); transition: transform var(--sg-transition-base, 250ms ease), opacity var(--sg-transition-base, 250ms ease); } .backdrop--open .dialog { transform: scale(1) translateY(0); } .dialog--accent::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: var(--sg-dialog-accent, var(--sg-gradient-spectral, linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5)) )); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude; pointer-events: none; } .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12)); } .header__title { font-size: 1.125rem; font-weight: 700; margin: 0; } .header__close { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: none; background: transparent; color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6)); cursor: pointer; border-radius: var(--sg-radius-sm, 8px); font-size: 1.25rem; line-height: 1; transition: background var(--sg-transition-fast, 150ms ease); } .header__close:hover { background: var(--sg-glass-bg-hover, rgba(255, 255, 255, 0.14)); color: var(--sg-text-primary, rgba(255, 255, 255, 0.9)); } .body { flex: 1; font-size: 0.875rem; line-height: 1.6; color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6)); } .footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12)); } `",
+              "description": "Portal styles — rendered as `<style>` inside the portal div."
+            },
             {
               "kind": "field",
               "name": "open",
@@ -2131,22 +2192,31 @@
             },
             {
               "kind": "field",
-              "name": "selected",
+              "name": "_portalEl",
               "type": {
-                "text": "boolean"
+                "text": "HTMLDivElement | null"
               },
-              "default": "false",
-              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
-              "attribute": "selected",
-              "reflects": true
+              "privacy": "private",
+              "default": "null"
             },
             {
               "kind": "field",
-              "name": "_dialogPanel",
+              "name": "_previousFocus",
               "type": {
-                "text": "HTMLElement"
+                "text": "HTMLElement | null"
               },
-              "privacy": "private"
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "_savedSlotNodes",
+              "type": {
+                "text": "Map<string, Node[]>"
+              },
+              "privacy": "private",
+              "default": "new Map()",
+              "description": "Saved slot-assigned nodes so they can be restored on close."
             },
             {
               "kind": "field",
@@ -2161,13 +2231,91 @@
               "description": "Selector for focusable elements inside the dialog."
             },
             {
-              "kind": "field",
-              "name": "_previousFocus",
-              "type": {
-                "text": "HTMLElement | null"
-              },
+              "kind": "method",
+              "name": "#showPortal",
               "privacy": "private",
-              "default": "null"
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#hidePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#destroyPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#ensurePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "HTMLDivElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#portalTemplate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateResult"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#getSlotContent",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Node[]"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "name",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#textContent",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "nodes",
+                  "type": {
+                    "text": "Node[]"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",
@@ -2214,16 +2362,6 @@
               "return": {
                 "type": {
                   "text": "void"
-                }
-              }
-            },
-            {
-              "kind": "method",
-              "name": "#hasFooterSlotted",
-              "privacy": "private",
-              "return": {
-                "type": {
-                  "text": "boolean"
                 }
               }
             }
@@ -2278,15 +2416,6 @@
               "default": "false",
               "description": "When true, renders a 1px spectral gradient border overlay.",
               "fieldName": "accent"
-            },
-            {
-              "name": "selected",
-              "type": {
-                "text": "boolean"
-              },
-              "default": "false",
-              "description": "When true, renders a thicker spectral gradient border to indicate selected state.",
-              "fieldName": "selected"
             }
           ],
           "superclass": {
@@ -2774,6 +2903,14 @@
             },
             {
               "kind": "field",
+              "name": "_ctaSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
               "name": "_drawerBody",
               "type": {
                 "text": "HTMLElement"
@@ -2805,7 +2942,7 @@
                   "text": "void"
                 }
               },
-              "description": "Clone the desktop nav slot's assigned nodes into the drawer body."
+              "description": "Clone the desktop nav and CTA slot nodes into the drawer body."
             },
             {
               "kind": "method",
@@ -5993,7 +6130,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgSpinner', component: 'sg-spinner', argTypes: { size: { control: 'select', options: ['sm', 'md', 'lg'] }, variant: { control: 'select', options: ['spectral', 'glass'] }, }, parameters: { docs: { description: { component: 'An animated loading spinner. The `spectral` variant uses four different spectral border colours for a rainbow rotation effect.', }, }, }, }"
+          "default": "{ title: 'Components/SgSpinner', component: 'sg-spinner', argTypes: { size: { control: 'select', options: ['sm', 'md', 'lg'] }, variant: { control: 'select', options: ['spectral', 'glass'] }, }, parameters: { docs: { description: { component: 'An animated loading spinner. The `spectral` variant uses a conic-gradient ring that sweeps the spectral palette as it spins.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -6311,7 +6448,7 @@
             },
             {
               "description": "Focus ring color.",
-              "name": "--sg-spectral-gold"
+              "name": "--sg-spectral-color3"
             },
             {
               "description": "Border radius for tabs.",
