@@ -1,6 +1,7 @@
 package com.securenome.data.share
 
 import com.securenome.BuildConfig
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,6 +11,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.pow
 
 /**
  * OkHttp client for the SecureNote share relay server.
@@ -25,6 +27,13 @@ import javax.inject.Singleton
  * POST   /api/shares       → create a share, returns a code
  * GET    /api/shares/:code → retrieve a blob by code (one-shot)
  * DELETE /api/shares/:code → revoke a share before it is read
+ *
+ * ## Retry policy
+ *
+ * Every mutating call (create, get, revoke) retries up to 3 times
+ * with exponential backoff (1s, 2s, 4s). Transient network blips
+ * are automatically recovered. Health checks are NOT retried —
+ * a quick snapshot of reachability is preferred.
  */
 @Serializable
 private data class CreateRequest(val blob: String)
@@ -37,6 +46,11 @@ private data class ErrorResponse(val error: String)
 
 @Singleton
 class ShareApi @Inject constructor() {
+
+    companion object {
+        private const val MAX_RETRIES = 3
+        private const val BASE_DELAY_MS = 1000L
+    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -51,49 +65,77 @@ class ShareApi @Inject constructor() {
     private val baseUrl: String = BuildConfig.SHARE_SERVER_URL
 
     /**
-     * Upload an encrypted blob and get a share code.
-     * @return The share code, or null on failure.
+     * Execute a network call with exponential backoff retry.
+     *
+     * Retries on any exception (IOException, timeout, server error)
+     * up to [MAX_RETRIES] times with delays: 1s, 2s, 4s.
+     * Suspends between retries so it must be called from a coroutine
+     * or from [runCatching] inside a suspend caller.
      */
-    fun createShare(blobBase64: String): Result<String> = runCatching {
-        val body = json.encodeToString(CreateRequest.serializer(), CreateRequest(blobBase64))
-        val request = Request.Builder()
-            .url("$baseUrl/api/shares")
-            .post(body.toRequestBody(mediaType))
-            .build()
-
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) {
-            val error = response.body?.string()
-            throw ShareApiException("Server returned ${response.code}: $error")
+    private suspend fun <T> retryWithBackoff(block: () -> T): T {
+        var lastException: Exception? = null
+        for (attempt in 0..MAX_RETRIES) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                lastException = e
+                if (attempt < MAX_RETRIES) {
+                    val delayMs = BASE_DELAY_MS * 2.0.pow(attempt.toDouble()).toLong()
+                    delay(delayMs)
+                }
+            }
         }
+        throw lastException ?: ShareApiException("Retry exhausted")
+    }
 
-        val responseBody = response.body?.string() ?: throw ShareApiException("Empty response")
-        val parsed = json.decodeFromString(CreateResponse.serializer(), responseBody)
-        parsed.code
+    /**
+     * Upload an encrypted blob and get a share code.
+     * @return The share code.
+     */
+    suspend fun createShare(blobBase64: String): Result<String> = runCatching {
+        retryWithBackoff {
+            val body = json.encodeToString(CreateRequest.serializer(), CreateRequest(blobBase64))
+            val request = Request.Builder()
+                .url("$baseUrl/api/shares")
+                .post(body.toRequestBody(mediaType))
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                val error = response.body?.string()
+                throw ShareApiException("Server returned ${response.code}: $error")
+            }
+
+            val responseBody = response.body?.string() ?: throw ShareApiException("Empty response")
+            val parsed = json.decodeFromString(CreateResponse.serializer(), responseBody)
+            parsed.code
+        }
     }
 
     /**
      * Retrieve an encrypted blob by share code.
-     * @return The base64-encoded blob, or null if not found/expired.
+     * @return The base64-encoded blob.
      */
-    fun getShare(code: String): Result<String> = runCatching {
-        val request = Request.Builder()
-            .url("$baseUrl/api/shares/$code")
-            .get()
-            .build()
+    suspend fun getShare(code: String): Result<String> = runCatching {
+        retryWithBackoff {
+            val request = Request.Builder()
+                .url("$baseUrl/api/shares/$code")
+                .get()
+                .build()
 
-        val response = client.newCall(request).execute()
-        when {
-            response.code == 404 -> throw ShareNotFoundException(code)
-            !response.isSuccessful -> {
-                val error = response.body?.string()
-                throw ShareApiException("Server returned ${response.code}: $error")
-            }
-            else -> {
-                val responseBody = response.body?.string()
-                    ?: throw ShareApiException("Empty response")
-                val parsed = json.decodeFromString(BlobResponse.serializer(), responseBody)
-                parsed.blob
+            val response = client.newCall(request).execute()
+            when {
+                response.code == 404 -> throw ShareNotFoundException(code)
+                !response.isSuccessful -> {
+                    val error = response.body?.string()
+                    throw ShareApiException("Server returned ${response.code}: $error")
+                }
+                else -> {
+                    val responseBody = response.body?.string()
+                        ?: throw ShareApiException("Empty response")
+                    val parsed = json.decodeFromString(BlobResponse.serializer(), responseBody)
+                    parsed.blob
+                }
             }
         }
     }
@@ -101,20 +143,22 @@ class ShareApi @Inject constructor() {
     /**
      * Revoke a share before it is read.
      */
-    fun revokeShare(code: String): Result<Unit> = runCatching {
-        val request = Request.Builder()
-            .url("$baseUrl/api/shares/$code")
-            .delete()
-            .build()
+    suspend fun revokeShare(code: String): Result<Unit> = runCatching {
+        retryWithBackoff {
+            val request = Request.Builder()
+                .url("$baseUrl/api/shares/$code")
+                .delete()
+                .build()
 
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful && response.code != 404) {
-            val error = response.body?.string()
-            throw ShareApiException("Server returned ${response.code}: $error")
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful && response.code != 404) {
+                val error = response.body?.string()
+                throw ShareApiException("Server returned ${response.code}: $error")
+            }
         }
     }
 
-    /** Check if the server is reachable. */
+    /** Check if the server is reachable (no retry — quick check). */
     fun healthCheck(): Result<Boolean> = runCatching {
         val request = Request.Builder()
             .url("$baseUrl/health")

@@ -134,7 +134,8 @@ fun NoteEditorScreen(
             }
         } else {
             when (state.noteType) {
-                NoteType.TEXT -> TextEditor(
+                // PHOTO is a legacy type — rendered as a text editor
+                NoteType.TEXT, NoteType.PHOTO -> TextEditor(
                     content = state.content,
                     onContentChange = { viewModel.onTextChanged(it) },
                     photos = state.photos,
@@ -148,16 +149,6 @@ fun NoteEditorScreen(
                     onAddItem = viewModel::addChecklistItem,
                     onToggleItem = viewModel::toggleChecklistItem,
                     onDeleteItem = viewModel::deleteChecklistItem,
-                    photos = state.photos,
-                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
-                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
-                    onDeletePhoto = { id -> viewModel.deletePhoto(id) },
-                    modifier = Modifier.padding(padding)
-                )
-                // Legacy PHOTO notes — show as text editor with photos
-                NoteType.PHOTO -> TextEditor(
-                    content = state.content,
-                    onContentChange = { viewModel.onTextChanged(it) },
                     photos = state.photos,
                     onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
                     onPickPhoto = { uri -> viewModel.savePhoto(uri) },

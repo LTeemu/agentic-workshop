@@ -10,8 +10,11 @@ import com.securenome.data.share.ShareManager
 import com.securenome.security.CryptoManager
 import java.util.Base64
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -55,15 +58,25 @@ class NoteListViewModel @Inject constructor(
 
     private val notebookId: Long = savedStateHandle["notebookId"] ?: -1L
 
+    init {
+        retryPendingRevocations()
+    }
+
     /**
-     * Notes as summaries.
+     * Current search query (empty = show all).
+     */
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    /**
+     * All notes as summaries (before search filter).
      *
      * ## Why flowOn(Dispatchers.Default)?
      *
      * Decryption is CPU-intensive. flowOn moves the map operation
      * to a background thread so the UI thread is not blocked.
      */
-    val noteSummaries: StateFlow<List<NoteSummary>> =
+    private val allNoteSummaries: StateFlow<List<NoteSummary>> =
         noteRepository.getNotesByNotebook(notebookId)
             .map { notesWithDetails ->
                 notesWithDetails.map { detail ->
@@ -98,6 +111,36 @@ class NoteListViewModel @Inject constructor(
             )
 
     /**
+     * Filtered note summaries based on search query.
+     * When query is empty, shows all notes.
+     * Matches case-insensitively against preview text AND note type label
+     * ("text" for text/photo, "checklist" for checklist).
+     */
+    val noteSummaries: StateFlow<List<NoteSummary>> =
+        combine(allNoteSummaries, _searchQuery) { notes, query ->
+            if (query.isBlank()) notes
+            else notes.filter { note ->
+                note.preview.contains(query, ignoreCase = true) ||
+                typeLabel(note.type).contains(query, ignoreCase = true)
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    /** Update the search query. */
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    /** User-facing label for a note type. Must match what NoteCard shows. */
+    private fun typeLabel(type: NoteType): String = when (type) {
+        NoteType.TEXT, NoteType.PHOTO -> "Text"
+        NoteType.CHECKLIST -> "Checklist"
+    }
+
+    /**
      * Persist a new manual ordering of notes.
      * Called when the user finishes a drag-and-drop reorder.
      */
@@ -124,6 +167,13 @@ class NoteListViewModel @Inject constructor(
      *
      * If the note already has a share code, revoke it (turn sharing off).
      * If it doesn't have one, generate a new share code.
+     *
+     * ## Pending revocations
+     *
+     * If the server DELETE fails (server down), the share code is queued
+     * as a "pending revocation" and retried later (see [retryPendingRevocations]).
+     * The local share code is cleared immediately so the UI shows the note
+     * as unshared.
      */
     fun toggleShare(noteId: Long, currentShareCode: String?) {
         viewModelScope.launch {
@@ -131,8 +181,12 @@ class NoteListViewModel @Inject constructor(
             if (!settingsDataStore.sharingEnabled.first()) return@launch
             if (currentShareCode != null) {
                 // Turn sharing off: revoke on server + clear local code
-                shareManager.revokeShare(currentShareCode)
+                val result = shareManager.revokeShare(currentShareCode)
                 noteRepository.setShareCode(noteId, null)
+                // If server DELETE failed, queue for retry
+                if (result.isFailure) {
+                    settingsDataStore.addPendingRevocation(noteId, currentShareCode)
+                }
             } else {
                 // Turn sharing on: generate code (also uploads to server if available)
                 val note = noteRepository.getNoteEntityById(noteId) ?: return@launch
@@ -163,6 +217,26 @@ class NoteListViewModel @Inject constructor(
                 if (shareCode != null) {
                     noteRepository.setShareCode(noteId, shareCode)
                 }
+            }
+        }
+    }
+
+    /**
+     * Retry pending revocations that failed due to server unavailability.
+     *
+     * Called on ViewModel initialization. Tries each pending DELETE,
+     * removes from the queue on success, keeps for next retry on failure.
+     */
+    private fun retryPendingRevocations() {
+        viewModelScope.launch {
+            val pending = settingsDataStore.getPendingRevocations()
+            if (pending.isEmpty()) return@launch
+            for (revocation in pending) {
+                val result = shareManager.revokeShare(revocation.shareCode)
+                if (result.isSuccess) {
+                    settingsDataStore.removePendingRevocation(revocation.noteId)
+                }
+                // On failure, leave in the queue for next retry
             }
         }
     }
@@ -241,8 +315,8 @@ class NoteListViewModel @Inject constructor(
                 }
                 noteId
             }
-            NoteType.TEXT -> noteRepository.createTextNote(notebookId, content)
-            NoteType.PHOTO -> noteRepository.createTextNote(notebookId, content)
+            // PHOTO is legacy — imported as TEXT
+            NoteType.TEXT, NoteType.PHOTO -> noteRepository.createTextNote(notebookId, content)
         }
 
         // Save imported photos — decrypt with CryptoManager (same key),

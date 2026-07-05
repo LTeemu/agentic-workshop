@@ -5,7 +5,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.securenome.data.local.datastore.SettingsDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,15 +18,22 @@ import javax.inject.Singleton
  *
  * ## How does this work?
  *
- * Observes the Activity lifecycle directly. On every `ON_STOP` (background
- * or config change) the `authenticated` flag is cleared. On every `ON_RESUME`,
- * if PIN lock is enabled and the user hasn't authenticated yet in this
- * session, the PinEntryScreen should be shown.
+ * Observes the Activity lifecycle directly. On `ON_STOP` (background, camera
+ * intent, or config change) a [LOCK_GRACE_MS] timer starts. If the user
+ * returns before the timer expires, the authenticated flag is preserved and
+ * no PIN is required. If the timer expires, the flag is cleared and the
+ * next `ON_RESUME` will show the PIN screen.
  *
- * This means:
- * - **Cold start**: `authenticated` starts false → prompt on first resume
- * - **Background return**: `ON_STOP` clears flag → prompt on next resume
- * - **Config change**: `ON_STOP` clears flag → prompt shows again (acceptable)
+ * This avoids locking the app when the camera or gallery intent is launched
+ * (brief backgrounding), while still securing the app when the user truly
+ * switches to another app.
+ *
+ * ## Grace period notes:
+ *
+ * - Camera/gallery intents typically return in < 1s → grace period keeps auth
+ * - Config change (rotation) is instant → grace period keeps auth
+ * - True background switching (home button, recent apps) → 5s grace then lock
+ * - Cold start: `authenticated` starts false → PIN on first resume
  *
  * ## Default: lock is OFF.
  *
@@ -36,10 +45,18 @@ import javax.inject.Singleton
 class AppLockManager @Inject constructor(
     private val settingsDataStore: SettingsDataStore
 ) {
+    companion object {
+        /** How long the app can be in background before locking. */
+        private const val LOCK_GRACE_MS = 5_000L
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /** Has the user authenticated in this process session? */
     private var authenticated: Boolean = false
+
+    /** Job that clears [authenticated] after the grace period. */
+    private var lockTimer: Job? = null
 
     /** Callback set by UI: what to do when lock is required */
     var onLockRequired: (() -> Unit)? = null
@@ -53,13 +70,21 @@ class AppLockManager @Inject constructor(
             LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_STOP -> {
-                        scope.launch {
+                        // Start grace timer — lock only if user stays away
+                        lockTimer?.cancel()
+                        lockTimer = scope.launch {
                             if (settingsDataStore.pinRequired.first()) {
+                                delay(LOCK_GRACE_MS)
                                 authenticated = false
                             }
                         }
                     }
                     Lifecycle.Event.ON_RESUME -> {
+                        // Cancel grace timer — user is back
+                        lockTimer?.cancel()
+                        lockTimer = null
+                        // If the timer already fired, authenticated is false → show PIN
+                        // If user returned quickly, authenticated is still true → no PIN
                         scope.launch {
                             if (!authenticated && settingsDataStore.pinRequired.first()) {
                                 onLockRequired?.invoke()

@@ -1,22 +1,71 @@
 import express from "express";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ---------------------------------------------------------------------------
-// In-memory blob store — ephemeral, restart clears all shares.
-// For production: replace with Redis / SQLite / filesystem.
+// File-persisted blob store — survives server restarts.
+// Writes to shares.json next to the source file.
 // ---------------------------------------------------------------------------
-const store = new Map<string, { blob: string; expiresAt: number }>();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const STORE_FILE = path.join(__dirname, "shares.json");
 
-// Clean up expired entries every 10 minutes
+interface StoreEntry {
+  blob: string;
+  expiresAt: number;
+}
+
+const store = new Map<string, StoreEntry>();
+
+/** Load the store from disk on startup. */
+function loadStore(): void {
+  try {
+    if (!fs.existsSync(STORE_FILE)) return;
+    const raw = fs.readFileSync(STORE_FILE, "utf-8");
+    const data: Record<string, StoreEntry> = JSON.parse(raw);
+    const now = Date.now();
+    for (const [code, entry] of Object.entries(data)) {
+      if (entry.expiresAt > now) {
+        store.set(code, entry);
+      }
+    }
+    console.log(`[store] Loaded ${store.size} active shares from disk`);
+  } catch (err) {
+    console.error("[store] Failed to load shares.json, starting fresh:", err);
+  }
+}
+
+/** Persist the entire store to disk. */
+function persistStore(): void {
+  try {
+    const data: Record<string, StoreEntry> = {};
+    for (const [code, entry] of store) {
+      data[code] = entry;
+    }
+    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error("[store] Failed to persist shares.json:", err);
+  }
+}
+
+loadStore();
+
+// Clean up expired entries every 10 minutes, persist after cleanup
 setInterval(() => {
   const now = Date.now();
+  let dirty = false;
   for (const [code, entry] of store) {
-    if (entry.expiresAt < now) store.delete(code);
+    if (entry.expiresAt < now) {
+      store.delete(code);
+      dirty = true;
+    }
   }
+  if (dirty) persistStore();
 }, 10 * 60 * 1000);
 
 app.use(express.json({ limit: "10mb" }));
@@ -39,7 +88,9 @@ app.post<{}>("/api/shares", (req, res) => {
   }
 
   const code = generateCode();
-  store.set(code, { blob, expiresAt: Date.now() + TTL_MS });
+  const expiresAt = Date.now() + TTL_MS;
+  store.set(code, { blob, expiresAt });
+  persistStore();
 
   console.log(`[share] Created ${code} (${blob.length} bytes base64)`);
   res.status(201).json({ code, expiresInMs: TTL_MS });
@@ -54,12 +105,14 @@ app.get<{ code: string }>("/api/shares/:code", (req, res) => {
 
   if (!entry || entry.expiresAt < Date.now()) {
     store.delete(code); // clean up expired
+    persistStore();
     res.status(404).json({ error: "Share not found or expired" });
     return;
   }
 
   // One-shot: remove immediately after read
   store.delete(code);
+  persistStore();
 
   console.log(`[share] Retrieved ${code}`);
   res.json({ blob: entry.blob });
@@ -77,6 +130,7 @@ app.delete<{ code: string }>("/api/shares/:code", (req, res) => {
   }
 
   store.delete(code);
+  persistStore();
   console.log(`[share] Deleted ${code}`);
   res.status(204).send();
 });

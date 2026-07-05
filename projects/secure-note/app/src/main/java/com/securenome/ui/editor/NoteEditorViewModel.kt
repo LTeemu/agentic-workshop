@@ -105,21 +105,19 @@ class NoteEditorViewModel @Inject constructor(
         _state.value = _state.value.copy(isSaving = true)
         try {
             if (noteId != null) {
-                when (noteType) {
-                    NoteType.TEXT -> noteRepository.updateTextNote(noteId!!, content)
-                    NoteType.CHECKLIST -> saveChecklistItems()
-                    NoteType.PHOTO -> noteRepository.updateTextNote(noteId!!, content)
+                    when (noteType) {
+                        NoteType.TEXT, NoteType.PHOTO -> noteRepository.updateTextNote(noteId!!, content)
+                        NoteType.CHECKLIST -> saveChecklistItems()
+                    }
+                } else {
+                    noteId = when (noteType) {
+                        NoteType.TEXT, NoteType.PHOTO -> noteRepository.createTextNote(notebookId, content)
+                        NoteType.CHECKLIST -> noteRepository.createChecklistNote(
+                            notebookId,
+                            _state.value.checklistItems.map { it.text }
+                        )
+                    }
                 }
-            } else {
-                noteId = when (noteType) {
-                    NoteType.TEXT -> noteRepository.createTextNote(notebookId, content)
-                    NoteType.CHECKLIST -> noteRepository.createChecklistNote(
-                        notebookId,
-                        _state.value.checklistItems.map { it.text }
-                    )
-                    NoteType.PHOTO -> noteRepository.createPhotoNote(notebookId)
-                }
-            }
             _state.value = _state.value.copy(isSaving = false)
         } catch (e: Exception) {
             _state.value = _state.value.copy(

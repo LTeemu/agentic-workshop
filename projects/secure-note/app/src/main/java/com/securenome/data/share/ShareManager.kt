@@ -112,11 +112,13 @@ class ShareManager @Inject constructor(
 
     /**
      * Revoke a share. Tries server and local cleanup.
+     * @return The result of the server revocation (caller can check for failure).
      */
-    suspend fun revokeShare(code: String) = withContext(Dispatchers.IO) {
-        shareApi.revokeShare(code)
+    suspend fun revokeShare(code: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val result = shareApi.revokeShare(code)
         // Also clean up local file
         File(shareDir, "$code.securenome").delete()
+        result
     }
 
     /**

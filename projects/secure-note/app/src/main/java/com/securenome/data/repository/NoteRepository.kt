@@ -116,16 +116,6 @@ class NoteRepository @Inject constructor(
         noteDao.deleteAllChecklistItems(noteId)
     }
 
-    suspend fun createPhotoNote(notebookId: Long): Long {
-        val note = NoteEntity(
-            notebookId = notebookId,
-            type = NoteType.PHOTO,
-            encryptedContent = cryptoManager.encrypt(byteArrayOf()),
-            sortOrder = nextSortOrder(notebookId)
-        )
-        return noteDao.insertNote(note)
-    }
-
     suspend fun addPhoto(noteId: Long, imageBytes: ByteArray, thumbnailBytes: ByteArray? = null): Long {
         val thumb = thumbnailBytes ?: createThumbnail(imageBytes)
         return noteDao.insertPhoto(

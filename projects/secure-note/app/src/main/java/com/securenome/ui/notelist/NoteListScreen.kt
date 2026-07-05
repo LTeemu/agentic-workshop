@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
@@ -89,6 +88,7 @@ fun NoteListScreen(
 ) {
     val notes by viewModel.noteSummaries.collectAsStateWithLifecycle()
     val sharingEnabled by viewModel.sharingEnabled.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     // Local mutable snapshot of notes used by the reorderable library.
     // Synced from the ViewModel flow when no drag is active.
@@ -307,11 +307,27 @@ fun NoteListScreen(
             }
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::setSearchQuery,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Search notes...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
             if (reorderableNotes.isEmpty()) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -381,6 +397,7 @@ fun NoteListScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -421,9 +438,8 @@ private fun NoteCard(
             }
 
             val icon = when (type) {
-                NoteType.TEXT -> Icons.Default.Description
+                NoteType.TEXT, NoteType.PHOTO -> Icons.Default.Description
                 NoteType.CHECKLIST -> Icons.Default.Checklist
-                NoteType.PHOTO -> Icons.Default.Photo
             }
             Icon(
                 imageVector = icon,
@@ -435,9 +451,8 @@ private fun NoteCard(
                 val photoSuffix = if (photoCount > 0) " ($photoCount)" else ""
                 Text(
                     text = when (type) {
-                        NoteType.TEXT -> "Text$photoSuffix"
+                        NoteType.TEXT, NoteType.PHOTO -> "Text$photoSuffix"
                         NoteType.CHECKLIST -> "Checklist" + (if (hasChecklist) " ✓" else "") + photoSuffix
-                        NoteType.PHOTO -> "Photo$photoSuffix"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,

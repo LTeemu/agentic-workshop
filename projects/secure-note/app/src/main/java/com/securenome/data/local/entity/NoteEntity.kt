@@ -6,7 +6,10 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Note type: text, checklist, or photo.
+ * Note type: text or checklist.
+ *
+ * PHOTO is a legacy value kept for DB compatibility — photos are now
+ * embedded within text and checklist notes, not a standalone type.
  */
 enum class NoteType {
     TEXT,
