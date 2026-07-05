@@ -2,7 +2,6 @@ package com.securenome.ui.notelist
 
 import androidx.lifecycle.SavedStateHandle
 import com.securenome.data.local.datastore.SettingsDataStore
-import com.securenome.data.local.entity.NoteType
 import com.securenome.data.repository.NoteRepository
 import com.securenome.data.share.ShareManager
 import com.securenome.security.CryptoManager
@@ -83,7 +82,7 @@ class NoteListViewModelTest {
         val shareCode = "A3F9-K2B1"
 
         // Mock: note exists, sharing enabled, server DELETE fails
-        coEvery { settingsDataStore.sharingEnabled.first() } returns true
+        // (sharingEnabled is already mocked in setUp to return a MutableStateFlow(true))
         coEvery { shareManager.revokeShare(shareCode) } returns Result.failure(
             com.securenome.data.share.ShareApiException("Server down")
         )
@@ -103,7 +102,6 @@ class NoteListViewModelTest {
         val noteId = 1L
         val shareCode = "A3F9-K2B1"
 
-        coEvery { settingsDataStore.sharingEnabled.first() } returns true
         coEvery { shareManager.revokeShare(shareCode) } returns Result.success(Unit)
         coEvery { noteRepository.setShareCode(noteId, null) } returns Unit
 

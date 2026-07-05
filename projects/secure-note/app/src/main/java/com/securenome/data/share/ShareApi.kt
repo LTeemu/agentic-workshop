@@ -91,9 +91,14 @@ class ShareApi @Inject constructor() {
     /**
      * Upload an encrypted blob and get a share code.
      * @return The share code.
+     *
+     * ## Why manual try-catch instead of runCatching?
+     *
+     * runCatching's lambda is `() -> T` (non-suspend), but retryWithBackoff
+     * is a suspend function. Manual try-catch lets us call suspend code.
      */
-    suspend fun createShare(blobBase64: String): Result<String> = runCatching {
-        retryWithBackoff {
+    suspend fun createShare(blobBase64: String): Result<String> = try {
+        val code = retryWithBackoff {
             val body = json.encodeToString(CreateRequest.serializer(), CreateRequest(blobBase64))
             val request = Request.Builder()
                 .url("$baseUrl/api/shares")
@@ -110,14 +115,17 @@ class ShareApi @Inject constructor() {
             val parsed = json.decodeFromString(CreateResponse.serializer(), responseBody)
             parsed.code
         }
+        Result.success(code)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
     /**
      * Retrieve an encrypted blob by share code.
      * @return The base64-encoded blob.
      */
-    suspend fun getShare(code: String): Result<String> = runCatching {
-        retryWithBackoff {
+    suspend fun getShare(code: String): Result<String> = try {
+        val blob = retryWithBackoff {
             val request = Request.Builder()
                 .url("$baseUrl/api/shares/$code")
                 .get()
@@ -138,12 +146,15 @@ class ShareApi @Inject constructor() {
                 }
             }
         }
+        Result.success(blob)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
     /**
      * Revoke a share before it is read.
      */
-    suspend fun revokeShare(code: String): Result<Unit> = runCatching {
+    suspend fun revokeShare(code: String): Result<Unit> = try {
         retryWithBackoff {
             val request = Request.Builder()
                 .url("$baseUrl/api/shares/$code")
@@ -156,6 +167,9 @@ class ShareApi @Inject constructor() {
                 throw ShareApiException("Server returned ${response.code}: $error")
             }
         }
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
     /** Check if the server is reachable (no retry — quick check). */

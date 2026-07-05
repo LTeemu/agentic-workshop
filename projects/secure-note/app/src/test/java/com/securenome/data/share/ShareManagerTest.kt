@@ -3,6 +3,7 @@ package com.securenome.data.share
 import android.content.Context
 import com.securenome.security.CryptoManager
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -10,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -102,7 +104,7 @@ class ShareManagerTest {
         val result = shareManager.revokeShare(code)
 
         assertTrue("Revocation must succeed", result.isSuccess)
-        verify { shareApi.revokeShare(code) }
+        coVerify { shareApi.revokeShare(code) }
     }
 
     @Test
@@ -114,12 +116,12 @@ class ShareManagerTest {
         val result = shareManager.revokeShare(code)
 
         assertTrue("Must propagate server failure", result.isFailure)
-        verify { shareApi.revokeShare(code) }
+        coVerify { shareApi.revokeShare(code) }
     }
 
     @Test
     fun `isServerReachable delegates to healthCheck`() = runTest {
-        coEvery { shareApi.healthCheck() } returns Result.success(true)
+        every { shareApi.healthCheck() } returns Result.success(true)
 
         val reachable = shareManager.isServerReachable()
 
