@@ -40,6 +40,10 @@ interface NotebookDao {
     @Query("UPDATE notebooks SET sortOrder = :sortOrder WHERE id = :id")
     suspend fun updateSortOrder(id: Long, sortOrder: Int)
 
+    /** Find a notebook by exact title (case-insensitive). */
+    @Query("SELECT * FROM notebooks WHERE LOWER(title) = LOWER(:title) LIMIT 1")
+    suspend fun getNotebookByTitle(title: String): NotebookEntity?
+
     /** Insert a new notebook. Returns the created id. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(notebook: NotebookEntity): Long

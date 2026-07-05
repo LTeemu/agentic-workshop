@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,17 +32,20 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -51,6 +57,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +76,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.securenome.data.local.entity.NoteType
 import java.io.File
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 /**
  * Note editor.
@@ -90,6 +102,11 @@ fun NoteEditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Pending photo name dialog state
+    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoSuggestion by remember { mutableStateOf("") }
+    var pendingPhotoName by remember { mutableStateOf("") }
+
     // Initialize ViewModel
     LaunchedEffect(notebookId, noteId) {
         viewModel.initialize(notebookId, noteId, noteType)
@@ -101,6 +118,39 @@ fun NoteEditorScreen(
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
+    }
+
+    // Photo name prompt dialog
+    pendingPhotoUri?.let { uri ->
+        AlertDialog(
+            onDismissRequest = {
+                pendingPhotoUri = null // discard photo
+            },
+            title = { Text("Name your photo") },
+            text = {
+                OutlinedTextField(
+                    value = pendingPhotoName,
+                    onValueChange = { pendingPhotoName = it },
+                    singleLine = true,
+                    placeholder = { Text(pendingPhotoSuggestion) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val name = pendingPhotoName.trim().ifBlank { null }
+                    viewModel.savePhoto(uri, name)
+                    pendingPhotoUri = null
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPhotoUri = null }) {
+                    Text("Discard")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -139,9 +189,18 @@ fun NoteEditorScreen(
                     content = state.content,
                     onContentChange = { viewModel.onTextChanged(it) },
                     photos = state.photos,
-                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
-                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
+                    onCapturePhoto = { uri ->
+                        pendingPhotoSuggestion = "Photo ${state.photos.size + 1}"
+                        pendingPhotoName = pendingPhotoSuggestion
+                        pendingPhotoUri = uri
+                    },
+                    onPickPhoto = { uri ->
+                        pendingPhotoSuggestion = "Photo ${state.photos.size + 1}"
+                        pendingPhotoName = pendingPhotoSuggestion
+                        pendingPhotoUri = uri
+                    },
                     onDeletePhoto = { id -> viewModel.deletePhoto(id) },
+                    onRenamePhoto = { id, name -> viewModel.renamePhoto(id, name) },
                     modifier = Modifier.padding(padding)
                 )
                 NoteType.CHECKLIST -> ChecklistEditor(
@@ -150,9 +209,18 @@ fun NoteEditorScreen(
                     onToggleItem = viewModel::toggleChecklistItem,
                     onDeleteItem = viewModel::deleteChecklistItem,
                     photos = state.photos,
-                    onCapturePhoto = { uri -> viewModel.savePhoto(uri) },
-                    onPickPhoto = { uri -> viewModel.savePhoto(uri) },
+                    onCapturePhoto = { uri ->
+                        pendingPhotoSuggestion = "Photo ${state.photos.size + 1}"
+                        pendingPhotoName = pendingPhotoSuggestion
+                        pendingPhotoUri = uri
+                    },
+                    onPickPhoto = { uri ->
+                        pendingPhotoSuggestion = "Photo ${state.photos.size + 1}"
+                        pendingPhotoName = pendingPhotoSuggestion
+                        pendingPhotoUri = uri
+                    },
                     onDeletePhoto = { id -> viewModel.deletePhoto(id) },
+                    onRenamePhoto = { id, name -> viewModel.renamePhoto(id, name) },
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -168,6 +236,7 @@ private fun TextEditor(
     onCapturePhoto: (Uri) -> Unit,
     onPickPhoto: (Uri) -> Unit,
     onDeletePhoto: (Long) -> Unit,
+    onRenamePhoto: (Long, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -194,7 +263,8 @@ private fun TextEditor(
             photos = photos,
             onCapturePhoto = onCapturePhoto,
             onPickPhoto = onPickPhoto,
-            onDeletePhoto = onDeletePhoto
+            onDeletePhoto = onDeletePhoto,
+            onRenamePhoto = onRenamePhoto
         )
     }
 }
@@ -209,6 +279,7 @@ private fun ChecklistEditor(
     onCapturePhoto: (Uri) -> Unit,
     onPickPhoto: (Uri) -> Unit,
     onDeletePhoto: (Long) -> Unit,
+    onRenamePhoto: (Long, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var newItemText by remember { mutableStateOf("") }
@@ -234,7 +305,7 @@ private fun ChecklistEditor(
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = {
-                    onAddItem(newItemText)
+                    onAddItem(newItemText.trim())
                     newItemText = ""
                 },
                 enabled = newItemText.isNotBlank()
@@ -298,7 +369,8 @@ private fun ChecklistEditor(
             photos = photos,
             onCapturePhoto = onCapturePhoto,
             onPickPhoto = onPickPhoto,
-            onDeletePhoto = onDeletePhoto
+            onDeletePhoto = onDeletePhoto,
+            onRenamePhoto = onRenamePhoto
         )
     }
 }
@@ -313,6 +385,7 @@ private fun PhotoSection(
     onCapturePhoto: (Uri) -> Unit,
     onPickPhoto: (Uri) -> Unit,
     onDeletePhoto: (Long) -> Unit,
+    onRenamePhoto: (Long, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -413,46 +486,19 @@ private fun PhotoSection(
 
         // Photo grid (non-lazy to avoid nested scrolling issues)
         if (photos.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 photos.chunked(2).forEach { rowPhotos ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         rowPhotos.forEach { photo ->
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
-                            ) {
-                                val bitmap = remember(photo.thumbnailBytes) {
-                                    BitmapFactory.decodeByteArray(
-                                        photo.thumbnailBytes,
-                                        0,
-                                        photo.thumbnailBytes.size
-                                    )
-                                }
-                                if (bitmap != null) {
-                                    androidx.compose.foundation.Image(
-                                        bitmap = bitmap.asImageBitmap(),
-                                        contentDescription = "Photo",
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { onDeletePhoto(photo.id) },
-                                    modifier = Modifier.align(Alignment.TopEnd)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Delete photo",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
+                            PhotoCard(
+                                photo = photo,
+                                modifier = Modifier.weight(1f).aspectRatio(1f),
+                                onDelete = { onDeletePhoto(photo.id) },
+                                onRename = { newName -> onRenamePhoto(photo.id, newName) }
+                            )
                         }
                         // Fill empty slot in the last row if odd count
                         if (rowPhotos.size == 1) {
@@ -460,6 +506,109 @@ private fun PhotoSection(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * A single photo card with thumbnail, name overlay on the image, delete button,
+ * and click-to-rename on the overlay.
+ */
+@Composable
+private fun PhotoCard(
+    photo: PhotoUi,
+    modifier: Modifier = Modifier,
+    onDelete: () -> Unit,
+    onRename: (String) -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+    var isEditing by remember { mutableStateOf(false) }
+    var editText by remember(photo.name) { mutableStateOf(photo.name) }
+
+    Box(modifier = modifier) {
+        // Thumbnail
+        val bitmap = remember(photo.thumbnailBytes) {
+            BitmapFactory.decodeByteArray(
+                photo.thumbnailBytes,
+                0,
+                photo.thumbnailBytes.size
+            )
+        }
+        if (bitmap != null) {
+            androidx.compose.foundation.Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Photo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        // Delete button — always visible, top-right
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete photo",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+
+        // Name overlay or inline rename field — bottom edge
+        if (isEditing) {
+            OutlinedTextField(
+                value = editText,
+                onValueChange = { editText = it },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .focusRequester(focusRequester),
+                textStyle = MaterialTheme.typography.labelSmall,
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        val trimmed = editText.trim()
+                        if (trimmed.isNotEmpty()) {
+                            onRename(trimmed)
+                        }
+                        isEditing = false
+                    }
+                )
+            )
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
+        } else {
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        editText = photo.name
+                        isEditing = true
+                    }
+            ) {
+                Text(
+                    text = photo.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
         }
     }

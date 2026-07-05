@@ -38,5 +38,7 @@ data class PhotoEntity(
     val noteId: Long,
     val encryptedImageBytes: ByteArray,
     val thumbnailBytes: ByteArray? = null, // Small preview, encrypted
+    /** Encrypted photo name. Null = auto-name "Photo N". */
+    val encryptedName: ByteArray? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

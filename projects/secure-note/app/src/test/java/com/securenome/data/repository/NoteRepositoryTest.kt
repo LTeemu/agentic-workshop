@@ -115,7 +115,64 @@ class NoteRepositoryTest {
             noteDao.insertPhoto(withArg { photo ->
                 assertEquals(noteId, photo.noteId)
                 assertArrayEquals(encryptedImage, photo.encryptedImageBytes)
+                assertNull("encryptedName must be null when no name provided", photo.encryptedName)
             })
+        }
+    }
+
+    @Test
+    fun `addPhoto encrypts name when provided`() = runTest {
+        val noteId = 1L
+        val imageBytes = byteArrayOf(10, 20, 30)
+        val photoName = "My Photo"
+        val thumbnail = byteArrayOf(99, 99)
+        val encryptedImage = byteArrayOf(1, 1, 1)
+        val encryptedThumbnail = byteArrayOf(2, 2, 2)
+        val encryptedName = byteArrayOf(3, 3, 3)
+
+        every { cryptoManager.encrypt(imageBytes) } returns encryptedImage
+        every { cryptoManager.encrypt(photoName.toByteArray()) } returns encryptedName
+        every { cryptoManager.encrypt(thumbnail) } returns encryptedThumbnail
+        coEvery { noteDao.insertPhoto(any<PhotoEntity>()) } returns 1L
+
+        val id = repository.addPhoto(noteId, imageBytes, thumbnailBytes = thumbnail, name = photoName)
+
+        assertEquals(1L, id)
+        coVerify {
+            noteDao.insertPhoto(withArg { photo ->
+                assertEquals(noteId, photo.noteId)
+                assertArrayEquals(encryptedImage, photo.encryptedImageBytes)
+                assertArrayEquals(encryptedName, photo.encryptedName)
+            })
+        }
+    }
+
+    @Test
+    fun `updatePhotoName updates encrypted name`() = runTest {
+        val photoId = 1L
+        val newName = "Renamed Photo"
+        val encryptedName = byteArrayOf(4, 4, 4)
+
+        every { cryptoManager.encrypt(newName.toByteArray()) } returns encryptedName
+        coEvery { noteDao.updatePhotoName(any(), any()) } returns Unit
+
+        repository.updatePhotoName(photoId, newName)
+
+        coVerify {
+            noteDao.updatePhotoName(photoId, encryptedName)
+        }
+    }
+
+    @Test
+    fun `updatePhotoName clears name when null`() = runTest {
+        val photoId = 1L
+
+        coEvery { noteDao.updatePhotoName(any(), any()) } returns Unit
+
+        repository.updatePhotoName(photoId, null)
+
+        coVerify {
+            noteDao.updatePhotoName(photoId, null)
         }
     }
 

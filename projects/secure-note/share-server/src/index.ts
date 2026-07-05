@@ -2,11 +2,27 @@ import express from "express";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import https from "node:https";
 import { fileURLToPath } from "node:url";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// ---------------------------------------------------------------------------
+// Rate limiting — 30 requests per minute per IP on sharing endpoints.
+// Health check is excluded from rate limiting.
+// ---------------------------------------------------------------------------
+const shareLimiter = rateLimit({
+  windowMs: 60_000, // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — try again later" },
+});
+
+app.use("/api/", shareLimiter);
 
 // ---------------------------------------------------------------------------
 // File-persisted blob store — survives server restarts.
@@ -136,15 +152,34 @@ app.delete<{ code: string }>("/api/shares/:code", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Health check
+// Health check (not rate-limited since it's under / not /api/)
 // ---------------------------------------------------------------------------
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", shares: store.size });
 });
 
-app.listen(PORT, () => {
-  console.log(`SecureNote share server running on http://localhost:${PORT}`);
-});
+// ---------------------------------------------------------------------------
+// Start server — HTTPS if SSL_KEY and SSL_CERT env vars are set, else HTTP
+// ---------------------------------------------------------------------------
+const sslKey = process.env.SSL_KEY;
+const sslCert = process.env.SSL_CERT;
+
+if (sslKey && sslCert) {
+  const credentials = {
+    key: fs.readFileSync(sslKey, "utf-8"),
+    cert: fs.readFileSync(sslCert, "utf-8"),
+  };
+  https.createServer(credentials, app).listen(PORT, () => {
+    console.log(`SecureNote share server running on https://localhost:${PORT}`);
+  });
+} else {
+  app.listen(PORT, () => {
+    console.log(
+      `SecureNote share server running on http://localhost:${PORT} ` +
+      `(set SSL_KEY and SSL_CERT for HTTPS)`
+    );
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers

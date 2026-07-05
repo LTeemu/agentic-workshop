@@ -83,6 +83,28 @@ class NoteEditorViewModelTest {
     }
 
     @Test
+    fun `addChecklistItem trims whitespace`() = runTest {
+        viewModel.initialize(notebookId = 1L, noteId = null, noteType = NoteType.CHECKLIST)
+
+        viewModel.addChecklistItem("  Item 1  ")
+
+        val state = viewModel.state.value
+        assertEquals("Must have one item", 1, state.checklistItems.size)
+        assertEquals("Item text must be trimmed", "Item 1", state.checklistItems[0].text)
+    }
+
+    @Test
+    fun `addChecklistItem rejects duplicates case-insensitive`() = runTest {
+        viewModel.initialize(notebookId = 1L, noteId = null, noteType = NoteType.CHECKLIST)
+
+        viewModel.addChecklistItem("Item 1")
+        viewModel.addChecklistItem("item 1") // case-insensitive duplicate
+
+        val state = viewModel.state.value
+        assertEquals("Must not add duplicate", 1, state.checklistItems.size)
+    }
+
+    @Test
     fun `toggleChecklistItem toggles done state`() = runTest {
         viewModel.initialize(notebookId = 1L, noteId = null, noteType = NoteType.CHECKLIST)
 

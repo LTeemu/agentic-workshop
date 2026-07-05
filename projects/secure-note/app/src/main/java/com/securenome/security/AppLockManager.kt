@@ -55,6 +55,9 @@ class AppLockManager @Inject constructor(
     /** Has the user authenticated in this process session? */
     private var authenticated: Boolean = false
 
+    /** Whether the user has authenticated in this process session. */
+    val isAuthenticated: Boolean get() = authenticated
+
     /** Job that clears [authenticated] after the grace period. */
     private var lockTimer: Job? = null
 

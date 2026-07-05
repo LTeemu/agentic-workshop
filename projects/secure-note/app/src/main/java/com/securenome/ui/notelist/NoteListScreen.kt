@@ -87,7 +87,9 @@ fun NoteListScreen(
     viewModel: NoteListViewModel = hiltViewModel()
 ) {
     val notes by viewModel.noteSummaries.collectAsStateWithLifecycle()
+    val totalNoteCount by viewModel.totalNoteCount.collectAsStateWithLifecycle()
     val sharingEnabled by viewModel.sharingEnabled.collectAsStateWithLifecycle()
+    val sharingLoadingNoteId by viewModel.sharingLoadingNoteId.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     // Local mutable snapshot of notes used by the reorderable library.
@@ -127,6 +129,7 @@ fun NoteListScreen(
         ShareDialog(
             noteId = noteId,
             currentShareCode = shareDialogCode,
+            isLoading = sharingLoadingNoteId == noteId,
             isServerReachable = shareDialogServerReachable,
             sharingEnabled = sharingEnabled,
             onToggleShare = { id, code ->
@@ -239,7 +242,7 @@ fun NoteListScreen(
                 ) {
                     if (isImporting) {
                         CircularProgressIndicator(
-                            modifier = Modifier.height(16.dp),
+                            modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
                         )
                     } else {
@@ -329,18 +332,20 @@ fun NoteListScreen(
                     .fillMaxSize()
             ) {
             if (reorderableNotes.isEmpty()) {
+                val isEmptyNotebook = totalNoteCount == 0
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "No notes",
+                        text = if (isEmptyNotebook) "No notes" else "No matching notes",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Create one with the + button",
+                        text = if (isEmptyNotebook) "Create one with the + button"
+                               else "Try a different search term",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

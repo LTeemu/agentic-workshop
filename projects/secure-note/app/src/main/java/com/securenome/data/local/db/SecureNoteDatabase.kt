@@ -17,6 +17,7 @@ import com.securenome.data.local.entity.PhotoEntity
  * - v1→v2: Empty migration (enables migration infrastructure)
  * - v2→v3: Added sortOrder column to notes table for manual reordering
  * - v3→v4: Added sortOrder column to notebooks table for manual reordering
+ * - v4→v5: Added encryptedName column to photos table for searchable photo names
  *
  * ## Why are all entities listed?
  *
@@ -30,7 +31,7 @@ import com.securenome.data.local.entity.PhotoEntity
         ChecklistItemEntity::class,
         PhotoEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class SecureNoteDatabase : RoomDatabase() {
@@ -66,6 +67,16 @@ abstract class SecureNoteDatabase : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notebooks ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * Migration from v4 to v5 — added encryptedName column to photos table.
+         * Existing photos get null name (auto-named "Photo N" in UI).
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE photos ADD COLUMN encryptedName BLOB")
             }
         }
     }

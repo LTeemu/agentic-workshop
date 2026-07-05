@@ -20,16 +20,23 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Default is overridden in buildTypes (debug/release)
         buildConfigField("String", "SHARE_SERVER_URL", "\"http://10.0.2.2:3001\"")
     }
 
     buildTypes {
+        debug {
+            // Emulator → host: HTTP is fine for local dev
+            buildConfigField("String", "SHARE_SERVER_URL", "\"http://10.0.2.2:3001\"")
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Production: use HTTPS. Replace with your actual server URL.
+            buildConfigField("String", "SHARE_SERVER_URL", "\"https://your-server.com\"")
         }
     }
 
@@ -93,8 +100,6 @@ dependencies {
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Security
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

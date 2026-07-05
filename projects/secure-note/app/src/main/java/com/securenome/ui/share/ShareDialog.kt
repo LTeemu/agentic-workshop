@@ -25,11 +25,6 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -51,14 +46,13 @@ import kotlinx.coroutines.launch
 fun ShareDialog(
     noteId: Long,
     currentShareCode: String?,
+    isLoading: Boolean,
     isServerReachable: Boolean,
     sharingEnabled: Boolean,
     onToggleShare: (noteId: Long, currentShareCode: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
-    val scope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -132,14 +126,10 @@ fun ShareDialog(
                         checked = currentShareCode != null,
                         onCheckedChange = { enabled ->
                             if (!isLoading && sharingEnabled) {
-                                isLoading = true
-                                scope.launch {
-                                    onToggleShare(noteId, if (enabled) null else currentShareCode)
-                                    isLoading = false
-                                }
+                                onToggleShare(noteId, if (enabled) null else currentShareCode)
                             }
                         },
-                        enabled = sharingEnabled,
+                        enabled = sharingEnabled && !isLoading,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -149,8 +139,13 @@ fun ShareDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Loading indicator while async operation is in progress
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+
                 // Share code display
-                if (currentShareCode != null) {
+                if (currentShareCode != null && !isLoading) {
                     OutlinedCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -195,17 +190,12 @@ fun ShareDialog(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                } else {
+                } else if (!isLoading) {
                     Text(
                         text = "Not shared",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    if (isLoading) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
                 }
             }
         },

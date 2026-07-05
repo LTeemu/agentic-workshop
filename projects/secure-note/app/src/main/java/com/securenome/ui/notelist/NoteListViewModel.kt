@@ -40,9 +40,10 @@ import javax.inject.Inject
 data class NoteSummary(
     val id: Long,
     val type: NoteType,
-    val preview: String, // First 50 characters decrypted
+    val preview: String, // Decrypted preview text
     val hasChecklist: Boolean,
     val photoCount: Int,
+    val photoNames: List<String>,
     val updatedAt: Long,
     val shareCode: String?
 )
@@ -62,6 +63,10 @@ class NoteListViewModel @Inject constructor(
         retryPendingRevocations()
     }
 
+    /** ID of the note currently toggling its share status, or null if idle. */
+    private val _sharingLoadingNoteId = MutableStateFlow<Long?>(null)
+    val sharingLoadingNoteId: StateFlow<Long?> = _sharingLoadingNoteId.asStateFlow()
+
     /**
      * Current search query (empty = show all).
      */
@@ -80,15 +85,28 @@ class NoteListViewModel @Inject constructor(
         noteRepository.getNotesByNotebook(notebookId)
             .map { notesWithDetails ->
                 notesWithDetails.map { detail ->
+                    val photoNames = detail.photos.mapNotNull { photo ->
+                        photo.encryptedName?.let {
+                            try { String(cryptoManager.decrypt(it)).trim() } catch (_: Exception) { null }
+                        }
+                    }
                     val preview = when (detail.note.type) {
                         NoteType.CHECKLIST -> {
-                            val total = detail.checklistItems.size
-                            val done = detail.checklistItems.count { it.isDone }
-                            if (total == 0) "(empty)" else "$done/$total done"
+                            val texts = detail.checklistItems.mapNotNull { item ->
+                                try {
+                                    String(cryptoManager.decrypt(item.encryptedText)).trim()
+                                } catch (_: Exception) { null }
+                            }
+                            val base = if (texts.isEmpty()) "(empty)" else texts.joinToString(" · ").take(80)
+                            if (photoNames.isNotEmpty()) "$base | ${photoNames.joinToString(", ").take(40)}"
+                            else base
                         }
                         else -> try {
-                            String(cryptoManager.decrypt(detail.note.encryptedContent))
+                            val base = String(cryptoManager.decrypt(detail.note.encryptedContent))
+                                .trim()
                                 .take(80)
+                            if (photoNames.isNotEmpty()) "$base | ${photoNames.joinToString(", ").take(40)}"
+                            else base
                         } catch (e: Exception) {
                             "(decryption error)"
                         }
@@ -99,6 +117,7 @@ class NoteListViewModel @Inject constructor(
                         preview = preview,
                         hasChecklist = detail.checklistItems.isNotEmpty(),
                         photoCount = detail.photos.size,
+                        photoNames = photoNames,
                         updatedAt = detail.note.updatedAt,
                         shareCode = detail.note.shareCode
                     )
@@ -111,6 +130,14 @@ class NoteListViewModel @Inject constructor(
             )
 
     /**
+     * Whether the current notebook has any notes at all (before search filtering).
+     * Used by UI to show the right empty-state message.
+     */
+    val totalNoteCount: StateFlow<Int> = allNoteSummaries
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /**
      * Filtered note summaries based on search query.
      * When query is empty, shows all notes.
      * Matches case-insensitively against preview text AND note type label
@@ -121,7 +148,8 @@ class NoteListViewModel @Inject constructor(
             if (query.isBlank()) notes
             else notes.filter { note ->
                 note.preview.contains(query, ignoreCase = true) ||
-                typeLabel(note.type).contains(query, ignoreCase = true)
+                typeLabel(note.type).contains(query, ignoreCase = true) ||
+                note.photoNames.any { it.contains(query, ignoreCase = true) }
             }
         }.stateIn(
             scope = viewModelScope,
@@ -176,47 +204,55 @@ class NoteListViewModel @Inject constructor(
      * as unshared.
      */
     fun toggleShare(noteId: Long, currentShareCode: String?) {
+        _sharingLoadingNoteId.value = noteId
         viewModelScope.launch {
-            // Master toggle check — silently no-op if sharing is disabled
-            if (!settingsDataStore.sharingEnabled.first()) return@launch
-            if (currentShareCode != null) {
-                // Turn sharing off: revoke on server + clear local code
-                val result = shareManager.revokeShare(currentShareCode)
-                noteRepository.setShareCode(noteId, null)
-                // If server DELETE failed, queue for retry
-                if (result.isFailure) {
-                    settingsDataStore.addPendingRevocation(noteId, currentShareCode)
-                }
-            } else {
-                // Turn sharing on: generate code (also uploads to server if available)
-                val note = noteRepository.getNoteEntityById(noteId) ?: return@launch
-                val plaintext = String(cryptoManager.decrypt(note.encryptedContent))
-                val noteData = buildString {
-                    appendLine("type=${note.type}")
-                    appendLine(plaintext)
-                    // Include checklist items for checklist notes
-                    if (note.type == NoteType.CHECKLIST) {
-                        val items = noteRepository.getChecklistItemEntities(noteId)
-                        for (item in items) {
-                            val decrypted = String(cryptoManager.decrypt(item.encryptedText))
-                            appendLine("item=$decrypted||${item.isDone}")
+            try {
+                // Master toggle check — silently no-op if sharing is disabled
+                if (!settingsDataStore.sharingEnabled.first()) return@launch
+                if (currentShareCode != null) {
+                    // Turn sharing off: revoke on server + clear local code
+                    val result = shareManager.revokeShare(currentShareCode)
+                    noteRepository.setShareCode(noteId, null)
+                    // If server DELETE failed, queue for retry
+                    if (result.isFailure) {
+                        settingsDataStore.addPendingRevocation(noteId, currentShareCode)
+                    }
+                } else {
+                    // Turn sharing on: generate code (also uploads to server if available)
+                    val note = noteRepository.getNoteEntityById(noteId) ?: return@launch
+                    val plaintext = String(cryptoManager.decrypt(note.encryptedContent))
+                    val noteData = buildString {
+                        appendLine("type=${note.type}")
+                        appendLine(plaintext)
+                        // Include checklist items for checklist notes
+                        if (note.type == NoteType.CHECKLIST) {
+                            val items = noteRepository.getChecklistItemEntities(noteId)
+                            for (item in items) {
+                                val decrypted = String(cryptoManager.decrypt(item.encryptedText))
+                                appendLine("item=$decrypted||${item.isDone}")
+                            }
+                        }
+                        // Include photos (encrypted bytes are part of the payload,
+                        // re-encrypted as a whole by ShareManager)
+                        val photos = noteRepository.getPhotoEntities(noteId)
+                        for (photo in photos) {
+                            val b64Bytes = Base64.getEncoder().encodeToString(photo.encryptedImageBytes)
+                            val b64Thumb = photo.thumbnailBytes?.let {
+                                Base64.getEncoder().encodeToString(it)
+                            } ?: ""
+                            val b64Name = photo.encryptedName?.let {
+                                Base64.getEncoder().encodeToString(it)
+                            } ?: ""
+                            appendLine("photo=$b64Bytes||$b64Thumb||${photo.createdAt}||$b64Name")
                         }
                     }
-                    // Include photos (encrypted bytes are part of the payload,
-                    // re-encrypted as a whole by ShareManager)
-                    val photos = noteRepository.getPhotoEntities(noteId)
-                    for (photo in photos) {
-                        val b64Bytes = Base64.getEncoder().encodeToString(photo.encryptedImageBytes)
-                        val b64Thumb = photo.thumbnailBytes?.let {
-                            Base64.getEncoder().encodeToString(it)
-                        } ?: ""
-                        appendLine("photo=$b64Bytes||$b64Thumb||${photo.createdAt}")
+                    val shareCode = shareManager.createShare(noteData.toByteArray())
+                    if (shareCode != null) {
+                        noteRepository.setShareCode(noteId, shareCode)
                     }
                 }
-                val shareCode = shareManager.createShare(noteData.toByteArray())
-                if (shareCode != null) {
-                    noteRepository.setShareCode(noteId, shareCode)
-                }
+            } finally {
+                _sharingLoadingNoteId.value = null
             }
         }
     }
@@ -279,7 +315,7 @@ class NoteListViewModel @Inject constructor(
         val itemDone = mutableListOf<Boolean>()
         for (line in lines.filter { it.startsWith("item=") }) {
             val parts = line.removePrefix("item=").split("||")
-            itemTexts.add(parts[0])
+            itemTexts.add(parts[0].trim())
             itemDone.add(parts.getOrNull(1)?.toBooleanStrictOrNull() ?: false)
         }
 
@@ -287,6 +323,7 @@ class NoteListViewModel @Inject constructor(
         data class PhotoShare(
             val encryptedBytes: ByteArray,
             val encryptedThumb: ByteArray?,
+            val encryptedName: ByteArray?,
             val createdAt: Long
         )
         val photoShares = lines.filter { it.startsWith("photo=") }.map { line ->
@@ -294,9 +331,11 @@ class NoteListViewModel @Inject constructor(
             val b64Bytes = parts.getOrNull(0) ?: return@map null
             val b64Thumb = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }
             val createdAt = parts.getOrNull(2)?.toLongOrNull() ?: System.currentTimeMillis()
+            val b64Name = parts.getOrNull(3)?.takeIf { it.isNotEmpty() }
             PhotoShare(
                 encryptedBytes = Base64.getDecoder().decode(b64Bytes),
                 encryptedThumb = b64Thumb?.let { Base64.getDecoder().decode(it) },
+                encryptedName = b64Name?.let { Base64.getDecoder().decode(it) },
                 createdAt = createdAt
             )
         }.filterNotNull()
@@ -321,12 +360,16 @@ class NoteListViewModel @Inject constructor(
 
         // Save imported photos — decrypt with CryptoManager (same key),
         // then re-encrypt for the new note via addPhoto()
+        // Decrypt name to pass plaintext to addPhoto (it re-encrypts)
         for (photoShare in photoShares) {
             val imageBytes = cryptoManager.decrypt(photoShare.encryptedBytes)
             val thumbBytes = photoShare.encryptedThumb?.let {
                 cryptoManager.decrypt(it)
             } ?: noteRepository.createThumbnail(imageBytes)
-            noteRepository.addPhoto(newNoteId, imageBytes, thumbBytes)
+            val name = photoShare.encryptedName?.let {
+                try { String(cryptoManager.decrypt(it)) } catch (_: Exception) { null }
+            }
+            noteRepository.addPhoto(newNoteId, imageBytes, thumbBytes, name)
         }
     }
 }

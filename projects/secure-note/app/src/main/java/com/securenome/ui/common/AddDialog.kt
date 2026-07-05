@@ -48,7 +48,7 @@ fun AddDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(text) },
+                onClick = { onConfirm(text.trim()) },
                 enabled = text.isNotBlank()
             ) {
                 Text("Create")

@@ -46,6 +46,7 @@ data class ChecklistItemUi(
 data class PhotoUi(
     val id: Long,
     val thumbnailBytes: ByteArray,
+    val name: String,
     val createdAt: Long
 )
 
@@ -92,6 +93,11 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
+    /** Trim content directly in the text field callback for immediate response. */
+    fun onTextChangedTrimmed(content: String) {
+        onTextChanged(content.trim())
+    }
+
     /**
      * Save immediately (called on back navigation after canceling any pending auto-save).
      */
@@ -101,7 +107,7 @@ class NoteEditorViewModel @Inject constructor(
     }
 
     private suspend fun performSave() {
-        val content = _state.value.content
+        val content = _state.value.content.trim()
         _state.value = _state.value.copy(isSaving = true)
         try {
             if (noteId != null) {
@@ -150,6 +156,9 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
+    /** Generate auto-name for a photo based on its index (1-based). */
+    private fun autoPhotoName(index: Int) = "Photo ${index + 1}"
+
     private fun loadNote(noteId: Long) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
@@ -176,9 +185,13 @@ class NoteEditorViewModel @Inject constructor(
                                 val thumb = photo.thumbnailBytes?.let {
                                     try { cryptoManager.decrypt(it) } catch (_: Exception) { null }
                                 } ?: return@mapNotNull null
+                                val name = photo.encryptedName?.let {
+                                    try { String(cryptoManager.decrypt(it)) } catch (_: Exception) { null }
+                                } ?: autoPhotoName(noteWithDetails.photos.indexOf(photo))
                                 PhotoUi(
                                     id = photo.id,
                                     thumbnailBytes = thumb,
+                                    name = name,
                                     createdAt = photo.createdAt
                                 )
                             }
@@ -199,8 +212,10 @@ class NoteEditorViewModel @Inject constructor(
      * Save a captured/selected photo to the current note.
      * If the note doesn't exist yet, creates it first as a TEXT note
      * (all note types can contain photos — no separate PHOTO type needed).
+     *
+     * @param name Optional display name. When null, auto-names as "Photo N".
      */
-    fun savePhoto(imageUri: Uri) {
+    fun savePhoto(imageUri: Uri, name: String? = null) {
         viewModelScope.launch {
             try {
                 // Read bytes from URI
@@ -215,12 +230,15 @@ class NoteEditorViewModel @Inject constructor(
 
                 // Compute thumbnail once and pass to addPhoto to avoid double processing
                 val thumbnailBytes = noteRepository.createThumbnail(imageBytes)
-                val photoId = noteRepository.addPhoto(noteId!!, imageBytes, thumbnailBytes)
+                val photoCount = noteRepository.getPhotoCount(noteId!!)
+                val photoName = name?.takeIf { it.isNotBlank() } ?: autoPhotoName(photoCount)
+                val photoId = noteRepository.addPhoto(noteId!!, imageBytes, thumbnailBytes, photoName)
 
                 _state.value = _state.value.copy(
                     photos = _state.value.photos + PhotoUi(
                         id = photoId,
                         thumbnailBytes = thumbnailBytes,
+                        name = photoName,
                         createdAt = System.currentTimeMillis()
                     )
                 )
@@ -249,13 +267,34 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
+    /** Rename a photo in the current note. */
+    fun renamePhoto(photoId: Long, newName: String) {
+        viewModelScope.launch {
+            try {
+                noteRepository.updatePhotoName(photoId, newName.trim())
+                _state.value = _state.value.copy(
+                    photos = _state.value.photos.map {
+                        if (it.id == photoId) it.copy(name = newName.trim()) else it
+                    }
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = "Error renaming photo: ${e.message}"
+                )
+            }
+        }
+    }
+
     // --- Checklist item management ---
 
     fun addChecklistItem(text: String) {
-        if (text.isBlank()) return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        // Dedup: skip if same text already exists (case-insensitive)
+        if (_state.value.checklistItems.any { it.text.equals(trimmed, ignoreCase = true) }) return
         val newItem = ChecklistItemUi(
             id = -System.currentTimeMillis(), // temporary negative id for new items
-            text = text,
+            text = trimmed,
             isDone = false
         )
         _state.value = _state.value.copy(

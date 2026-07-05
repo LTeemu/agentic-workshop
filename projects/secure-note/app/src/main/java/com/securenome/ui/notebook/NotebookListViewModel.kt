@@ -47,7 +47,8 @@ class NotebookListViewModel @Inject constructor(
     /** Create new notebook */
     fun createNotebook(title: String) {
         viewModelScope.launch {
-            notebookRepository.createNotebook(title.ifBlank { "New notebook" })
+            val trimmed = title.trim().ifBlank { "New notebook" }
+            notebookRepository.createNotebook(trimmed)
         }
     }
 

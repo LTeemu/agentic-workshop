@@ -40,7 +40,7 @@ class NoteRepository @Inject constructor(
         notebookId: Long,
         plainText: String
     ): Long {
-        val encrypted = cryptoManager.encrypt(plainText.toByteArray())
+        val encrypted = cryptoManager.encrypt(plainText.trim().toByteArray())
         val note = NoteEntity(
             notebookId = notebookId,
             type = NoteType.TEXT,
@@ -52,7 +52,7 @@ class NoteRepository @Inject constructor(
 
     suspend fun updateTextNote(noteId: Long, plainText: String) {
         val existing = noteDao.getNoteEntityById(noteId) ?: return
-        val encrypted = cryptoManager.encrypt(plainText.toByteArray())
+        val encrypted = cryptoManager.encrypt(plainText.trim().toByteArray())
         noteDao.updateNote(
             existing.copy(
                 encryptedContent = encrypted,
@@ -75,12 +75,16 @@ class NoteRepository @Inject constructor(
                 sortOrder = nextSortOrder(notebookId)
             )
         )
-        // Insert checklist items
+        // Insert checklist items (trimmed, deduped)
+        val seen = mutableSetOf<String>()
         for (text in items) {
+            val trimmed = text.trim()
+            if (trimmed.isEmpty()) continue
+            if (!seen.add(trimmed.lowercase())) continue // case-insensitive dedup
             noteDao.insertChecklistItem(
                 ChecklistItemEntity(
                     noteId = noteId,
-                    encryptedText = cryptoManager.encrypt(text.toByteArray())
+                    encryptedText = cryptoManager.encrypt(trimmed.toByteArray())
                 )
             )
         }
@@ -88,10 +92,17 @@ class NoteRepository @Inject constructor(
     }
 
     suspend fun addChecklistItem(noteId: Long, text: String, isDone: Boolean = false): Long {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return -1L
+        // Dedup: skip if same text already exists for this note (case-insensitive)
+        val existing = noteDao.getChecklistItemEntities(noteId)
+        if (existing.any { String(cryptoManager.decrypt(it.encryptedText)).equals(trimmed, ignoreCase = true) }) {
+            return -1L
+        }
         return noteDao.insertChecklistItem(
             ChecklistItemEntity(
                 noteId = noteId,
-                encryptedText = cryptoManager.encrypt(text.toByteArray()),
+                encryptedText = cryptoManager.encrypt(trimmed.toByteArray()),
                 isDone = isDone
             )
         )
@@ -116,16 +127,26 @@ class NoteRepository @Inject constructor(
         noteDao.deleteAllChecklistItems(noteId)
     }
 
-    suspend fun addPhoto(noteId: Long, imageBytes: ByteArray, thumbnailBytes: ByteArray? = null): Long {
+    suspend fun addPhoto(noteId: Long, imageBytes: ByteArray, thumbnailBytes: ByteArray? = null, name: String? = null): Long {
         val thumb = thumbnailBytes ?: createThumbnail(imageBytes)
         return noteDao.insertPhoto(
             PhotoEntity(
                 noteId = noteId,
                 encryptedImageBytes = cryptoManager.encrypt(imageBytes),
-                thumbnailBytes = cryptoManager.encrypt(thumb)
+                thumbnailBytes = cryptoManager.encrypt(thumb),
+                encryptedName = name?.let { cryptoManager.encrypt(it.toByteArray()) }
             )
         )
     }
+
+    suspend fun updatePhotoName(photoId: Long, name: String?) {
+        val encryptedName = name?.let { cryptoManager.encrypt(it.toByteArray()) }
+        noteDao.updatePhotoName(photoId, encryptedName)
+    }
+
+    /** Get the count of photos for a note, used for auto-naming. */
+    suspend fun getPhotoCount(noteId: Long): Int =
+        noteDao.getPhotoCount(noteId)
 
     suspend fun deletePhoto(photo: PhotoEntity) {
         noteDao.deletePhoto(photo)

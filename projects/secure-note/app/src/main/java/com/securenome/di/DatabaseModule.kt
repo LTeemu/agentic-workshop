@@ -36,7 +36,8 @@ object DatabaseModule {
             .addMigrations(
                 SecureNoteDatabase.MIGRATION_1_2,
                 SecureNoteDatabase.MIGRATION_2_3,
-                SecureNoteDatabase.MIGRATION_3_4
+                SecureNoteDatabase.MIGRATION_3_4,
+                SecureNoteDatabase.MIGRATION_4_5
             )
             .build()
     }

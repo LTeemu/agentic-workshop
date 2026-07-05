@@ -72,17 +72,30 @@ class NotebookRepositoryTest {
     }
 
     @Test
-    fun `createNotebook inserts and returns id`() = runTest {
+    fun `createNotebook trims title and inserts`() = runTest {
+        coEvery { notebookDao.getNotebookByTitle("New notebook") } returns null
         coEvery { notebookDao.insert(any<NotebookEntity>()) } returns 1L
 
-        val id = repository.createNotebook("New notebook")
+        val id = repository.createNotebook("  New notebook  ")
 
         assertEquals("createNotebook must return the created id", 1L, id)
         coVerify {
+            notebookDao.getNotebookByTitle("New notebook")
             notebookDao.insert(withArg { entity ->
-                assertEquals("Title must be passed through", "New notebook", entity.title)
+                assertEquals("Title must be trimmed", "New notebook", entity.title)
             })
         }
+    }
+
+    @Test
+    fun `createNotebook returns existing id when duplicate`() = runTest {
+        val existing = NotebookEntity(id = 5L, title = "Work")
+        coEvery { notebookDao.getNotebookByTitle("Work") } returns existing
+
+        val id = repository.createNotebook("  Work  ")
+
+        assertEquals("Must return existing notebook id", 5L, id)
+        coVerify(exactly = 0) { notebookDao.insert(any()) }
     }
 
     @Test

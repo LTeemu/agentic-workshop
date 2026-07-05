@@ -102,6 +102,17 @@ interface NoteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: PhotoEntity): Long
 
+    @Update
+    suspend fun updatePhoto(photo: PhotoEntity)
+
+    /** Targeted update for photo name — avoids reading/writing large BLOB fields. */
+    @Query("UPDATE photos SET encryptedName = :name WHERE id = :photoId")
+    suspend fun updatePhotoName(photoId: Long, name: ByteArray?)
+
     @Delete
     suspend fun deletePhoto(photo: PhotoEntity)
+
+    /** Lightweight count query — avoids loading BLOB fields. */
+    @Query("SELECT COUNT(*) FROM photos WHERE noteId = :noteId")
+    suspend fun getPhotoCount(noteId: Long): Int
 }

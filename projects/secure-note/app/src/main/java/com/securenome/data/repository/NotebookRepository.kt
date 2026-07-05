@@ -28,8 +28,12 @@ class NotebookRepository @Inject constructor(
     suspend fun getNotebook(id: Long): NotebookEntity? = notebookDao.getNotebookById(id)
 
     suspend fun createNotebook(title: String): Long {
+        val trimmed = title.trim()
+        // Check for duplicate (case-insensitive after trim)
+        val existing = notebookDao.getNotebookByTitle(trimmed)
+        if (existing != null) return existing.id
         val nextSortOrder = notebookDao.getMaxSortOrder() + 1
-        val notebook = NotebookEntity(title = title, sortOrder = nextSortOrder)
+        val notebook = NotebookEntity(title = trimmed, sortOrder = nextSortOrder)
         return notebookDao.insert(notebook)
     }
 

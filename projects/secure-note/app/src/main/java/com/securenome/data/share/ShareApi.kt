@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -52,11 +53,28 @@ class ShareApi @Inject constructor() {
         private const val BASE_DELAY_MS = 1000L
     }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+
+        // Add certificate pinning for HTTPS connections.
+        // Only pins when the URL uses HTTPS (release builds);
+        // HTTP (debug/emulator) skips pinning.
+        if (baseUrl.startsWith("https://")) {
+            // SHA-256 hash of the server's certificate public key.
+            // Replace with the actual hash for your production server.
+            // Generate with: openssl s_client -connect host:port < /dev/null 2>/dev/null | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
+            builder.certificatePinner(
+                CertificatePinner.Builder()
+                    .add("your-server.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                    .build()
+            )
+        }
+
+        builder.build()
+    }
 
     private val json = Json { ignoreUnknownKeys = true }
     private val mediaType = "application/json".toMediaType()
