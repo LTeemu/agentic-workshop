@@ -1,0 +1,81 @@
+{% extends "layout.html" %} {% block title %}Audio Features — Spotify Playlist Analyzer{% endblock
+%} {% block content %} {% set features = data.get('audio_features', {}) %} {% set feature_config = {
+'bpm': { 'label': 'BPM', 'color': '#d4a853' }, 'energy': { 'label': 'Energy', 'color': '#c9773a' },
+'dance': { 'label': 'Danceability', 'color': '#b8433a' }, 'valence': { 'label': 'Valence
+(Happiness)', 'color': '#8a8a3a' }, 'acousticness': { 'label': 'Acousticness', 'color': '#3a8a7a' },
+'instrumentalness': { 'label': 'Instrumentalness', 'color': '#7a4a8a' }, 'speechiness': { 'label':
+'Speechiness', 'color': '#8a5a3a' }, 'liveness': { 'label': 'Liveness', 'color': '#a07d3a' },
+'loudness': { 'label': 'Loudness (dB)', 'color': '#6a6a2a' }, } %}
+
+<div class="page-header">
+  <h1>Audio Features</h1>
+  <p class="subtitle">Distribution histograms for every audio feature in your playlist</p>
+</div>
+
+<div class="chart-grid">
+  {% for key, cfg in feature_config.items() %} {% set feat = features.get(key, {}) %} {% if
+  feat.get('buckets') %}
+  <div class="chart-card">
+    <h3>
+      {{ cfg.label }} {% if feat.get('unit') %}<span class="unit">({{ feat.unit }})</span>{% endif
+      %}
+    </h3>
+    <div class="chart-wrapper">
+      <canvas id="chart_{{ key }}"></canvas>
+    </div>
+  </div>
+  {% endif %} {% endfor %}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Parse hex to HSL, then shift lightness per bar
+    function hexToHsl(hex) {
+      let r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+      let mx = Math.max(r,g,b), mn = Math.min(r,g,b), h, s, l = (mx+mn)/2;
+      if (mx === mn) return [0,0,Math.round(l*100)];
+      let d = mx - mn;
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      else if (mx === g) h = ((b - r) / d + 2) / 6;
+      else h = ((r - g) / d + 4) / 6;
+      return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+    }
+
+    const config = {{ feature_config | tojson }};
+    const features = {{ features | tojson }};
+
+    Object.entries(config).forEach(([key, cfg]) => {
+      const data = features[key];
+      if (!data || !data.buckets || !data.buckets.length) return;
+
+      const ctx = document.getElementById('chart_' + key);
+      if (!ctx) return;
+
+      const [h, s, l] = hexToHsl(cfg.color);
+      const colors = data.buckets.map((_, i) => `hsl(${h}, ${s}%, ${l + (i - data.buckets.length/2) * 5}%)`);
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.buckets,
+          datasets: [{
+            label: 'Count',
+            data: data.counts,
+            backgroundColor: colors,
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "layout.html" %} {% block title %}Mood &amp; Key — Spotify Playlist Analyzer{% endblock
+%} {% block content %} {% set mood_data = data.get('mood_key', {}) %} {% set key_dist =
+mood_data.get('key_distribution', []) %} {% set camelot = mood_data.get('camelot_distribution', [])
+%} {% set quad = mood_data.get('mood_quadrants', {}) %} {% set scatter =
+mood_data.get('valence_energy_scatter', []) %}
+
+<div class="page-header">
+  <h1>Mood &amp; Key</h1>
+  <p class="subtitle">Musical key distribution and valence-energy mood analysis</p>
+</div>
+
+{% if quad %}
+<section class="section">
+  <h2>Mood Quadrants</h2>
+  <p class="subtitle">Songs split by median Valence vs Energy</p>
+  <canvas id="moodQuadrantChart" height="80"></canvas>
+</section>
+{% endif %} {% if key_dist %}
+<section class="section">
+  <h2>Key Distribution</h2>
+  <div class="chart-grid-2col">
+    <div class="chart-card">
+      <h3>Musical Keys</h3>
+      <div class="chart-wrapper">
+        <canvas id="keyChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Camelot Wheel</h3>
+      <div class="chart-wrapper">
+        <canvas id="camelotChart"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %} {% if scatter %}
+<section class="section">
+  <h2>Valence vs Energy Scatter</h2>
+  <p class="subtitle">Each dot is a song — hover for details</p>
+  <canvas id="scatterChart" height="140"></canvas>
+</section>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const quad = {{ quad | tojson }};
+    if (Object.keys(quad).length) {
+      const labels = {
+        high_valence_high_energy: 'Happy & Energetic',
+        high_valence_low_energy: 'Happy & Calm',
+        low_valence_high_energy: 'Sad & Energetic',
+        low_valence_low_energy: 'Sad & Calm'
+      };
+      new Chart(document.getElementById('moodQuadrantChart'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(quad).map(k => labels[k] || k),
+          datasets: [{
+            data: Object.values(quad),
+            backgroundColor: ['#7a4a8a', '#5a3a6a', '#8a5a3a', '#3a5a6a'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    const keyDist = {{ key_dist | tojson }};
+    if (keyDist.length) {
+      const colors = keyDist.map((_, i) => `hsl(${(i * 360 / keyDist.length)}, 60%, 60%)`);
+      new Chart(document.getElementById('keyChart'), {
+        type: 'bar',
+        data: {
+          labels: keyDist.map(k => k.key),
+          datasets: [{
+            label: 'Count',
+            data: keyDist.map(k => k.count),
+            backgroundColor: colors,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+          }
+        }
+      });
+    }
+
+    const cam = {{ camelot | tojson }};
+    if (cam.length) {
+      new Chart(document.getElementById('camelotChart'), {
+        type: 'doughnut',
+        data: {
+          labels: cam.map(c => c.camelot),
+          datasets: [{
+            data: cam.map(c => c.count),
+            backgroundColor: cam.map((_, i) => `hsl(${(i * 360 / cam.length)}, 55%, 55%)`),
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } }
+          }
+        }
+      });
+    }
+
+    const scat = {{ scatter | tojson }};
+    if (scat.length) {
+      new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Songs',
+            data: scat.map(s => ({ x: s.valence, y: s.energy })),
+            backgroundColor: '#d4a853',
+            pointRadius: 6,
+            pointHoverRadius: 9,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  const s = scat[ctx.dataIndex];
+                  return `${s.song} — ${s.artist} (${s.genre})`;
+                }
+              }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Valence (Sad → Happy)' }, min: 0, max: 100, grid: { color: '#2f2822' } },
+            y: { title: { display: true, text: 'Energy (Calm → Energetic)' }, min: 0, max: 100, grid: { color: '#2f2822' } }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

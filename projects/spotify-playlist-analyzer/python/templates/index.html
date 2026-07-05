@@ -1,0 +1,262 @@
+{% extends "layout.html" %} {% block title %}Overview — Spotify Playlist Analyzer{% endblock %} {%
+block content %} {% set stats = data.get('basic_stats', {}) %}
+
+<div class="page-header">
+  <h1>Your Playlist</h1>
+  {% if data.get('_meta', {}).get('limit_applied') %}
+  <p class="subtitle">
+    Analysis of <strong>{{ stats.get('total_songs', 0) }}</strong> songs
+    <span class="badge badge-warning">limited to {{ data['_meta']['limit_applied'] }} rows</span>
+  </p>
+  {% endif %}
+</div>
+
+<!-- Vinyl Record Hero -->
+<div class="vinyl-hero">
+  <div class="vinyl-disc">
+    <div class="vinyl-grooves"></div>
+    <div class="vinyl-label">
+      <span class="vinyl-label-label">Playlist</span>
+      <span class="vinyl-label-title">{{ stats.get('total_songs', 0) }} Tracks</span>
+      <span class="vinyl-label-speed">33&frac13; RPM</span>
+    </div>
+  </div>
+  <div class="vinyl-stats">
+    <div class="vinyl-stat"><span class="num">{{ stats.get('total_songs', 0) }}</span> tracks</div>
+    <div class="vinyl-stat">
+      <span class="num">{{ stats.get('unique_artists', 0) }}</span> artists
+    </div>
+    <div class="vinyl-stat">
+      <span class="num">{{ stats.get('total_duration_hrs', 0) }}</span> hours
+    </div>
+  </div>
+</div>
+
+<!-- LP Case Stat Grid -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('total_songs', 0) }}</div>
+    <div class="stat-label">Tracks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('unique_artists', 0) }}</div>
+    <div class="stat-label">Artists</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('unique_genres', 0) }}</div>
+    <div class="stat-label">Genres</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('unique_albums', 0) }}</div>
+    <div class="stat-label">Albums</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_bpm', '—') }}</div>
+    <div class="stat-label">Avg BPM</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_energy', '—') }}</div>
+    <div class="stat-label">Avg Energy</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_dance', '—') }}</div>
+    <div class="stat-label">Avg Dance</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_valence', '—') }}</div>
+    <div class="stat-label">Avg Valence</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_popularity', '—') }}</div>
+    <div class="stat-label">Avg Popularity</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('avg_duration_sec', '—') }}s</div>
+    <div class="stat-label">Avg Duration</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('explicit_count', 0) }}</div>
+    <div class="stat-label">Explicit</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.get('explicit_pct', 0) }}%</div>
+    <div class="stat-label">Explicit %</div>
+  </div>
+</div>
+
+{% set perfect = data.get('perfect_song', {}) %} {% set freq = perfect.get('freq', {}) %} {% set
+composite = perfect.get('composite', {}) %} {% set match = perfect.get('closest_match', {}) %} {%
+set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
+<section class="section perfect-song">
+  <h2>The Perfect Track</h2>
+  <p class="subtitle">The most common audio feature values across your playlist</p>
+  <div class="perfect-grid">
+    {% for key, cfg in {'bpm': 'BPM', 'energy': 'Energy', 'dance': 'Dance', 'valence': 'Valence',
+    'acousticness': 'Acoustic', 'popularity': 'Popularity'}.items() %} {% set p = freq.get(key, {})
+    %} {% if p %}
+    <div class="perfect-stat">
+      <span class="perfect-value"
+        >{{ p.value }}{% if p.unit and p.unit != '' %} {{ p.unit }}{% endif %}</span
+      >
+      <span class="perfect-label">{{ cfg }}</span>
+    </div>
+    {% endif %} {% endfor %}
+  </div>
+  {% if composite %}
+  <div class="perfect-composite">
+    <span class="perfect-composite-label">Most common attributes:</span>
+    <span class="perfect-composite-tags">
+      {% if composite.key and composite.key != '—' %}<span class="tag">{{ composite.key }}</span>{%
+      endif %} {% if composite.camelot and composite.camelot != '—' %}<span class="tag"
+        >{{ composite.camelot }}</span
+      >{% endif %} {% if composite.genre and composite.genre != '—' %}<span class="tag"
+        >{{ composite.genre }}</span
+      >{% endif %} {% if composite.time_signature and composite.time_signature != '—' %}<span
+        class="tag"
+        >{{ composite.time_signature }}/4</span
+      >{% endif %}
+    </span>
+  </div>
+  {% endif %} {% if match %}
+  <div class="perfect-divider"></div>
+  <div class="edge-cards">
+    <div class="edge-card edge-closest">
+      <h3 class="match-heading">Most representative</h3>
+      <div class="match-card">
+        <div class="match-info">
+          <span class="match-title">{{ match.song }}</span>
+          <span class="match-artist">{{ match.artist }}</span>
+          <div class="match-tags">
+            {% if composite.genre and composite.genre != '—' %}<span class="tag"
+              >{{ composite.genre }}</span
+            >{% endif %} {% if match.key %}<span class="tag">{{ match.key }}</span>{% endif %} {% if
+            match.camelot %}<span class="tag">{{ match.camelot }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="match-stats">
+          <div class="match-stat">
+            <span class="match-stat-value">{{ match.bpm or '—' }}</span>
+            <span class="match-stat-label">BPM</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ match.energy or '—' }}</span>
+            <span class="match-stat-label">Energy</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ match.dance or '—' }}</span>
+            <span class="match-stat-label">Dance</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ match.valence or '—' }}</span>
+            <span class="match-stat-label">Valence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% if furthest %}
+    <div class="edge-card edge-furthest">
+      <h3 class="match-heading">Most different</h3>
+      <div class="match-card">
+        <div class="match-info">
+          <span class="match-title">{{ furthest.song }}</span>
+          <span class="match-artist">{{ furthest.artist }}</span>
+          <div class="match-tags">
+            {% if furthest.genres %}<span class="tag tag-dim"
+              >{{ furthest.genres.split(',')[0].strip().title() }}</span
+            >{% endif %} {% if furthest.key %}<span class="tag tag-dim">{{ furthest.key }}</span>{%
+            endif %}
+          </div>
+        </div>
+        <div class="match-stats">
+          <div class="match-stat">
+            <span class="match-stat-value">{{ furthest.bpm or '—' }}</span>
+            <span class="match-stat-label">BPM</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ furthest.energy or '—' }}</span>
+            <span class="match-stat-label">Energy</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ furthest.dance or '—' }}</span>
+            <span class="match-stat-label">Dance</span>
+          </div>
+          <div class="match-stat">
+            <span class="match-stat-value">{{ furthest.valence or '—' }}</span>
+            <span class="match-stat-label">Valence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endif %} {% set genres = data.get('genres', {}).get('top_genres', []) %} {% if genres %}
+<section class="section">
+  <h2>Top Genres</h2>
+  <canvas id="genresPreviewChart" height="100"></canvas>
+</section>
+{% endif %} {% set artists = data.get('artists', {}).get('top_artists', []) %} {% if artists %}
+<section class="section">
+  <h2>Top Artists</h2>
+  <canvas id="artistsPreviewChart" height="100"></canvas>
+</section>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function warmColors(n) {
+      return Array.from({length: n}, (_, i) => `hsl(${30 + i * 35}, 50%, 45%)`);
+    }
+    function tealColors(n) {
+      return Array.from({length: n}, (_, i) => `hsl(${160 + i * 20}, 40%, 40%)`);
+    }
+
+    {% if genres %}
+      new Chart(document.getElementById('genresPreviewChart'), {
+        type: 'bar',
+        data: {
+          labels: {{ genres[:8] | map(attribute='name') | list | tojson }},
+          datasets: [{
+            label: 'Songs',
+            data: {{ genres[:8] | map(attribute='count') | list | tojson }},
+            backgroundColor: warmColors({{ genres[:8] | length }}),
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    {% endif %}
+
+    {% if artists %}
+      new Chart(document.getElementById('artistsPreviewChart'), {
+        type: 'bar',
+        data: {
+          labels: {{ artists[:8] | map(attribute='name') | list | tojson }},
+          datasets: [{
+            label: 'Songs',
+            data: {{ artists[:8] | map(attribute='count') | list | tojson }},
+            backgroundColor: tealColors({{ artists[:8] | length }}),
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    {% endif %}
+  });
+</script>
+{% endblock %}

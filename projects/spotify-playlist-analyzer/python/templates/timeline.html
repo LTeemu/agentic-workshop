@@ -1,0 +1,113 @@
+{% extends "layout.html" %} {% block title %}Timeline — Spotify Playlist Analyzer{% endblock %} {%
+block content %} {% set temporal = data.get('temporal', {}) %} {% set by_year =
+temporal.get('songs_by_year', []) %} {% set by_month = temporal.get('songs_by_month', []) %} {% set
+album_years = temporal.get('album_year_counts', []) %}
+
+<div class="page-header">
+  <h1>Timeline</h1>
+  <p class="subtitle">
+    {% if temporal.get('earliest_added') and temporal.get('latest_added') %} Songs added from
+    <strong>{{ temporal.earliest_added }}</strong> to <strong>{{ temporal.latest_added }}</strong>
+    {% endif %}
+  </p>
+</div>
+
+{% if by_year %}
+<section class="section">
+  <h2>Songs Added by Year</h2>
+  <canvas id="byYearChart" height="100"></canvas>
+</section>
+{% endif %} {% if by_month %}
+<section class="section">
+  <h2>Songs Added by Month</h2>
+  <canvas id="byMonthChart" height="120"></canvas>
+</section>
+{% endif %} {% if album_years %}
+<section class="section">
+  <h2>Album Release Years</h2>
+  <canvas id="albumYearChart" height="100"></canvas>
+</section>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const byYear = {{ by_year | tojson }};
+    if (byYear.length) {
+      const amberColors = byYear.map((_, i) => `hsl(${25 + i * 25}, 55%, 42%)`);
+      new Chart(document.getElementById('byYearChart'), {
+        type: 'bar',
+        data: {
+          labels: byYear.map(d => String(d.year)),
+          datasets: [{
+            label: 'Songs Added',
+            data: byYear.map(d => d.count),
+            backgroundColor: amberColors,
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const byMonth = {{ by_month | tojson }};
+    if (byMonth.length) {
+      new Chart(document.getElementById('byMonthChart'), {
+        type: 'line',
+        data: {
+          labels: byMonth.map(d => d.month),
+          datasets: [{
+            label: 'Songs Added',
+            data: byMonth.map(d => d.count),
+            borderColor: '#d4a853',
+            backgroundColor: 'rgba(212,168,83,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 20, maxRotation: 45 } }
+          }
+        }
+      });
+    }
+
+    const albumYears = {{ album_years | tojson }};
+    if (albumYears.length) {
+      const forestColors = albumYears.map((_, i) => `hsl(${140 + i * 25}, 35%, 35%)`);
+      new Chart(document.getElementById('albumYearChart'), {
+        type: 'bar',
+        data: {
+          labels: albumYears.map(d => String(d.year)),
+          datasets: [{
+            label: 'Albums',
+            data: albumYears.map(d => d.count),
+            backgroundColor: forestColors,
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

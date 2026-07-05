@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Spotify Playlist Analyzer{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:opsz@9..40&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        Chart.defaults.color = '#8b8176';
+        Chart.defaults.borderColor = '#2f2822';
+        Chart.defaults.plugins.legend.labels.boxWidth = 10;
+      });
+    </script>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-brand">
+        <span class="nav-brand-icon">&#x1F3B6;</span>
+        <span class="nav-brand-text">Playlist Analyzer</span>
+      </div>
+      <ul class="nav-links">
+        {% for link in nav_links %}
+        <li>
+          <a
+            href="{{ link.path }}"
+            class="nav-link{% if current_path == link.path %} active{% endif %}"
+          >
+            {{ link.label }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+    <main class="container">{% block content %}{% endblock %}</main>
+
+    <footer class="footer">
+      <p>
+        Playlist Analyzer &mdash; data from
+        <code>{{ (data or {}).get('_meta', {}).get('source', 'N/A') }}</code> &mdash; {{ (data or
+        {}).get('basic_stats', {}).get('total_songs', 0) }} tracks
+      </p>
+    </footer>
+  </body>
+</html>

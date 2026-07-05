@@ -1,0 +1,7 @@
+{% extends "layout.html" %} {% block title %}Error{% endblock %} {% block content %}
+<div class="page-header">
+  <h1>Something went wrong</h1>
+  <p class="subtitle">{{ error_message or 'An unexpected error occurred.' }}</p>
+  <a href="{{ url_for('index') }}" class="btn">Back to Overview</a>
+</div>
+{% endblock %}

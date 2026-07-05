@@ -1,0 +1,98 @@
+{% extends "layout.html" %} {% block title %}Artists — Spotify Playlist Analyzer{% endblock %} {%
+block content %} {% set artist_data = data.get('artists', {}) %} {% set top =
+artist_data.get('top_artists', []) %}
+
+<div class="page-header">
+  <h1>Artists</h1>
+  <p class="subtitle">
+    <strong>{{ artist_data.get('total_unique_artists', 0) }}</strong> unique artists,
+    <strong>{{ artist_data.get('collaboration_count', 0) }}</strong> collaborations
+  </p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ artist_data.get('total_unique_artists', 0) }}</div>
+    <div class="stat-label">Unique Artists</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ artist_data.get('collaboration_count', 0) }}</div>
+    <div class="stat-label">Collaborations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ top[0].count if top else 0 }}</div>
+    <div class="stat-label">Most Songs by One Artist</div>
+  </div>
+</div>
+
+{% if top %}
+<section class="section">
+  <h2>Top 20 Artists</h2>
+  <canvas id="artistsChart"></canvas>
+</section>
+
+<section class="section">
+  <h2>Artist Details</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Artist</th>
+        <th>Songs</th>
+        <th>%</th>
+        <th>Genres</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in top %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="artist-name">{{ a.name }}</td>
+        <td>{{ a.count }}</td>
+        <td>{{ a.pct }}%</td>
+        <td class="genre-tags">
+          {% for g in a.get('genres', []) %}
+          <span class="tag">{{ g }}</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<div class="empty-state">
+  <p>No artist data available.</p>
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const top = {{ top | tojson }};
+    if (top.length) {
+      const tealColors = top.map((_, i) => `hsl(${165 + i * 15}, 42%, 40%)`);
+      new Chart(document.getElementById('artistsChart'), {
+        type: 'bar',
+        data: {
+          labels: top.map(a => a.name),
+          datasets: [{
+            label: 'Songs',
+            data: top.map(a => a.count),
+            backgroundColor: tealColors,
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#2f2822' } },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

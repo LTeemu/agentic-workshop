@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+data/analysis.json
+data/spotify-playlist.csv
+package-lock.json

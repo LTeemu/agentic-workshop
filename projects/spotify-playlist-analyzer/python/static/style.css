@@ -1,0 +1,839 @@
+/* ========================================================================
+   Spotify Playlist Analyzer — Record Label Aesthetic
+   ======================================================================== */
+
+/* -----------------------------------------------------------------------
+   Tokens
+   ----------------------------------------------------------------------- */
+
+:root {
+  --bg: #120e0c;
+  --surface: #1c1714;
+  --surface-hover: #26201c;
+  --border: #2f2822;
+  --text: #e8e0d6;
+  --text-muted: #8b8176;
+  --text-dim: #5c554b;
+  --vinyl-black: #0d0a08;
+
+  /* Record label palette */
+  --gold: #d4a853;
+  --gold-dim: #a07d3a;
+  --gold-glow: rgba(212, 168, 83, 0.12);
+  --rust: #b8433a;
+  --rust-dim: #8a332a;
+  --burnt-orange: #c9773a;
+  --teal: #3a8a7a;
+  --teal-dim: #2a6a5a;
+  --olive: #8a8a3a;
+  --olive-dim: #6a6a2a;
+  --plum: #7a4a8a;
+  --plum-dim: #5a3a6a;
+  --brown: #8a5a3a;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+}
+
+/* -----------------------------------------------------------------------
+   Reset & Base
+   ----------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--text);
+}
+
+::selection {
+  background: var(--gold-dim);
+  color: var(--bg);
+}
+
+/* -----------------------------------------------------------------------
+   Grain Overlay
+   ----------------------------------------------------------------------- */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* -----------------------------------------------------------------------
+   Navigation
+   ----------------------------------------------------------------------- */
+
+.nav {
+  background: var(--vinyl-black);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  min-height: 52px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.nav-brand-icon {
+  font-size: 1.2rem;
+  filter: sepia(0.6) saturate(0.8) hue-rotate(-10deg);
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  flex: 1;
+  justify-content: flex-start;
+  padding: var(--space-2) 0;
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  border-bottom-color: var(--text-muted);
+}
+
+.nav-link.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* -----------------------------------------------------------------------
+   Layout
+   ----------------------------------------------------------------------- */
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-16);
+}
+
+/* -----------------------------------------------------------------------
+   Page Header
+   ----------------------------------------------------------------------- */
+
+.page-header {
+  margin-bottom: var(--space-8);
+  position: relative;
+}
+
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin-bottom: var(--space-1);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* -----------------------------------------------------------------------
+   Badge
+   ----------------------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0;
+  margin-left: var(--space-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-warning {
+  background: var(--gold-dim);
+  color: var(--bg);
+}
+
+/* -----------------------------------------------------------------------
+   Vinyl Hero (Overview)
+   ----------------------------------------------------------------------- */
+
+.vinyl-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  margin-bottom: var(--space-12);
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vinyl-disc {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #333, var(--vinyl-black) 55%);
+  position: relative;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 80px rgba(0, 0, 0, 0.7),
+    inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.vinyl-grooves {
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.025);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.015),
+    0 0 0 14px rgba(255, 255, 255, 0.01),
+    0 0 0 24px rgba(255, 255, 255, 0.008),
+    0 0 0 36px rgba(255, 255, 255, 0.005);
+  animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pause spin on reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vinyl-grooves {
+    animation: none;
+  }
+}
+
+.vinyl-label {
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--vinyl-black);
+  padding: var(--space-2);
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.vinyl-label-label {
+  font-family: var(--font-body);
+  font-size: 0.45rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.vinyl-label-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: var(--space-1) 0;
+}
+
+.vinyl-label-speed {
+  font-family: var(--font-body);
+  font-size: 0.4rem;
+  letter-spacing: 0.15em;
+  opacity: 0.6;
+}
+
+.vinyl-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vinyl-stat {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.vinyl-stat .num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: block;
+  line-height: 1.1;
+}
+
+/* -----------------------------------------------------------------------
+   Stat Grid (LP Case Grid)
+   ----------------------------------------------------------------------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--border);
+  margin-bottom: var(--space-8);
+}
+
+.stat-card {
+  background: var(--surface);
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.stat-card:hover {
+  background: var(--surface-hover);
+}
+
+/* Remove outer borders for grid finesse */
+.stat-card:nth-child(4n) {
+  border-right: none;
+}
+.stat-card:nth-last-child(-n + 4) {
+  border-bottom: none;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+  margin-bottom: var(--space-1);
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+
+/* -----------------------------------------------------------------------
+   Sections (LP Sleeve Cards)
+   ----------------------------------------------------------------------- */
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: var(--space-8);
+  margin-bottom: var(--space-6);
+  position: relative;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-8);
+  right: var(--space-8);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+.section h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.section .subtitle {
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: var(--space-6);
+}
+
+/* -----------------------------------------------------------------------
+   Perfect Song
+   ----------------------------------------------------------------------- */
+
+.perfect-song {
+  border-left: 3px solid var(--gold);
+}
+
+.perfect-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.perfect-stat {
+  background: var(--vinyl-black);
+  border: 1px solid var(--border);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.perfect-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+}
+
+.perfect-label {
+  display: block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.perfect-source {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfect-composite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.perfect-composite-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.perfect-composite-tags {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* -----------------------------------------------------------------------
+   Perfect Song — Real Match Card
+   ----------------------------------------------------------------------- */
+
+.match-card {
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+  padding: var(--space-4) 0;
+}
+
+.match-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.match-heading {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+  letter-spacing: 0.05em;
+}
+
+.edge-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.edge-card .match-card {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  gap: var(--space-6);
+}
+
+.edge-closest .match-card {
+  border-color: var(--gold-dim);
+}
+
+.edge-furthest .match-card {
+  border-color: var(--rust-dim);
+}
+
+@media (max-width: 700px) {
+  .edge-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.match-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.2;
+  margin-bottom: var(--space-1);
+}
+
+.match-artist {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.match-tags {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.match-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.match-stat {
+  background: var(--vinyl-black);
+  border: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  min-width: 80px;
+}
+
+.match-stat-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+}
+
+.match-stat-label {
+  display: block;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.perfect-divider {
+  margin: var(--space-4) 0;
+  border-top: 1px solid var(--border);
+}
+
+/* -----------------------------------------------------------------------
+   Chart Grids
+   ----------------------------------------------------------------------- */
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+
+.chart-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: var(--space-6);
+}
+
+.chart-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+}
+
+.chart-card .unit {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.chart-wrapper {
+  position: relative;
+}
+
+/* -----------------------------------------------------------------------
+   Data Tables (LP Liner Notes)
+   ----------------------------------------------------------------------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table thead {
+  border-bottom: 2px solid var(--gold-dim);
+}
+
+.data-table th {
+  text-align: left;
+  padding: var(--space-3) var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--gold);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.data-table td {
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.artist-name {
+  font-weight: 500;
+}
+
+/* Genre Tags */
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tag {
+  display: inline-block;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  letter-spacing: 0.03em;
+}
+
+.tag-dim {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.6rem;
+}
+
+/* -----------------------------------------------------------------------
+   Empty State
+   ----------------------------------------------------------------------- */
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  color: var(--text-dim);
+}
+
+/* -----------------------------------------------------------------------
+   Button
+   ----------------------------------------------------------------------- */
+
+.btn {
+  display: inline-block;
+  background: var(--gold-dim);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: var(--space-3) var(--space-6);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+/* -----------------------------------------------------------------------
+   Footer (Record Label Colophon)
+   ----------------------------------------------------------------------- */
+
+.footer {
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--border);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.footer code {
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 0.05rem 0.35rem;
+  font-size: 0.65rem;
+}
+
+/* -----------------------------------------------------------------------
+   Responsive
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .vinyl-hero {
+    flex-direction: column;
+    gap: var(--space-6);
+    text-align: center;
+  }
+  .vinyl-disc {
+    width: 180px;
+    height: 180px;
+  }
+  .vinyl-stats {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+  .vinyl-stat .num {
+    display: inline;
+    font-size: 1.2rem;
+    margin-right: 0.25rem;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat-card:nth-child(2n) {
+    border-right: none;
+  }
+  .stat-card:nth-child(4n) {
+    border-right: 1px solid var(--border);
+  }
+  .stat-card:nth-last-child(-n + 4) {
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-card:nth-last-child(-n + 2) {
+    border-bottom: none;
+  }
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-grid-2col {
+    grid-template-columns: 1fr;
+  }
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+  .nav {
+    padding: 0 var(--space-4);
+    gap: var(--space-4);
+  }
+  .data-table {
+    font-size: 0.75rem;
+  }
+  .data-table th,
+  .data-table td {
+    padding: var(--space-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-links {
+    gap: 0;
+  }
+  .nav-link {
+    padding: 0 var(--space-4);
+    font-size: 0.6rem;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

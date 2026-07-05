@@ -1,0 +1,95 @@
+{% extends "layout.html" %} {% block title %}Genres — Spotify Playlist Analyzer{% endblock %} {%
+block content %} {% set genre_data = data.get('genres', {}) %} {% set top =
+genre_data.get('top_genres', []) %}
+
+<div class="page-header">
+  <h1>Genres</h1>
+  <p class="subtitle">
+    <strong>{{ genre_data.get('total_unique', 0) }}</strong> unique genres across
+    <strong>{{ genre_data.get('total_occurrences', 0) }}</strong> genre tags
+  </p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ genre_data.get('total_unique', 0) }}</div>
+    <div class="stat-label">Unique Genres</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ genre_data.get('total_occurrences', 0) }}</div>
+    <div class="stat-label">Total Tags</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">
+      {% if top and genre_data.get('total_occurrences') %} {{ (top[0].count /
+      genre_data.total_occurrences * 100) | round(1) }}% {% else %} 0% {% endif %}
+    </div>
+    <div class="stat-label">Top Genre Share</div>
+  </div>
+</div>
+
+{% if top %}
+<section class="section">
+  <h2>Top 20 Genres</h2>
+  <canvas id="genresChart"></canvas>
+</section>
+
+<section class="section">
+  <h2>Genre Breakdown</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Genre</th>
+        <th>Count</th>
+        <th>%</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in top %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ g.name }}</td>
+        <td>{{ g.count }}</td>
+        <td>{{ g.pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<div class="empty-state">
+  <p>No genre data available.</p>
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const top = {{ top | tojson }};
+    if (top.length) {
+      const oliveColors = top.map((_, i) => `hsl(${50 + i * 20}, 40%, 38%)`);
+      new Chart(document.getElementById('genresChart'), {
+        type: 'bar',
+        data: {
+          labels: top.map(g => g.name),
+          datasets: [{
+            label: 'Songs',
+            data: top.map(g => g.count),
+            backgroundColor: oliveColors,
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#2f2822' } },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+  "name": "spotify-playlist-analyzer",
+  "private": true,
+  "scripts": {
+    "start": "cd python && python server.py"
+  }
+}
