@@ -25,12 +25,12 @@ export function generateReading() {
   const t = types[type];
   const range = t.max - t.min;
 
-  // Smooth random walk — 8% of range per step. No clamping to [min, max]
+  // Smooth random walk — 15% of range per step. No clamping to [min, max]
   // so values naturally drift across thresholds and back.
   // A soft guard rail at ±30% of range prevents runaway values.
   const guardMin = t.min - range * 0.3;
   const guardMax = t.max + range * 0.3;
-  const step = (Math.random() - 0.5) * range * 0.08;
+  const step = (Math.random() - 0.5) * range * 0.15;
   const value =
     Math.round(Math.max(guardMin, Math.min(guardMax, sensorState[type] + step)) * 100) / 100;
 
