@@ -11,7 +11,7 @@ Usage:
 import argparse
 import json
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -124,83 +124,115 @@ def audio_features(df):
     return result
 
 
+def _parse_genres(x):
+    if pd.isna(x):
+        return []
+    return [
+        g.strip().lower()
+        for g in str(x).split(",")
+        if g.strip() and g.strip().lower() != "nan"
+    ]
+
+
 def genres(df):
     """Count and rank genres."""
-    genre_list = _split_col(df, "Genres")
+
+    df = df.copy()
+    df["Genres"] = df["Genres"].fillna("")
+
+    genre_list = [
+        g
+        for x in df["Genres"]
+        for g in _parse_genres(x)
+    ]
+
     if not genre_list:
         return {"top_genres": [], "total_unique": 0}
+
     counter = Counter(genre_list)
     total = len(genre_list)
 
-    # Count unique artists per genre and track year range
     genre_artists = {}
     genre_years = {}
+
     for _, row in df.iterrows():
         artists = [a.strip() for a in str(row.get("Artist", "")).split(",") if a.strip()]
-        genres_raw = row.get("Genres", "")
-        if pd.isna(genres_raw) or not str(genres_raw).strip():
+        genres_in_row = _parse_genres(row.get("Genres", ""))
+
+        if not genres_in_row:
             continue
-        genres_in_row = [g.strip().lower() for g in str(genres_raw).split(",") if g.strip()]
+
         added_dt = pd.to_datetime(row.get("Added at"), errors="coerce")
         year = int(added_dt.year) if pd.notna(added_dt) else None
+
         for g in genres_in_row:
-            genre_artists.setdefault(g, set()).update(artists)
+            if artists:
+                genre_artists.setdefault(g, set()).add(artists[0])
             if year:
                 genre_years.setdefault(g, set()).add(year)
 
     top = [
         {
-            "name": name.title(),
+            "name": name,
             "count": count,
             "pct": round(count / total * 100, 1),
             "artist_count": len(genre_artists.get(name, set())),
-            "year_min": min(genre_years.get(name, set())) if genre_years.get(name) else None,
-            "year_max": max(genre_years.get(name, set())) if genre_years.get(name) else None,
+            "year_min": min(genre_years[name]) if name in genre_years else None,
+            "year_max": max(genre_years[name]) if name in genre_years else None,
         }
         for name, count in counter.most_common(20)
     ]
-    # Genres per song distribution + most popular combo per count
+
     genre_combo_counter = {}
+
     for _, row in df.iterrows():
-        genres_raw = row.get("Genres", "")
-        if pd.isna(genres_raw) or not str(genres_raw).strip():
+        genres_in_row = _parse_genres(row.get("Genres", ""))
+        if not genres_in_row:
             continue
-        genres_in_row = sorted(g.strip().lower() for g in str(genres_raw).split(",") if g.strip())
-        n = len(genres_in_row)
-        if n == 0:
-            continue
-        key = n
-        if key > 6:
-            key = 6
-        if key not in genre_combo_counter:
-            genre_combo_counter[key] = Counter()
+
+        genres_in_row = sorted(genres_in_row)
+        n = min(len(genres_in_row), 6)
+
+        genre_combo_counter.setdefault(n, Counter())
+
         if n == 1:
-            genre_combo_counter[1][genres_in_row[0].title()] += 1
+            genre_combo_counter[n][genres_in_row[0].title()] += 1
         else:
             combo = " + ".join(g.title() for g in genres_in_row)
-            genre_combo_counter[key][combo] += 1
+            genre_combo_counter[n][combo] += 1
 
-    genre_counts = df["Genres"].dropna().str.split(",").apply(
-        lambda x: sum(1 for g in x if g.strip())
-    )
+    genre_counts = pd.Series([
+        len(_parse_genres(x)) for x in df["Genres"].fillna("")
+    ])
+
     max_bin = int(genre_counts.max()) if not genre_counts.empty else 5
+
     bins = list(range(1, min(max_bin + 1, 6))) + (["6+"] if max_bin >= 6 else [])
+
     genres_per_song = []
     genre_combo_info = {}
+
     for b in bins:
         if isinstance(b, int):
             cnt = int((genre_counts == b).sum())
             genres_per_song.append({"label": str(b), "count": cnt})
-            # Most popular at this level
+
             top_entry = genre_combo_counter.get(b, Counter()).most_common(1)
             if top_entry:
-                genre_combo_info[str(b)] = {"name": top_entry[0][0], "count": top_entry[0][1]}
+                genre_combo_info[str(b)] = {
+                    "name": top_entry[0][0],
+                    "count": top_entry[0][1],
+                }
         else:
             cnt = int((genre_counts >= 6).sum())
             genres_per_song.append({"label": "6+", "count": cnt})
+
             top_entry = genre_combo_counter.get(6, Counter()).most_common(1)
             if top_entry:
-                genre_combo_info["6+"] = {"name": top_entry[0][0], "count": top_entry[0][1]}
+                genre_combo_info["6+"] = {
+                    "name": top_entry[0][0],
+                    "count": top_entry[0][1],
+                }
 
     return {
         "top_genres": top,
@@ -210,6 +242,120 @@ def genres(df):
         "genre_combo_info": genre_combo_info,
     }
 
+
+def artists(df):
+    """Analyze artist frequency and collaborations."""
+
+    df = df.copy()
+
+    df["_artists"] = (
+        df["Artist"]
+        .fillna("")
+        .apply(lambda x: [a.strip() for a in str(x).split(",") if a.strip()])
+    )
+
+    all_artists = [a for group in df["_artists"] for a in group]
+
+    if not all_artists:
+        return {
+            "top_artists": [],
+            "collaboration_count": 0,
+            "total_unique_artists": 0,
+            "song_count_distribution": [],
+        }
+
+    counter = Counter(all_artists)
+
+    top = [
+        {
+            "name": name,
+            "count": count,
+            "pct": round(count / len(all_artists) * 100, 1),
+        }
+        for name, count in counter.most_common(20)
+    ]
+
+    collab_count = int(df["_artists"].apply(lambda x: len(x) > 1).sum())
+
+    artist_genres = {}
+    artist_years = {}
+    artist_year_counts = {}
+    artist_collab_genres = defaultdict(list)
+
+    for _, row in df.iterrows():
+        artists_list = row["_artists"]
+        genres = _parse_genres(row.get("Genres", ""))
+
+        added = pd.to_datetime(row.get("Added at"), errors="coerce")
+        year = int(added.year) if pd.notna(added) else None
+
+        for artist in artists_list:
+            if year is not None:
+                artist_years.setdefault(artist, set()).add(year)
+                artist_year_counts.setdefault(artist, Counter())[year] += 1
+
+            artist_collab_genres[artist].append(genres)
+
+        if len(artists_list) == 1 and genres:
+            artist_genres.setdefault(artists_list[0], set()).update(genres)
+
+    for artist, genre_lists in artist_collab_genres.items():
+        if artist in artist_genres:
+            continue
+
+        flat = [g for gl in genre_lists for g in gl if g]
+
+        if flat:
+            artist_genres[artist] = {Counter(flat).most_common(1)[0][0]}
+        else:
+            artist_genres[artist] = {"uncategorized"}
+
+    for t in top:
+        name = t["name"]
+
+        t["genres"] = sorted(artist_genres.get(name, []))
+
+        years = artist_years.get(name, set())
+        t["year_min"] = min(years) if years else None
+        t["year_max"] = max(years) if years else None
+        t["year_count"] = len(years)
+
+        counts = artist_year_counts.get(name)
+        if counts:
+            peak_year, peak_count = counts.most_common(1)[0]
+            t["peak_year"] = peak_year
+            t["peak_count"] = peak_count
+        else:
+            t["peak_year"] = None
+            t["peak_count"] = 0
+
+    top.sort(
+        key=lambda x: (
+            x["peak_year"] is None,
+            x["peak_year"] or 0,
+            -x["count"],
+        )
+    )
+
+    freq_dist = Counter(counter.values())
+    max_freq = max(freq_dist.keys(), default=0)
+
+    song_count_distribution = [
+        {"label": "1", "count": freq_dist.get(1, 0)},
+        {"label": "2", "count": freq_dist.get(2, 0)},
+        {"label": "3", "count": freq_dist.get(3, 0)},
+        {"label": "4", "count": freq_dist.get(4, 0)},
+        {"label": "5", "count": freq_dist.get(5, 0)},
+        {"label": "6–10", "count": sum(freq_dist.get(i, 0) for i in range(6, 11))},
+        {"label": "11+", "count": sum(freq_dist.get(i, 0) for i in range(11, max_freq + 1))},
+    ]
+
+    return {
+        "top_artists": top,
+        "collaboration_count": collab_count,
+        "total_unique_artists": len(counter),
+        "song_count_distribution": song_count_distribution,
+    }
 
 def temporal(df):
     """Analyze songs added over time and album release dates."""
@@ -261,6 +407,7 @@ def _value_counts_to_records(series, key_name):
 
 def mood_key(df):
     """Analyze key distribution and valence-energy mood quadrants."""
+
     key_distribution = _value_counts_to_records(
         df["Key"].dropna().str.strip(), "key"
     )
@@ -268,117 +415,72 @@ def mood_key(df):
         df["Camelot"].dropna().str.strip(), "camelot"
     )
 
-    # Mood quadrants: split on median valence/energy
-    # Use a single dropna on the subset to keep valence-energy pairs aligned
+    # Mood quadrants
     mood_subset = df[["Valence", "Energy"]].dropna()
-    if len(mood_subset) > 0:
-        v_vals = mood_subset["Valence"]
-        e_vals = mood_subset["Energy"]
-        v_med = v_vals.median()
-        e_med = e_vals.median()
-        quad = {"high_valence_high_energy": 0, "high_valence_low_energy": 0,
-                "low_valence_high_energy": 0, "low_valence_low_energy": 0}
-        for v, e in zip(v_vals, e_vals):
+    if len(mood_subset):
+        v_med = mood_subset["Valence"].median()
+        e_med = mood_subset["Energy"].median()
+
+        quad = {
+            "high_valence_high_energy": 0,
+            "high_valence_low_energy": 0,
+            "low_valence_high_energy": 0,
+            "low_valence_low_energy": 0,
+        }
+
+        for v, e in zip(mood_subset["Valence"], mood_subset["Energy"]):
             if v >= v_med and e >= e_med:
                 quad["high_valence_high_energy"] += 1
-            elif v >= v_med and e < e_med:
+            elif v >= v_med:
                 quad["high_valence_low_energy"] += 1
-            elif v < v_med and e >= e_med:
+            elif e >= e_med:
                 quad["low_valence_high_energy"] += 1
             else:
                 quad["low_valence_low_energy"] += 1
     else:
         quad = {}
 
-    # Scatter data for Chart.js: individual song valence/energy
+    # ------------------------------------------------------------------
+    # Build artist -> genres lookup (includes featured artists)
+    # ------------------------------------------------------------------
+    artist_genres = {}
+
+    for _, row in df.iterrows():
+        artists = [a.strip() for a in str(row["Artist"]).split(",") if a.strip()]
+        genres = [g.strip().lower() for g in str(row["Genres"]).split(",") if g.strip()]
+
+        for artist in artists:
+            artist_genres.setdefault(artist, set()).update(genres)
+
+    # ------------------------------------------------------------------
+    # Scatter data
+    # ------------------------------------------------------------------
     scatter = df.dropna(subset=["Valence", "Energy"])
-    valence_energy_scatter = [
-        {
+
+    valence_energy_scatter = []
+
+    for _, row in scatter.iterrows():
+        artists = [a.strip() for a in str(row["Artist"]).split(",") if a.strip()]
+
+        merged_genres = sorted({
+            genre
+            for artist in artists
+            for genre in artist_genres.get(artist, set())
+        })
+
+        valence_energy_scatter.append({
             "valence": float(row["Valence"]),
             "energy": float(row["Energy"]),
             "song": str(row["Song"]),
-            "artist": str(row["Artist"]),
-            "genre": str(row["Genres"]),
-        }
-        for _, row in scatter.iterrows()
-    ]
+            "artist": ",".join(artists),
+            "genre": ", ".join(merged_genres),
+        })
 
     return {
         "key_distribution": key_distribution,
         "camelot_distribution": camelot_distribution,
         "mood_quadrants": quad,
         "valence_energy_scatter": valence_energy_scatter,
-    }
-
-
-def artists(df):
-    """Analyze artist frequency and collaborations."""
-    # Parse Artist (may contain multiple separated by comma)
-    df["_artists"] = df["Artist"].str.split(",")
-    all_artists = [a.strip() for sublist in df["_artists"].dropna() for a in sublist]
-    if not all_artists:
-        return {"top_artists": [], "collaboration_count": 0}
-    counter = Counter(all_artists)
-    top = [
-        {"name": name, "count": count, "pct": round(count / len(all_artists) * 100, 1)}
-        for name, count in counter.most_common(20)
-    ]
-
-    # Collaboration count: rows where Artist has multiple names
-    collab_count = int(df["_artists"].dropna().apply(lambda x: len(x) > 1).sum())
-
-    # Artist-genre mapping and year range per artist
-    artist_genres = {}
-    artist_years = {}
-    artist_year_counts = {}
-    for _, row in df.iterrows():
-        artists_list = [a.strip() for a in str(row.get("Artist", "")).split(",")]
-        genres_list = [g.strip().lower() for g in str(row.get("Genres", "")).split(",") if g.strip()]
-        added_dt = pd.to_datetime(row.get("Added at"), errors="coerce")
-        year = int(added_dt.year) if pd.notna(added_dt) else None
-        for a in artists_list:
-            artist_genres.setdefault(a, set()).update(genres_list)
-            if year:
-                artist_years.setdefault(a, set()).add(year)
-                artist_year_counts.setdefault(a, Counter())[year] += 1
-
-    # Enrich top artists with their genres and year range
-    for t in top:
-        name = t["name"]
-        t["genres"] = sorted(artist_genres.get(name, set()))
-        t["year_min"] = min(artist_years.get(name, set())) if artist_years.get(name) else None
-        t["year_max"] = max(artist_years.get(name, set())) if artist_years.get(name) else None
-        t["year_count"] = len(artist_years.get(name, set()))  # distinct years
-        # Peak year — year with most songs added
-        year_counts = artist_year_counts.get(name, {})
-        if year_counts:
-            peak_year, peak_count = max(year_counts.items(), key=lambda x: x[1])
-            t["peak_year"] = peak_year
-            t["peak_count"] = peak_count
-        else:
-            t["peak_year"] = None
-            t["peak_count"] = 0
-
-    # Sort top artists by peak_year (ascending) then by count desc
-    top.sort(key=lambda x: (x.get("peak_year") or 9999, -(x["count"])))
-
-    # Songs per artist distribution
-    freq_dist = Counter(counter.values())
-    song_count_distribution = [
-        {"label": "1", "count": freq_dist.get(1, 0)},
-        {"label": "2", "count": freq_dist.get(2, 0)},
-        {"label": "3", "count": freq_dist.get(3, 0)},
-        {"label": "4", "count": freq_dist.get(4, 0)},
-        {"label": "5", "count": freq_dist.get(5, 0)},
-        {"label": "6–10", "count": sum(freq_dist.get(i, 0) for i in range(6, 11))},
-        {"label": "11+", "count": sum(freq_dist.get(i, 0) for i in range(11, max(freq_dist.keys()) + 1))},
-    ]
-
-    return {
-        "top_artists": top,
-        "collaboration_count": collab_count,
-        "total_unique_artists": len(counter),
-        "song_count_distribution": song_count_distribution,
     }
 
 
@@ -397,7 +499,8 @@ def albums(df):
         years = pd.to_datetime(group["Album Date"], errors="coerce").dt.year.dropna()
         year_min = int(years.min()) if not years.empty else None
         year_max = int(years.max()) if not years.empty else None
-        genre_list = _split_col(group, "Genres")
+        solo_tracks = group[~group["Artist"].str.contains(",", na=False)]
+        genre_list = _split_col(solo_tracks, "Genres") if len(solo_tracks) > 0 else _split_col(group, "Genres")
         top_genres = [g.title() for g, _ in Counter(genre_list).most_common(3)]
 
         top.append({
@@ -408,7 +511,6 @@ def albums(df):
             "year_max": year_max,
             "genres": top_genres,
         })
-
     top.sort(key=lambda x: x["count"], reverse=True)
     return {"top_albums": top[:20], "total_unique_albums": len(top)}
 
@@ -500,7 +602,7 @@ def artist_trends(df, top_n=15):
     year_counter = {}
     for _, row in df.iterrows():
         year = int(row["_ayear"])
-        artists = [a.strip() for a in str(row["Artist"]).split(",") if a.strip()]
+        artists = [a.strip().lower() for a in str(row["Artist"]).split(",") if a.strip()]
         for a in artists:
             year_counter.setdefault(year, Counter())[a] += 1
 

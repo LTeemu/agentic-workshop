@@ -869,6 +869,7 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+  align-items: center;
 }
 
 .tag {
@@ -879,6 +880,11 @@ body::before {
   padding: 0.1rem 0.45rem;
   border: 1px solid var(--border);
   letter-spacing: 0.03em;
+}
+
+/* Year Range - prevent wrapping */
+.year-range {
+  white-space: nowrap;
 }
 
 /* -----------------------------------------------------------------------

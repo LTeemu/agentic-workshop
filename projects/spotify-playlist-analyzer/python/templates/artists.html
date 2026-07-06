@@ -52,14 +52,12 @@ top_albums = album_data.get('top_albums', []) %}
           <td>{{ a.pct }}%</td>
           <td>{{ a.peak_year if a.peak_year else '—' }}</td>
           <td>{{ a.peak_count if a.peak_count else '—' }}</td>
-          <td>
+          <td class="year-range">
             {% if a.year_min and a.year_max %}{% if a.year_min == a.year_max %}{{ a.year_min }}{%
             else %}{{ a.year_min }}–{{ a.year_max }}{% endif %}{% else %}—{% endif %}
           </td>
           <td class="genre-tags">
-            {% for g in a.get('genres', []) %}
-            <span class="tag">{{ g }}</span>
-            {% endfor %}
+            {% for g in a.get('genres', []) %}<span class="tag">{{ g }}</span>{% endfor %}
           </td>
         </tr>
         {% endfor %}
@@ -110,14 +108,12 @@ top_albums = album_data.get('top_albums', []) %}
           <td class="artist-name">{{ a.name }}</td>
           <td>{{ a.artist }}</td>
           <td>{{ a.count }}</td>
-          <td>
+          <td class="year-range">
             {% if a.year_min and a.year_max %}{% if a.year_min == a.year_max %}{{ a.year_min }}{%
             else %}{{ a.year_min }}–{{ a.year_max }}{% endif %}{% else %}—{% endif %}
           </td>
           <td class="genre-tags">
-            {% for g in a.get('genres', []) %}
-            <span class="tag">{{ g }}</span>
-            {% endfor %}
+            {% for g in a.get('genres', []) %}<span class="tag">{{ g }}</span>{% endfor %}
           </td>
         </tr>
         {% endfor %}
