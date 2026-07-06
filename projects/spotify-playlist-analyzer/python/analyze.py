@@ -2,7 +2,7 @@
 Spotify Playlist Analyzer — Python data analysis layer.
 
 Reads a Spotify playlist CSV, computes all statistics,
-and writes analysis.json consumed by the Ruby/Sinatra dashboard.
+and writes analysis.json consumed by the Flask dashboard.
 
 Usage:
     python analyze.py <csv_path> [-o output_path] [--limit N]
@@ -131,14 +131,83 @@ def genres(df):
         return {"top_genres": [], "total_unique": 0}
     counter = Counter(genre_list)
     total = len(genre_list)
+
+    # Count unique artists per genre and track year range
+    genre_artists = {}
+    genre_years = {}
+    for _, row in df.iterrows():
+        artists = [a.strip() for a in str(row.get("Artist", "")).split(",") if a.strip()]
+        genres_raw = row.get("Genres", "")
+        if pd.isna(genres_raw) or not str(genres_raw).strip():
+            continue
+        genres_in_row = [g.strip().lower() for g in str(genres_raw).split(",") if g.strip()]
+        added_dt = pd.to_datetime(row.get("Added at"), errors="coerce")
+        year = int(added_dt.year) if pd.notna(added_dt) else None
+        for g in genres_in_row:
+            genre_artists.setdefault(g, set()).update(artists)
+            if year:
+                genre_years.setdefault(g, set()).add(year)
+
     top = [
-        {"name": name.title(), "count": count, "pct": round(count / total * 100, 1)}
+        {
+            "name": name.title(),
+            "count": count,
+            "pct": round(count / total * 100, 1),
+            "artist_count": len(genre_artists.get(name, set())),
+            "year_min": min(genre_years.get(name, set())) if genre_years.get(name) else None,
+            "year_max": max(genre_years.get(name, set())) if genre_years.get(name) else None,
+        }
         for name, count in counter.most_common(20)
     ]
+    # Genres per song distribution + most popular combo per count
+    genre_combo_counter = {}
+    for _, row in df.iterrows():
+        genres_raw = row.get("Genres", "")
+        if pd.isna(genres_raw) or not str(genres_raw).strip():
+            continue
+        genres_in_row = sorted(g.strip().lower() for g in str(genres_raw).split(",") if g.strip())
+        n = len(genres_in_row)
+        if n == 0:
+            continue
+        key = n
+        if key > 6:
+            key = 6
+        if key not in genre_combo_counter:
+            genre_combo_counter[key] = Counter()
+        if n == 1:
+            genre_combo_counter[1][genres_in_row[0].title()] += 1
+        else:
+            combo = " + ".join(g.title() for g in genres_in_row)
+            genre_combo_counter[key][combo] += 1
+
+    genre_counts = df["Genres"].dropna().str.split(",").apply(
+        lambda x: sum(1 for g in x if g.strip())
+    )
+    max_bin = int(genre_counts.max()) if not genre_counts.empty else 5
+    bins = list(range(1, min(max_bin + 1, 6))) + (["6+"] if max_bin >= 6 else [])
+    genres_per_song = []
+    genre_combo_info = {}
+    for b in bins:
+        if isinstance(b, int):
+            cnt = int((genre_counts == b).sum())
+            genres_per_song.append({"label": str(b), "count": cnt})
+            # Most popular at this level
+            top_entry = genre_combo_counter.get(b, Counter()).most_common(1)
+            if top_entry:
+                genre_combo_info[str(b)] = {"name": top_entry[0][0], "count": top_entry[0][1]}
+        else:
+            cnt = int((genre_counts >= 6).sum())
+            genres_per_song.append({"label": "6+", "count": cnt})
+            top_entry = genre_combo_counter.get(6, Counter()).most_common(1)
+            if top_entry:
+                genre_combo_info["6+"] = {"name": top_entry[0][0], "count": top_entry[0][1]}
+
     return {
         "top_genres": top,
         "total_unique": len(counter),
         "total_occurrences": total,
+        "genres_per_song": genres_per_song,
+        "genre_combo_info": genre_combo_info,
     }
 
 
@@ -258,25 +327,225 @@ def artists(df):
     # Collaboration count: rows where Artist has multiple names
     collab_count = int(df["_artists"].dropna().apply(lambda x: len(x) > 1).sum())
 
-    # Artist-genre mapping: aggregate genres per artist
+    # Artist-genre mapping and year range per artist
     artist_genres = {}
+    artist_years = {}
+    artist_year_counts = {}
     for _, row in df.iterrows():
         artists_list = [a.strip() for a in str(row.get("Artist", "")).split(",")]
-        genres_list = [g.strip().lower() for g in str(row.get("Genres", "")).split(",")]
+        genres_list = [g.strip().lower() for g in str(row.get("Genres", "")).split(",") if g.strip()]
+        added_dt = pd.to_datetime(row.get("Added at"), errors="coerce")
+        year = int(added_dt.year) if pd.notna(added_dt) else None
         for a in artists_list:
-            if a not in artist_genres:
-                artist_genres[a] = set()
-            artist_genres[a].update(genres_list)
+            artist_genres.setdefault(a, set()).update(genres_list)
+            if year:
+                artist_years.setdefault(a, set()).add(year)
+                artist_year_counts.setdefault(a, Counter())[year] += 1
 
-    # Enrich top artists with their genres
+    # Enrich top artists with their genres and year range
     for t in top:
         name = t["name"]
         t["genres"] = sorted(artist_genres.get(name, set()))
+        t["year_min"] = min(artist_years.get(name, set())) if artist_years.get(name) else None
+        t["year_max"] = max(artist_years.get(name, set())) if artist_years.get(name) else None
+        t["year_count"] = len(artist_years.get(name, set()))  # distinct years
+        # Peak year — year with most songs added
+        year_counts = artist_year_counts.get(name, {})
+        if year_counts:
+            peak_year, peak_count = max(year_counts.items(), key=lambda x: x[1])
+            t["peak_year"] = peak_year
+            t["peak_count"] = peak_count
+        else:
+            t["peak_year"] = None
+            t["peak_count"] = 0
+
+    # Sort top artists by peak_year (ascending) then by count desc
+    top.sort(key=lambda x: (x.get("peak_year") or 9999, -(x["count"])))
+
+    # Songs per artist distribution
+    freq_dist = Counter(counter.values())
+    song_count_distribution = [
+        {"label": "1", "count": freq_dist.get(1, 0)},
+        {"label": "2", "count": freq_dist.get(2, 0)},
+        {"label": "3", "count": freq_dist.get(3, 0)},
+        {"label": "4", "count": freq_dist.get(4, 0)},
+        {"label": "5", "count": freq_dist.get(5, 0)},
+        {"label": "6–10", "count": sum(freq_dist.get(i, 0) for i in range(6, 11))},
+        {"label": "11+", "count": sum(freq_dist.get(i, 0) for i in range(11, max(freq_dist.keys()) + 1))},
+    ]
 
     return {
         "top_artists": top,
         "collaboration_count": collab_count,
         "total_unique_artists": len(counter),
+        "song_count_distribution": song_count_distribution,
+    }
+
+
+def albums(df):
+    """Analyze album frequency."""
+    required = {"Album", "Artist", "Album Date", "Genres"}
+    missing = required - set(df.columns)
+    if missing:
+        return {"top_albums": [], "total_unique_albums": 0}
+
+    album_groups = df.groupby("Album", sort=False)
+    top = []
+    for name, group in album_groups:
+        first = group.iloc[0]
+        artists = str(first.get("Artist", ""))
+        years = pd.to_datetime(group["Album Date"], errors="coerce").dt.year.dropna()
+        year_min = int(years.min()) if not years.empty else None
+        year_max = int(years.max()) if not years.empty else None
+        genre_list = _split_col(group, "Genres")
+        top_genres = [g.title() for g, _ in Counter(genre_list).most_common(3)]
+
+        top.append({
+            "name": str(name),
+            "artist": artists,
+            "count": len(group),
+            "year_min": year_min,
+            "year_max": year_max,
+            "genres": top_genres,
+        })
+
+    top.sort(key=lambda x: x["count"], reverse=True)
+    return {"top_albums": top[:20], "total_unique_albums": len(top)}
+
+
+def genre_trends(df, top_n=15):
+    """Genre distribution by year added — top N genres per year, rest in Other."""
+    required = {"Genres", "Added at"}
+    missing = required - set(df.columns)
+    if missing:
+        return {"years": [], "genres": [], "series": {}}
+
+    df = df.copy()
+    df["_gyear"] = pd.to_datetime(df["Added at"], errors="coerce").dt.year
+    df = df.dropna(subset=["_gyear", "Genres"])
+    df["_gyear"] = df["_gyear"].astype(int)
+
+    if df.empty:
+        return {"years": [], "genres": [], "series": {}}
+
+    # Build year → genre counter
+    year_counter = {}
+    for _, row in df.iterrows():
+        year = int(row["_gyear"])
+        genres = [g.strip().lower() for g in str(row["Genres"]).split(",") if g.strip()]
+        for g in genres:
+            year_counter.setdefault(year, Counter())[g] += 1
+
+    years = sorted(year_counter.keys())
+
+    # Collect per-year top N genres (union across years → series keys)
+    top_genre_set = set()
+    for year in years:
+        top_genres = [g for g, _ in year_counter[year].most_common(top_n)]
+        top_genre_set.update(top_genres)
+
+    all_years_genres = sorted(top_genre_set)
+
+    # Build series: per-year, top N go in their slot, rest into Other
+    series = {}
+    for year in years:
+        counts = year_counter[year]
+        top_for_year = {g for g, _ in counts.most_common(top_n)}
+        for g in all_years_genres:
+            val = counts.get(g, 0)
+            if g in top_for_year and val > 0:
+                series.setdefault(g, [0] * len(years))[years.index(year)] = val
+            else:
+                series.setdefault("Other", [0] * len(years))[years.index(year)] += val
+
+    # Order by total count descending, Other always last
+    genre_order = sorted(
+        [g for g in series if g != "Other"],
+        key=lambda g: sum(series[g]), reverse=True
+    )
+    ordered = {g: series[g] for g in genre_order}
+    if "Other" in series:
+        ordered["Other"] = series["Other"]
+
+    top_per_year = [
+        {"year": y, "name": year_counter[y].most_common(1)[0][0].title(),
+         "count": year_counter[y].most_common(1)[0][1]}
+        for y in years
+    ]
+
+    return {
+        "years": years,
+        "genres": list(ordered.keys()),
+        "series": ordered,
+        "top_per_year": top_per_year,
+    }
+
+
+def artist_trends(df, top_n=15):
+    """Top artists by year added — top N artists per year, rest in Other."""
+    required = {"Artist", "Added at"}
+    missing = required - set(df.columns)
+    if missing:
+        return {"years": [], "artists": [], "series": {}}
+
+    df = df.copy()
+    df["_ayear"] = pd.to_datetime(df["Added at"], errors="coerce").dt.year
+    df = df.dropna(subset=["_ayear", "Artist"])
+    df["_ayear"] = df["_ayear"].astype(int)
+
+    if df.empty:
+        return {"years": [], "artists": [], "series": {}}
+
+    # Build year → artist counter (split multi-artist rows)
+    year_counter = {}
+    for _, row in df.iterrows():
+        year = int(row["_ayear"])
+        artists = [a.strip() for a in str(row["Artist"]).split(",") if a.strip()]
+        for a in artists:
+            year_counter.setdefault(year, Counter())[a] += 1
+
+    years = sorted(year_counter.keys())
+
+    # Collect per-year top N artists (union → series keys)
+    top_artist_set = set()
+    for year in years:
+        top_artists = [a for a, _ in year_counter[year].most_common(top_n)]
+        top_artist_set.update(top_artists)
+
+    all_years_artists = sorted(top_artist_set)
+
+    # Build series: per-year, top N go in their slot, rest into Other
+    series = {}
+    for year in years:
+        counts = year_counter[year]
+        top_for_year = {a for a, _ in counts.most_common(top_n)}
+        for a in all_years_artists:
+            val = counts.get(a, 0)
+            if a in top_for_year and val > 0:
+                series.setdefault(a, [0] * len(years))[years.index(year)] = val
+            else:
+                series.setdefault("Other", [0] * len(years))[years.index(year)] += val
+
+    # Order by total count descending, Other always last
+    artist_order = sorted(
+        [a for a in series if a != "Other"],
+        key=lambda a: sum(series[a]), reverse=True
+    )
+    ordered = {a: series[a] for a in artist_order}
+    if "Other" in series:
+        ordered["Other"] = series["Other"]
+
+    top_per_year = [
+        {"year": y, "name": year_counter[y].most_common(1)[0][0],
+         "count": year_counter[y].most_common(1)[0][1]}
+        for y in years
+    ]
+
+    return {
+        "years": years,
+        "artists": list(ordered.keys()),
+        "series": ordered,
+        "top_per_year": top_per_year,
     }
 
 
@@ -469,6 +738,9 @@ def run(csv_path, output_path, limit=None):
         "temporal": temporal(df),
         "mood_key": mood_key(df),
         "artists": artists(df),
+        "albums": albums(df),
+        "genre_trends": genre_trends(df),
+        "artist_trends": artist_trends(df),
         "perfect_song": perfect_song(df),
         "_meta": {
             "source": str(csv_path),

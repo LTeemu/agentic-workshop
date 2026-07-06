@@ -1,6 +1,7 @@
 {% extends "layout.html" %} {% block title %}Artists — Spotify Playlist Analyzer{% endblock %} {%
 block content %} {% set artist_data = data.get('artists', {}) %} {% set top =
-artist_data.get('top_artists', []) %}
+artist_data.get('top_artists', []) %} {% set album_data = data.get('albums', {}) %} {% set
+top_albums = album_data.get('top_albums', []) %}
 
 <div class="page-header">
   <h1>Artists</h1>
@@ -27,71 +28,178 @@ artist_data.get('top_artists', []) %}
 
 {% if top %}
 <section class="section">
-  <h2>Top 20 Artists</h2>
-  <canvas id="artistsChart"></canvas>
+  <h2>Artist Details</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Artist</th>
+          <th>Songs</th>
+          <th>%</th>
+          <th>Peak Year</th>
+          <th>Peak Songs</th>
+          <th>Added</th>
+          <th>Genres</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in top %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="artist-name">{{ a.name }}</td>
+          <td>{{ a.count }}</td>
+          <td>{{ a.pct }}%</td>
+          <td>{{ a.peak_year if a.peak_year else '—' }}</td>
+          <td>{{ a.peak_count if a.peak_count else '—' }}</td>
+          <td>
+            {% if a.year_min and a.year_max %}{% if a.year_min == a.year_max %}{{ a.year_min }}{%
+            else %}{{ a.year_min }}–{{ a.year_max }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td class="genre-tags">
+            {% for g in a.get('genres', []) %}
+            <span class="tag">{{ g }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 
+{% set scd = artist_data.get('song_count_distribution', []) %} {% if scd %}
 <section class="section">
-  <h2>Artist Details</h2>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Artist</th>
-        <th>Songs</th>
-        <th>%</th>
-        <th>Genres</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for a in top %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td class="artist-name">{{ a.name }}</td>
-        <td>{{ a.count }}</td>
-        <td>{{ a.pct }}%</td>
-        <td class="genre-tags">
-          {% for g in a.get('genres', []) %}
-          <span class="tag">{{ g }}</span>
-          {% endfor %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <h2>Songs per Artist</h2>
+  <p class="subtitle">How many artists have N songs in your playlist</p>
+  <canvas id="songsPerArtistChart" height="80"></canvas>
+</section>
+{% endif %}
+
+<section class="section">
+  <h2>Artists Across Most Years</h2>
+  <p class="subtitle">Top artists ranked by how many different years they appear in</p>
+  <canvas id="artistYearCountChart" height="150"></canvas>
 </section>
 {% else %}
 <div class="empty-state">
   <p>No artist data available.</p>
 </div>
-{% endif %}
-
+{% endif %} {% if top_albums %}
+<section class="section">
+  <h2>Albums</h2>
+  <p class="subtitle">
+    {{ album_data.get('total_unique_albums', 0) }} unique albums in your playlist
+  </p>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Album</th>
+          <th>Artist</th>
+          <th>Songs</th>
+          <th>Year</th>
+          <th>Genres</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in top_albums %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="artist-name">{{ a.name }}</td>
+          <td>{{ a.artist }}</td>
+          <td>{{ a.count }}</td>
+          <td>
+            {% if a.year_min and a.year_max %}{% if a.year_min == a.year_max %}{{ a.year_min }}{%
+            else %}{{ a.year_min }}–{{ a.year_max }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td class="genre-tags">
+            {% for g in a.get('genres', []) %}
+            <span class="tag">{{ g }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %} {% set scd = artist_data.get('song_count_distribution', []) %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const top = {{ top | tojson }};
-    if (top.length) {
-      const tealColors = top.map((_, i) => `hsl(${165 + i * 15}, 42%, 40%)`);
-      new Chart(document.getElementById('artistsChart'), {
+    const scd = {{ scd | tojson }};
+    if (scd.length) {
+      new Chart(document.getElementById('songsPerArtistChart'), {
         type: 'bar',
         data: {
-          labels: top.map(a => a.name),
+          labels: scd.map(d => d.label + ' song' + (d.label === '1' ? '' : 's')),
           datasets: [{
-            label: 'Songs',
-            data: top.map(a => a.count),
-            backgroundColor: tealColors,
+            label: 'Artists',
+            data: scd.map(d => d.count),
+            backgroundColor: ['#3a8a7a', '#4a9a8a', '#5aaa9a', '#6abaac', '#7acabc', '#8adacc', '#9aeadc'],
             borderRadius: 3,
           }]
         },
         options: {
           responsive: true,
-          indexAxis: 'y',
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, grid: { color: '#2f2822' } },
-            y: { grid: { display: false } }
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
           }
         }
       });
+    }
+
+    const top = {{ top | tojson }};
+    if (top.length) {
+      var yearSlice = top.slice().sort(function (a, b) { return b.year_count - a.year_count || b.count - a.count; }).slice(0, 15);
+      if (yearSlice.length) {
+        new Chart(document.getElementById('artistYearCountChart'), {
+          type: 'bar',
+          data: {
+            labels: yearSlice.map(function (a) { return a.name; }),
+            datasets: [{
+              label: 'Years active',
+              data: yearSlice.map(function (a) { return a.year_count; }),
+              backgroundColor: yearSlice.map(function (_, i) { return 'hsl(' + (165 + i * 12) + ', 42%, 40%)'; }),
+              borderRadius: 3,
+            }]
+          },
+          options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                titleFont: { size: 14 },
+                bodyFont: { size: 13 },
+                padding: 10,
+                callbacks: {
+                  title: function (items) {
+                    var a = yearSlice[items[0].dataIndex];
+                    return a.name;
+                  },
+                  label: function (ctx) {
+                    var a = yearSlice[ctx.dataIndex];
+                    return ctx.raw + ' years (' + a.year_min + '\u2013' + a.year_max + ')';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: { color: '#2f2822' },
+                ticks: { stepSize: 1 },
+                title: { display: true, text: 'Distinct years in playlist' },
+              },
+              y: { grid: { display: false } }
+            }
+          }
+        });
+      }
     }
   });
 </script>

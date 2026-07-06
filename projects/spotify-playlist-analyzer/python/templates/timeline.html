@@ -1,7 +1,12 @@
 {% extends "layout.html" %} {% block title %}Timeline — Spotify Playlist Analyzer{% endblock %} {%
 block content %} {% set temporal = data.get('temporal', {}) %} {% set by_year =
 temporal.get('songs_by_year', []) %} {% set by_month = temporal.get('songs_by_month', []) %} {% set
-album_years = temporal.get('album_year_counts', []) %}
+album_years = temporal.get('album_year_counts', []) %} {% set genre_trends =
+data.get('genre_trends', {}) %} {% set gt_years = genre_trends.get('years', []) %} {% set gt_genres
+= genre_trends.get('genres', []) %} {% set gt_series = genre_trends.get('series', {}) %} {% set
+artist_trends = data.get('artist_trends', {}) %} {% set at_years = artist_trends.get('years', []) %}
+{% set at_artists = artist_trends.get('artists', []) %} {% set at_series =
+artist_trends.get('series', {}) %}
 
 <div class="page-header">
   <h1>Timeline</h1>
@@ -24,8 +29,20 @@ album_years = temporal.get('album_year_counts', []) %}
 </section>
 {% endif %} {% if album_years %}
 <section class="section">
-  <h2>Album Release Years</h2>
+  <h2>Songs by Release Year</h2>
   <canvas id="albumYearChart" height="100"></canvas>
+</section>
+{% endif %} {% if gt_years %}
+<section class="section">
+  <h2>Genre Trends Over Time</h2>
+  <p class="subtitle">Genres by year added (top 15 per year, rest grouped as Other)</p>
+  <canvas id="genreTrendsChart" height="120"></canvas>
+</section>
+{% endif %} {% if at_years %}
+<section class="section">
+  <h2>Top Artists by Year</h2>
+  <p class="subtitle">Artists by year added (top 15 per year, rest grouped as Other)</p>
+  <canvas id="artistTrendsChart" height="120"></canvas>
 </section>
 {% endif %}
 
@@ -92,7 +109,7 @@ album_years = temporal.get('album_year_counts', []) %}
         data: {
           labels: albumYears.map(d => String(d.year)),
           datasets: [{
-            label: 'Albums',
+            label: 'Songs',
             data: albumYears.map(d => d.count),
             backgroundColor: forestColors,
             borderRadius: 3,
@@ -104,6 +121,94 @@ album_years = temporal.get('album_year_counts', []) %}
           scales: {
             y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
             x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const gtYears = {{ gt_years | tojson }};
+    const gtGenres = {{ gt_genres | tojson }};
+    const gtSeries = {{ gt_series | tojson }};
+    if (gtYears.length) {
+      const datasets = gtGenres.map((g, i) => ({
+        label: g.charAt(0).toUpperCase() + g.slice(1),
+        data: gtSeries[g],
+        backgroundColor: g === 'Other'
+          ? '#555555'
+          : `hsl(${(i * 360 / gtGenres.length)}, ${55 + (i % 3) * 10}%, ${40 + (i % 3) * 8}%)`,
+      }));
+      new Chart(document.getElementById('genreTrendsChart'), {
+        type: 'bar',
+        data: {
+          labels: gtYears,
+          datasets: datasets,
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              filter: function (item) { return item.raw > 0; },
+              itemSort: function (a, b) {
+                var isOther = datasets.length - 1;
+                if (a.datasetIndex === isOther && b.datasetIndex !== isOther) return 1;
+                if (b.datasetIndex === isOther && a.datasetIndex !== isOther) return -1;
+                return b.raw - a.raw;
+              },
+              titleFont: { size: 14 },
+              bodyFont: { size: 13 },
+              padding: 10,
+            },
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+          }
+        }
+      });
+    }
+
+    const atYears = {{ at_years | tojson }};
+    const atArtists = {{ at_artists | tojson }};
+    const atSeries = {{ at_series | tojson }};
+    if (atYears.length) {
+      const aDatasets = atArtists.map((a, i) => ({
+        label: a,
+        data: atSeries[a],
+        backgroundColor: a === 'Other'
+          ? '#555555'
+          : `hsl(${150 + (i * 30)}, ${50 + (i % 3) * 12}%, ${38 + (i % 3) * 8}%)`,
+      }));
+      new Chart(document.getElementById('artistTrendsChart'), {
+        type: 'bar',
+        data: {
+          labels: atYears,
+          datasets: aDatasets,
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              filter: function (item) { return item.raw > 0; },
+              itemSort: function (a, b) {
+                var isOther = aDatasets.length - 1;
+                if (a.datasetIndex === isOther && b.datasetIndex !== isOther) return 1;
+                if (b.datasetIndex === isOther && a.datasetIndex !== isOther) return -1;
+                return b.raw - a.raw;
+              },
+              titleFont: { size: 14 },
+              bodyFont: { size: 13 },
+              padding: 10,
+            },
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
           }
         }
       });

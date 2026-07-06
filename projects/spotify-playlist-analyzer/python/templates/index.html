@@ -161,10 +161,9 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
           <span class="match-title">{{ furthest.song }}</span>
           <span class="match-artist">{{ furthest.artist }}</span>
           <div class="match-tags">
-            {% if furthest.genres %}<span class="tag tag-dim"
+            {% if furthest.genres %}<span class="tag"
               >{{ furthest.genres.split(',')[0].strip().title() }}</span
-            >{% endif %} {% if furthest.key %}<span class="tag tag-dim">{{ furthest.key }}</span>{%
-            endif %}
+            >{% endif %} {% if furthest.key %}<span class="tag">{{ furthest.key }}</span>{% endif %}
           </div>
         </div>
         <div class="match-stats">
@@ -193,70 +192,80 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
 </section>
 {% endif %} {% set genres = data.get('genres', {}).get('top_genres', []) %} {% if genres %}
 <section class="section">
-  <h2>Top Genres</h2>
-  <canvas id="genresPreviewChart" height="100"></canvas>
+  <h2>Top 8 Genres</h2>
+  <div class="preview-cards">
+    {% for g in genres[:8] %}
+    <div class="preview-card">
+      <div class="preview-card-header">
+        <span class="preview-card-name">{{ g.name }}</span>
+        <span class="preview-card-count">{{ g.count }} song{{ 's' if g.count != 1 }}</span>
+      </div>
+      <div class="preview-card-bar-row">
+        <div class="preview-card-bar">
+          <div class="preview-card-fill" style="width: {{ g.pct }}%"></div>
+        </div>
+        <span class="preview-card-pct">{{ g.pct }}%</span>
+      </div>
+      <div class="preview-card-sub">
+        {{ g.artist_count }} artist{{ 's' if g.artist_count != 1 }}
+      </div>
+      {% if g.year_min and g.year_max %}
+      <div class="preview-card-years">
+        Added: {{ g.year_min }}{% if g.year_min != g.year_max %}–{{ g.year_max }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
 </section>
 {% endif %} {% set artists = data.get('artists', {}).get('top_artists', []) %} {% if artists %}
 <section class="section">
-  <h2>Top Artists</h2>
-  <canvas id="artistsPreviewChart" height="100"></canvas>
+  <h2>Top 8 Artists</h2>
+  <div class="preview-cards preview-cards-artists">
+    {% for a in artists[:8] %}
+    <div class="preview-card">
+      <div class="preview-card-header">
+        <span class="preview-card-name">{{ a.name }}</span>
+        <span class="preview-card-count">{{ a.count }} song{{ 's' if a.count != 1 }}</span>
+      </div>
+      <div class="preview-card-bar-row">
+        <div class="preview-card-bar">
+          <div class="preview-card-fill preview-card-fill-artist" style="width: {{ a.pct }}%"></div>
+        </div>
+        <span class="preview-card-pct">{{ a.pct }}%</span>
+      </div>
+      {% if a.get('genres') %}
+      <div class="preview-card-sub">{{ a.genres[0] | title }}</div>
+      {% endif %} {% if a.year_min and a.year_max %}
+      <div class="preview-card-years">
+        Added: {{ a.year_min }}{% if a.year_min != a.year_max %}–{{ a.year_max }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
 </section>
-{% endif %}
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    function warmColors(n) {
-      return Array.from({length: n}, (_, i) => `hsl(${30 + i * 35}, 50%, 45%)`);
-    }
-    function tealColors(n) {
-      return Array.from({length: n}, (_, i) => `hsl(${160 + i * 20}, 40%, 40%)`);
-    }
-
-    {% if genres %}
-      new Chart(document.getElementById('genresPreviewChart'), {
-        type: 'bar',
-        data: {
-          labels: {{ genres[:8] | map(attribute='name') | list | tojson }},
-          datasets: [{
-            label: 'Songs',
-            data: {{ genres[:8] | map(attribute='count') | list | tojson }},
-            backgroundColor: warmColors({{ genres[:8] | length }}),
-            borderRadius: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    {% endif %}
-
-    {% if artists %}
-      new Chart(document.getElementById('artistsPreviewChart'), {
-        type: 'bar',
-        data: {
-          labels: {{ artists[:8] | map(attribute='name') | list | tojson }},
-          datasets: [{
-            label: 'Songs',
-            data: {{ artists[:8] | map(attribute='count') | list | tojson }},
-            backgroundColor: tealColors({{ artists[:8] | length }}),
-            borderRadius: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    {% endif %}
-  });
-</script>
-{% endblock %}
+{% endif %} {% set gt_top = data.get('genre_trends', {}).get('top_per_year', []) %} {% set at_top =
+data.get('artist_trends', {}).get('top_per_year', []) %} {% if gt_top and at_top %}
+<section class="section">
+  <h2>Year by Year</h2>
+  <p class="subtitle">Your top genre and artist for each year</p>
+  <div class="year-summary">
+    {% for g in gt_top %} {% set a = at_top | selectattr('year', 'equalto', g.year) | first %}
+    <div class="year-row">
+      <span class="year-row-year">{{ g.year }}</span>
+      <span class="year-row-item">
+        <span class="tag">{{ g.name }}</span>
+        <span class="year-row-count">{{ g.count }}</span>
+      </span>
+      {% if a %}
+      <span class="year-row-item">
+        <span class="tag">{{ a.name }}</span>
+        <span class="year-row-count">{{ a.count }}</span>
+      </span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %} {% endblock %}

@@ -603,6 +603,161 @@ body::before {
 }
 
 /* -----------------------------------------------------------------------
+   Preview Cards (overview top genres / artists)
+   ----------------------------------------------------------------------- */
+
+.preview-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.preview-card {
+  background: var(--vinyl-black);
+  border: 1px solid var(--border);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.preview-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.preview-card-name {
+  font-size: 0.8rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-card-count {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.preview-card-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.preview-card-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--surface-hover);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.preview-card-pct {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  min-width: 3em;
+  text-align: right;
+}
+
+.preview-card-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.preview-card-fill-artist {
+  background: #3a8a7a;
+}
+
+.preview-card-sub {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preview-card-years {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* -----------------------------------------------------------------------
+   Year-by-Year Summary (overview)
+   ----------------------------------------------------------------------- */
+
+.year-summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.year-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.year-row:last-child {
+  border-bottom: none;
+}
+
+.year-row-year {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 4em;
+}
+
+.year-row-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.year-row-count {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 600px) {
+  .year-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .year-row-year {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+/* -----------------------------------------------------------------------
+   Preview Cards (overview top genres / artists)
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 800px) {
+  .preview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .preview-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -----------------------------------------------------------------------
    Chart Grids
    ----------------------------------------------------------------------- */
 
@@ -646,6 +801,29 @@ body::before {
 /* -----------------------------------------------------------------------
    Data Tables (LP Liner Notes)
    ----------------------------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.table-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.table-wrap .data-table {
+  min-width: 700px;
+}
 
 .data-table {
   width: 100%;
@@ -701,13 +879,6 @@ body::before {
   padding: 0.1rem 0.45rem;
   border: 1px solid var(--border);
   letter-spacing: 0.03em;
-}
-
-.tag-dim {
-  border-color: transparent;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 0.6rem;
 }
 
 /* -----------------------------------------------------------------------

@@ -30,11 +30,6 @@ genre_data.get('top_genres', []) %}
 
 {% if top %}
 <section class="section">
-  <h2>Top 20 Genres</h2>
-  <canvas id="genresChart"></canvas>
-</section>
-
-<section class="section">
   <h2>Genre Breakdown</h2>
   <table class="data-table">
     <thead>
@@ -43,6 +38,7 @@ genre_data.get('top_genres', []) %}
         <th>Genre</th>
         <th>Count</th>
         <th>%</th>
+        <th>Artists</th>
       </tr>
     </thead>
     <tbody>
@@ -52,30 +48,43 @@ genre_data.get('top_genres', []) %}
         <td>{{ g.name }}</td>
         <td>{{ g.count }}</td>
         <td>{{ g.pct }}%</td>
+        <td>{{ g.artist_count }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </section>
+
+<section class="section">
+  <h2>Artists per Genre</h2>
+  <p class="subtitle">How many unique artists appear in each genre</p>
+  <canvas id="artistsPerGenreChart" height="120"></canvas>
+</section>
+
+<section class="section">
+  <h2>Genres per Song</h2>
+  <p class="subtitle">How many genre tags each song has</p>
+  <canvas id="genresPerSongChart" height="80"></canvas>
+</section>
 {% else %}
 <div class="empty-state">
   <p>No genre data available.</p>
 </div>
-{% endif %}
-
+{% endif %} {% set gps = data.get('genres', {}).get('genres_per_song', []) %} {% set gci =
+data.get('genres', {}).get('genre_combo_info', {}) %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const top = {{ top | tojson }};
     if (top.length) {
-      const oliveColors = top.map((_, i) => `hsl(${50 + i * 20}, 40%, 38%)`);
-      new Chart(document.getElementById('genresChart'), {
+      const slice = top.slice().sort(function (a, b) { return b.artist_count - a.artist_count; }).slice(0, 15);
+      new Chart(document.getElementById('artistsPerGenreChart'), {
         type: 'bar',
         data: {
-          labels: top.map(g => g.name),
+          labels: slice.map(g => g.name),
           datasets: [{
-            label: 'Songs',
-            data: top.map(g => g.count),
-            backgroundColor: oliveColors,
+            label: 'Artists',
+            data: slice.map(g => g.artist_count),
+            backgroundColor: slice.map((_, i) => `hsl(${165 + i * 15}, 42%, 40%)`),
             borderRadius: 3,
           }]
         },
@@ -84,8 +93,55 @@ genre_data.get('top_genres', []) %}
           indexAxis: 'y',
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, grid: { color: '#2f2822' } },
+            x: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
             y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const gps = {{ gps | tojson }};
+    const gci = {{ gci | tojson }};
+    if (gps.length) {
+      new Chart(document.getElementById('genresPerSongChart'), {
+        type: 'bar',
+        data: {
+          labels: gps.map(d => d.label),
+          datasets: [{
+            label: 'Songs',
+            data: gps.map(d => d.count),
+            backgroundColor: ['#d4a853', '#c9773a', '#b8433a', '#8a8a3a', '#3a8a7a', '#7a4a8a'],
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              titleFont: { size: 14 },
+              bodyFont: { size: 13 },
+              padding: 10,
+              callbacks: {
+                label: function (ctx) {
+                  var total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                  var pct = ((ctx.raw / total) * 100).toFixed(1);
+                  return ctx.raw + ' songs (' + pct + '%)';
+                },
+                afterBody: function (items) {
+                  var key = items[0].label;
+                  var info = gci[key];
+                  if (info) {
+                    return 'Most common: ' + info.name + ' (' + info.count + ' songs)';
+                  }
+                  return '';
+                }
+              }
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
           }
         }
       });
