@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 import { createAuthClient } from "better-auth/client";
 
 const authClient = createAuthClient();
 
 export default function RegisterPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -32,6 +37,8 @@ export default function RegisterPage() {
       return;
     }
 
+    // Clear stale user-specific caches before navigating to dashboard
+    queryClient.invalidateQueries({ queryKey: trpc.stocks.getTracked.queryKey() });
     router.push("/dashboard");
     router.refresh();
   }
@@ -90,7 +97,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-gray-500">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">Sign In</a>
+          <Link href="/login" className="text-blue-600 hover:underline">Sign In</Link>
         </p>
       </form>
     </div>

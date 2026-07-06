@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 import { authClient } from "@/lib/auth-client";
 
 export function DashboardNav() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
 
   async function handleSignOut() {
     await authClient.signOut();
+    // Clear stale user-specific caches before leaving dashboard
+    queryClient.invalidateQueries({ queryKey: trpc.stocks.getTracked.queryKey() });
     router.push("/login");
     router.refresh();
   }

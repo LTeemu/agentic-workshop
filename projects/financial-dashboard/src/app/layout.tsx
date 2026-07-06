@@ -25,10 +25,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} style={{ backgroundColor: 'var(--background)' }}>
+      <body className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--background)' }}>
         <TRPCReactProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <div style={{ minHeight: '100dvh', backgroundColor: 'var(--background)' }}>
+              {children}
+            </div>
+          </ToastProvider>
         </TRPCReactProvider>
       </body>
     </html>

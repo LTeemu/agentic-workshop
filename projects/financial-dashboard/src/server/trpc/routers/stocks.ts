@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "@/trpc/init";
 import { searchSymbol, getProfile, getNews, getQuote } from "@/lib/finance/finnhub";
 import { trackedSymbols } from "@/server/db/schema/index";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 
 export const stocksRouter = router({
   /** Search for a stock/ETF/fund by query */
@@ -12,12 +13,17 @@ export const stocksRouter = router({
       return searchSymbol(input.query);
     }),
 
-  /** Get list of tracked symbols for the user */
+  /** Get list of tracked symbols for the authenticated user */
   getTracked: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.select().from(trackedSymbols).orderBy(desc(trackedSymbols.addedAt));
+    if (!ctx.userId) return [];
+    return ctx.db
+      .select()
+      .from(trackedSymbols)
+      .where(eq(trackedSymbols.userId, ctx.userId))
+      .orderBy(desc(trackedSymbols.addedAt));
   }),
 
-  /** Add a symbol to tracking */
+  /** Add a symbol to tracking for the authenticated user */
   addSymbol: publicProcedure
     .input(
       z.object({
@@ -27,20 +33,24 @@ export const stocksRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
       const [tracked] = await ctx.db
         .insert(trackedSymbols)
-        .values({ symbol: input.symbol, name: input.name, type: input.type })
+        .values({ userId: ctx.userId, symbol: input.symbol, name: input.name, type: input.type })
         .onConflictDoNothing()
         .returning();
 
       return tracked ?? { symbol: input.symbol };
     }),
 
-  /** Remove a tracked symbol */
+  /** Remove a tracked symbol owned by the authenticated user */
   removeSymbol: publicProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.delete(trackedSymbols).where(eq(trackedSymbols.id, input.id));
+      if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      await ctx.db
+        .delete(trackedSymbols)
+        .where(and(eq(trackedSymbols.id, input.id), eq(trackedSymbols.userId, ctx.userId)));
       return { success: true };
     }),
 
