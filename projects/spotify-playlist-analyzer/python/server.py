@@ -18,9 +18,14 @@ from flask import Flask, render_template, request
 # ---------------------------------------------------------------------------
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = ROOT_DIR / "data" / "spotify-playlist.csv"
+CSV_PRIMARY = ROOT_DIR / "data" / "spotify-playlist.csv"
+CSV_FALLBACK = ROOT_DIR / "data" / "spotify-playlist-example.csv"
+CSV_PATH = CSV_PRIMARY if CSV_PRIMARY.exists() else CSV_FALLBACK
 ANALYSIS_PATH = ROOT_DIR / "data" / "analysis.json"
 PYTHON_DIR = Path(__file__).resolve().parent
+
+if CSV_PATH == CSV_FALLBACK:
+    print(f"[server] Using example CSV ({CSV_FALLBACK.name}) — place your own at {CSV_PRIMARY.name} for analysis", file=sys.stderr)
 
 # ---------------------------------------------------------------------------
 # App
@@ -77,7 +82,7 @@ if needs_rebuild():
         else:
             print(f"[server] Analysis failed:\n{result.stderr}", file=sys.stderr)
     else:
-        print(f"[server] No CSV found at {CSV_PATH}", file=sys.stderr)
+        print(f"[server] No CSV found — expected {CSV_PRIMARY.name} or {CSV_FALLBACK.name}", file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
