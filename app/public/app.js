@@ -58,7 +58,7 @@ function renderProjectList() {
     item.className =
       'project-item' + (activeProject && activeProject.name === p.name ? ' active' : '');
     const dotClass = p.running ? 'running' : '';
-    const typeLabel = p.runType ? `<span class="run-type">${p.runType}</span>` : '';
+    const typeLabel = `<span class="run-type">${p.runType || p.type || '—'}</span>`;
     item.innerHTML = `<span class="dot ${dotClass}"></span><span>${p.name}${typeLabel}</span><button class="remove" data-name="${p.name}">×</button>`;
     item.addEventListener('click', (e) => {
       if (e.target.classList.contains('remove')) return;
@@ -133,6 +133,13 @@ async function selectProject(name, start = true) {
         setStatus('running', 'running');
         previewFrame.src = result.url;
       }
+    } else if (result.starting) {
+      // Already being started (e.g. by the auto-start path on boot).
+      // Keep 'loading' / 'starting...' and wait for SSE events.
+      setStatus('loading', 'starting...');
+      previewNoticeText.textContent = 'starting...';
+      previewNotice.classList.remove('hidden');
+      previewFrame.classList.add('hidden');
     } else {
       setStatus('stopped', result.error || 'stopped');
       activeProject.url = null;
@@ -326,12 +333,20 @@ evtSource.onmessage = (e) => {
 
     case 'project-exit':
       if (activeProject && activeProject.name === data.project) {
-        setStatus('stopped', `exited (${data.code})`);
+        const label =
+          data.code === -1
+            ? 'failed to start'
+            : data.code === 'stopped'
+              ? 'stopped'
+              : data.code === 0
+                ? 'stopped (exit 0)'
+                : `exited (${data.code})`;
+        setStatus('stopped', label);
         projectUrlEl.textContent = '';
         previewFrame.src = '';
         activeProject.url = null;
         openTabBtn.disabled = true;
-        showNotice(`exited (${data.code})`);
+        showNotice(label);
         loadProjects();
       }
       break;

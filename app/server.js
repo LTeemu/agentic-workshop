@@ -99,6 +99,7 @@ function killPortOwner(port) {
 
 let active = null; // The currently-focused project (shown in iframe)
 let runningProjects = {}; // All projects with live processes: { name: { port, child } }
+let startingProjects = new Set(); // Projects currently being started (prevents double-start)
 let sseClients = [];
 let activeWatcher = null;
 let projectsWatcher = null;
@@ -182,6 +183,47 @@ function detectRun(projectPath) {
   if (fs.existsSync(path.join(projectPath, 'index.html'))) {
     return { type: 'static' };
   }
+  return null;
+}
+
+/**
+ * Returns a human-readable description of a project's type, even when the
+ * project isn't directly runnable by the workshop (e.g. Gradle, Python, etc.).
+ * Used for the project-list type badge and for better error messages.
+ * @param {string} projectPath
+ * @returns {string|null}
+ */
+function describeProject(projectPath) {
+  const pkgPath = path.join(projectPath, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.scripts && (pkg.scripts.start || pkg.scripts.dev)) {
+        return 'npm';
+      }
+      return 'npm (no start script)';
+    } catch {}
+  }
+  if (fs.existsSync(path.join(projectPath, 'server.js'))) return 'Node.js';
+  if (fs.existsSync(path.join(projectPath, 'index.html'))) return 'Static HTML';
+  if (fs.existsSync(path.join(projectPath, 'build.gradle.kts'))) return 'Gradle (Kotlin)';
+  if (fs.existsSync(path.join(projectPath, 'build.gradle'))) return 'Gradle';
+  if (
+    fs.existsSync(path.join(projectPath, 'gradlew')) ||
+    fs.existsSync(path.join(projectPath, 'gradlew.bat'))
+  )
+    return 'Gradle';
+  if (fs.existsSync(path.join(projectPath, 'pom.xml'))) return 'Maven';
+  if (fs.existsSync(path.join(projectPath, 'Cargo.toml'))) return 'Rust (Cargo)';
+  if (fs.existsSync(path.join(projectPath, 'main.py'))) return 'Python';
+  if (fs.existsSync(path.join(projectPath, 'requirements.txt'))) return 'Python';
+  if (fs.existsSync(path.join(projectPath, 'Dockerfile'))) return 'Docker';
+  if (
+    fs.existsSync(path.join(projectPath, 'docker-compose.yml')) ||
+    fs.existsSync(path.join(projectPath, 'docker-compose.yaml'))
+  )
+    return 'Docker Compose';
+  if (fs.existsSync(path.join(projectPath, '.csproj'))) return '.NET';
   return null;
 }
 
@@ -322,7 +364,9 @@ function watchProjectsDir() {
     if (projectsWatcher) {
       try {
         projectsWatcher.close();
-      } catch {}
+      } catch (err) {
+        console.error('[watchProjectsDir] Error closing watcher:', err?.message || err);
+      }
     }
     projectsWatcher = fs.watch(PROJECTS_DIR, (eventType, filename) => {
       if (timer) clearTimeout(timer);
@@ -349,7 +393,9 @@ function watchProject(name) {
   if (activeWatcher) {
     try {
       activeWatcher.close();
-    } catch {}
+    } catch (err) {
+      console.error(`[watchProject] Error closing watcher for ${name}:`, err?.message || err);
+    }
     activeWatcher = null;
   }
   if (!name) return;
@@ -433,7 +479,9 @@ async function stopActive() {
   if (activeWatcher) {
     try {
       activeWatcher.close();
-    } catch {}
+    } catch (err) {
+      console.error('[stopActive] Error closing watcher:', err?.message || err);
+    }
     activeWatcher = null;
   }
   const prev = active;
@@ -443,15 +491,20 @@ async function stopActive() {
   delete runningProjects[prev.name];
   broadcastSSE({ type: 'project-exit', project: prev.name, code: 'stopped' });
 
-  if (typeof prev.process.close === 'function') {
-    // Static server — close immediately. Ports are project-specific
-    // and never reused across different projects, so no wait needed.
-    try {
+  // Guard against the early-start state where active is set but has no process yet
+  if (!prev.process) return;
+
+  try {
+    if (typeof prev.process.close === 'function') {
+      // Static server — close immediately. Ports are project-specific
+      // and never reused across different projects, so no wait needed.
       prev.process.close();
-    } catch {}
-  } else if (typeof prev.process.pid === 'number') {
-    // Wait for the child process to fully exit before returning
-    await killProcessTree(prev.process.pid, prev.process);
+    } else if (typeof prev.process.pid === 'number') {
+      // Wait for the child process to fully exit before returning
+      await killProcessTree(prev.process.pid, prev.process);
+    }
+  } catch (err) {
+    console.error(`[stopActive] Error stopping ${prev.name}:`, err?.message || err);
   }
 }
 
@@ -536,14 +589,27 @@ async function startProject(name, { autoStop = true } = {}) {
       fs.writeFileSync(ACTIVE_FILE, `projects/${name}`, 'utf-8');
     } catch {}
 
+    // Prevent double-start: if the same project is already being started by the
+    // auto-start path, return early so the client waits for SSE completion events
+    // instead of spawning a second (conflicting) process.
+    if (startingProjects.has(name)) {
+      const url = `http://localhost:${port}`;
+      pushLog(name, 'system', `Already starting — waiting for completion on ${url}`);
+      return { url, starting: true, runType: null };
+    }
+    startingProjects.add(name);
+
+    // Mark as starting immediately so /api/active reflects the in-flight start
+    // and the client won't show a stale "no active project" state.
+    active = { name, port, url: null, runType: null };
+    pushLog(name, 'system', 'Starting project...');
+    broadcastSSE({ type: 'project-status', project: name, status: 'starting' });
+
     const run = detectRun(projectPath);
     if (!run) {
-      pushLog(
-        name,
-        'system',
-        'No start method detected (no package.json scripts, server.js, or index.html)',
-      );
-      return { error: 'no start method detected' };
+      const desc = describeProject(projectPath) || 'unknown';
+      pushLog(name, 'system', `No start method detected — project type: ${desc}`);
+      return { error: `no start method detected (project type: ${desc})` };
     }
 
     // Auto-install dependencies if node_modules is missing and project uses npm
@@ -741,6 +807,15 @@ async function startProject(name, { autoStop = true } = {}) {
   } catch (err) {
     console.error(`Failed to start project ${name}:`, err.message);
     return { error: err.message };
+  } finally {
+    startingProjects.delete(name);
+    // If start failed and active still points to this project with no process
+    // (the early-start placeholder at line 587), clear it so re-clicks on the
+    // project list re-attempt start instead of getting stuck on "starting...".
+    if (active && active.name === name && !active.process) {
+      active = null;
+      broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
+    }
   }
 }
 
@@ -914,6 +989,7 @@ async function handleAPI(req, res) {
             running,
             url: isActive ? active.url : null,
             runType: isActive ? active.runType : run ? run.type : null,
+            type: run ? run.type : describeProject(projectPath),
           };
         }),
       );
@@ -979,6 +1055,12 @@ async function handleAPI(req, res) {
         fs.writeFileSync(ACTIVE_FILE, `projects/${name}`, 'utf-8');
       } catch {}
       const autoStop = url.searchParams.get('autoStop') !== 'false';
+
+      // If already active (including while still starting up), don't double-start
+      if (active && active.name === name) {
+        const url = `http://localhost:${projectPort(name)}`;
+        return json(res, { url, starting: !active.process, runType: active.runType });
+      }
 
       // If project is already running in background, just focus it — don't restart
       if (isProjectRunning(name) && (!active || active.name !== name)) {
