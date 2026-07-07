@@ -6,8 +6,8 @@
   "instructions": ["AGENTS.md"],
   "command": {
     "review": {
-      "description": "Review staged changes with @reviewer",
-      "template": "Run @reviewer on the current staged changes in git. Report all issues.",
+      "description": "Review code for issues with @reviewer",
+      "template": "Run @reviewer on all changed files. Report all issues.",
       "agent": "reviewer"
     },
     "clean": {

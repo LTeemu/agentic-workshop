@@ -24,12 +24,14 @@ Follow `.opencode/rules/active-project.md` for scope.
 8. **Missing or weak tests**: Public code without tests, tests testing implementation, or missing edge cases.
 9. **Commented-out code**: Any dead code left in comments — flag for removal.
 
+- **General**: Be mindful of security (hardcoded secrets, injection, input validation) but don't block on it unless explicitly requested.
+
 ## Output
 
 Every finding must include the exact line number. Use the format:
 
 ```
-## path/to/file.ts:L<line>
+## path/to/file:L<line>
 - **Issue**: duplicate of other.ts:L<line> | long function | naming
 - **Severity**: high | medium | low
 - **Suggestion**: extract to function / split / rename

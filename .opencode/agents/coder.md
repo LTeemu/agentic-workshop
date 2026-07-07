@@ -28,7 +28,15 @@ Scope follows `.opencode/rules/active-project.md`.
 - Keep functions under 20 lines. Extract nested logic into named helpers.
 - Match the codebase's style. If the project uses classes, don't force functional — be consistent.
 - Always consider error cases and edge cases, not just the happy path.
-- Use `@reviewer` before finishing to catch issues. Use `@refactor` when duplication is found.
+
+## Pipeline (always run this order after completing code changes)
+
+Skip this pipeline if you made no code changes (e.g. answering a question).
+
+1. Invoke `@reviewer`, passing the files you changed.
+2. If reviewer flagged any issues, run `@refactor`.
+3. Auto-detect the test command from project config files and run it.
+4. If tests fail, fix and rerun tests.
 
 ## Consistency
 
@@ -46,6 +54,5 @@ accessibility, animation, api-design, authentication, backend, caching, cli, dat
 
 ## Before Writing Code
 
-- Check if the change introduces duplication. If so, refactor first.
 - Look for existing partial matches you can extract and build upon.
 - If a skill matches the task, load it and follow its guidance.

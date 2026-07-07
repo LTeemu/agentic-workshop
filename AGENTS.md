@@ -19,5 +19,4 @@
 ## Workshop
 
 - Projects live under `projects/`, tracked by `.active-project`. See `.opencode/rules/active-project.md` for scope logic.
-- Never read, reference, or copy code from other projects in `projects/`.
 - Dashboard: `http://localhost:3000` — start with `node app/server.js`.

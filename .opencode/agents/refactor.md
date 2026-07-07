@@ -13,7 +13,7 @@ Follow `.opencode/rules/active-project.md` for scope.
 
 ## Process
 
-1. **Analyze** target for duplication, long functions, structural issues.
+1. **Review** the issues flagged by `@reviewer`, then examine the affected code to determine the full scope of the refactor.
 2. **Plan** extractions, shared patterns, minimal change set.
 3. **Execute** — extract, rename, split. Preserve behavior exactly.
 4. **Update** all callers to use shared code. Remove old blocks.
@@ -22,5 +22,4 @@ Follow `.opencode/rules/active-project.md` for scope.
 
 - Never change behavior or add features. One concern per change.
 - Large refactors → break into steps.
-- After: suggest what to test.
 - Prefer simplest extraction. Don't over-abstract.
