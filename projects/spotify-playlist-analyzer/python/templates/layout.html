@@ -12,13 +12,6 @@
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        Chart.defaults.color = '#8b8176';
-        Chart.defaults.borderColor = '#2f2822';
-        Chart.defaults.plugins.legend.labels.boxWidth = 10;
-      });
-    </script>
   </head>
   <body>
     <nav class="nav">
@@ -49,5 +42,6 @@
         {}).get('basic_stats', {}).get('total_songs', 0) }} tracks
       </p>
     </footer>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>

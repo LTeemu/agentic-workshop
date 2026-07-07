@@ -29,7 +29,7 @@ genre_data.get('top_genres', []) %}
 </div>
 
 {% if top %}
-<section class="section">
+<section class="section reveal">
   <h2>Genre Breakdown</h2>
   <table class="data-table">
     <thead>
@@ -55,13 +55,13 @@ genre_data.get('top_genres', []) %}
   </table>
 </section>
 
-<section class="section">
+<section class="section reveal">
   <h2>Artists per Genre</h2>
   <p class="subtitle">How many unique artists appear in each genre</p>
   <canvas id="artistsPerGenreChart" height="120"></canvas>
 </section>
 
-<section class="section">
+<section class="section reveal">
   <h2>Genres per Song</h2>
   <p class="subtitle">How many genre tags each song has</p>
   <canvas id="genresPerSongChart" height="80"></canvas>

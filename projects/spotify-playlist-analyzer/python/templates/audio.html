@@ -12,10 +12,10 @@
   <p class="subtitle">Distribution histograms for every audio feature in your playlist</p>
 </div>
 
-<div class="chart-grid">
+<div class="chart-grid reveal">
   {% for key, cfg in feature_config.items() %} {% set feat = features.get(key, {}) %} {% if
   feat.get('buckets') %}
-  <div class="chart-card">
+  <div class="chart-card reveal-child" style="--i: {{ loop.index0 }}">
     <h3>
       {{ cfg.label }} {% if feat.get('unit') %}<span class="unit">({{ feat.unit }})</span>{% endif
       %}

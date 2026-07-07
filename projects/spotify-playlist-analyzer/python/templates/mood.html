@@ -10,13 +10,15 @@ mood_data.get('valence_energy_scatter', []) %}
 </div>
 
 {% if quad %}
-<section class="section">
+<section class="section reveal">
   <h2>Mood Quadrants</h2>
   <p class="subtitle">Songs split by median Valence vs Energy</p>
-  <canvas id="moodQuadrantChart" height="80"></canvas>
+  <div class="chart-constrained">
+    <canvas id="moodQuadrantChart" height="56"></canvas>
+  </div>
 </section>
 {% endif %} {% if key_dist %}
-<section class="section">
+<section class="section reveal">
   <h2>Key Distribution</h2>
   <div class="chart-grid-2col">
     <div class="chart-card">
@@ -34,10 +36,10 @@ mood_data.get('valence_energy_scatter', []) %}
   </div>
 </section>
 {% endif %} {% if scatter %}
-<section class="section">
+<section class="section reveal">
   <h2>Valence vs Energy Scatter</h2>
   <p class="subtitle">Each dot is a song — hover for details</p>
-  <canvas id="scatterChart" height="140"></canvas>
+  <canvas id="scatterChart" height="80"></canvas>
 </section>
 {% endif %}
 
@@ -125,8 +127,8 @@ mood_data.get('valence_energy_scatter', []) %}
             label: 'Songs',
             data: scat.map(s => ({ x: s.valence, y: s.energy })),
             backgroundColor: '#d4a853',
-            pointRadius: 6,
-            pointHoverRadius: 9,
+            pointRadius: 3,
+            pointHoverRadius: 6,
           }]
         },
         options: {
