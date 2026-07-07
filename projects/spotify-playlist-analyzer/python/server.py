@@ -22,6 +22,7 @@ CSV_PRIMARY = ROOT_DIR / "data" / "spotify-playlist.csv"
 CSV_FALLBACK = ROOT_DIR / "data" / "spotify-playlist-example.csv"
 CSV_PATH = CSV_PRIMARY if CSV_PRIMARY.exists() else CSV_FALLBACK
 ANALYSIS_PATH = ROOT_DIR / "data" / "analysis.json"
+ANALYZE_PY_PATH = Path(__file__).resolve().parent / "analyze.py"
 PYTHON_DIR = Path(__file__).resolve().parent
 
 if CSV_PATH == CSV_FALLBACK:
@@ -65,12 +66,17 @@ def needs_rebuild():
         return True
     if not CSV_PATH.exists():
         return False
-    return CSV_PATH.stat().st_mtime > ANALYSIS_PATH.stat().st_mtime
+    analysis_mtime = ANALYSIS_PATH.stat().st_mtime
+    if CSV_PATH.stat().st_mtime > analysis_mtime:
+        return True
+    if ANALYZE_PY_PATH.stat().st_mtime > analysis_mtime:
+        return True
+    return False
 
 
 if needs_rebuild():
     if CSV_PATH.exists():
-        print("[server] CSV is newer than analysis.json — running analysis...", file=sys.stderr)
+        print("[server] Source files changed — running analysis...", file=sys.stderr)
         result = subprocess.run(
             [sys.executable, "analyze.py", str(CSV_PATH), "-o", str(ANALYSIS_PATH)],
             cwd=PYTHON_DIR,
