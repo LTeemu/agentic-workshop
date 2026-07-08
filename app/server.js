@@ -10,7 +10,6 @@ const ROOT = path.resolve(__dirname, '..');
 const ACTIVE_FILE = path.join(ROOT, '.active-project');
 const PROJECTS_DIR = path.join(ROOT, 'projects');
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const TEMPLATES_DIR = path.join(ROOT, '_templates');
 const BACKUPS_DIR = path.join(ROOT, '_backups');
 
 const MAX_LOG_LINES = 500;
@@ -140,16 +139,6 @@ function projectPort(name) {
     hash |= 0;
   }
   return 4000 + (Math.abs(hash) % 998) + 1;
-}
-
-function getTemplates() {
-  try {
-    return fs
-      .readdirSync(TEMPLATES_DIR)
-      .filter((f) => fs.statSync(path.join(TEMPLATES_DIR, f)).isDirectory());
-  } catch {
-    return [];
-  }
 }
 
 function detectRun(projectPath) {
@@ -888,31 +877,6 @@ function walkDir(dir, fn) {
   } catch {}
 }
 
-function scaffoldProject(name, template) {
-  const tplDir = path.join(TEMPLATES_DIR, template || 'empty');
-  if (!fs.existsSync(tplDir)) return { error: `template '${template}' not found` };
-
-  const projectPath = path.join(PROJECTS_DIR, name);
-  fs.mkdirSync(projectPath, { recursive: true });
-
-  copyDirSync(tplDir, projectPath);
-  return { name, template };
-}
-
-function copyDirSync(src, dest) {
-  fs.mkdirSync(dest, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const s = path.join(src, entry.name);
-    const d = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDirSync(s, d);
-    } else {
-      fs.writeFileSync(d, fs.readFileSync(s));
-    }
-  }
-}
-
 function serveStatic(req, res) {
   let filePath = req.url === '/' ? '/index.html' : req.url.split('?')[0];
   filePath = path.join(PUBLIC_DIR, filePath);
@@ -965,12 +929,7 @@ async function handleAPI(req, res) {
       projects: { total: projects.length, running: Object.keys(runningProjects).length },
       active: active ? { name: active.name, url: active.url, runType: active.runType } : null,
       runningProjects: Object.keys(runningProjects),
-      templates: getTemplates(),
     });
-  }
-
-  if (parts[0] === 'api' && parts[1] === 'templates' && !parts[2]) {
-    return json(res, getTemplates());
   }
 
   if (parts[0] === 'api' && parts[1] === 'projects' && !parts[2]) {
@@ -1005,12 +964,6 @@ async function handleAPI(req, res) {
       }
       const projectPath = path.join(PROJECTS_DIR, body.name);
       if (fs.existsSync(projectPath)) return json(res, { error: 'exists' }, 409);
-
-      if (body.template) {
-        const result = scaffoldProject(body.name, body.template);
-        if (result.error) return json(res, result, 400);
-        return json(res, result);
-      }
 
       fs.mkdirSync(projectPath, { recursive: true });
       return json(res, { name: body.name });

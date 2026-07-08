@@ -1,8 +1,8 @@
 # agentic-workshop
 
-> Mostly AI-generated experimental project. Built entirely through agentic LLM tooling as a coding sandbox playground.
+> Mostly AI-generated code.
 
-A local development sandbox for spinning up and managing small coding projects.
+A local development sandbox for spinning up and managing small agentic coding projects.
 
 ## What it does
 
@@ -11,7 +11,6 @@ A local development sandbox for spinning up and managing small coding projects.
 - Auto-installs dependencies when `node_modules` is missing
 - Streams logs from running projects to the dashboard via SSE
 - Watches project files for changes and notifies the dashboard
-- Scaffolds new projects from templates in `_templates/`
 
 ## How to use
 
@@ -28,7 +27,6 @@ Then open `http://localhost:3000`.
 | `app/server.js`   | Dashboard server (port 3000)               |
 | `app/public/`     | Dashboard frontend (HTML/CSS/JS)           |
 | `projects/`       | Each subdirectory is a project             |
-| `_templates/`     | Scaffold templates for new projects        |
 | `_backups/`       | Auto-generated backups on project deletion |
 | `.active-project` | Tracks which project is currently active   |
 | `AGENTS.md`       | Instructions for the AI assistant          |

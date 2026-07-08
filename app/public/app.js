@@ -1,6 +1,4 @@
 const projectList = document.getElementById('project-list');
-const newProjectInput = document.getElementById('new-project-name');
-const addBtn = document.getElementById('add-project');
 const placeholder = document.getElementById('placeholder');
 const preview = document.getElementById('preview');
 const previewFrame = document.getElementById('preview-frame');
@@ -231,26 +229,6 @@ function showPlaceholder() {
   preview.classList.add('hidden');
   renderProjectList();
 }
-
-addBtn.addEventListener('click', async () => {
-  const name = newProjectInput.value.trim();
-  if (!name) return;
-  newProjectInput.value = '';
-  const result = await api('/api/projects', {
-    method: 'POST',
-    body: JSON.stringify({ name }),
-  });
-  if (result.name) {
-    await loadProjects();
-    selectProject(result.name);
-  } else {
-    alert(result.error || 'Failed to create project');
-  }
-});
-
-newProjectInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') addBtn.click();
-});
 
 openTabBtn.addEventListener('click', () => {
   if (activeProject && activeProject.url) {
