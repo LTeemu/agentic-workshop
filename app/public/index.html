@@ -10,20 +10,25 @@
   <body>
     <div id="app">
       <aside id="sidebar">
-        <h1>Workshop</h1>
-        <div id="project-list"></div>
-        <div id="sidebar-actions">
-          <input type="text" id="new-project-name" placeholder="project-name" />
-          <button id="add-project">+ Add</button>
+        <div id="sidebar-header">
+          <button id="sidebar-toggle" aria-label="Toggle sidebar">◀</button>
+          <h1>Workshop</h1>
         </div>
-        <label id="auto-stop-label">
-          <input type="checkbox" id="auto-stop" checked />
-          <span class="toggle-track">
-            <span class="toggle-knob"></span>
-          </span>
-          Auto-stop on switch
-        </label>
-        <button id="stop-all" class="sidebar-btn danger">Stop All</button>
+        <div id="sidebar-body">
+          <div id="project-list"></div>
+          <div id="sidebar-actions">
+            <input type="text" id="new-project-name" placeholder="project-name" />
+            <button id="add-project">+ Add</button>
+          </div>
+          <label id="auto-stop-label">
+            <input type="checkbox" id="auto-stop" checked />
+            <span class="toggle-track">
+              <span class="toggle-knob"></span>
+            </span>
+            Auto-stop on switch
+          </label>
+          <button id="stop-all" class="sidebar-btn danger">Stop All</button>
+        </div>
       </aside>
       <main id="main">
         <div id="placeholder">

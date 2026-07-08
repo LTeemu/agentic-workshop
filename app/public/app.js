@@ -13,6 +13,8 @@ const autoStopCheckbox = document.getElementById('auto-stop');
 const stopAllBtn = document.getElementById('stop-all');
 const previewNotice = document.getElementById('preview-notice');
 const previewNoticeText = document.getElementById('preview-notice-text');
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebar-toggle');
 
 let projects = [];
 let activeProject = null; // { name, url, runType }
@@ -161,6 +163,7 @@ async function selectProject(name, start = true) {
       projectTypeEl.textContent = status.runType || '';
       setStatus('running', 'running');
       previewFrame.src = status.url;
+      openTabBtn.disabled = false;
     } else {
       selectProject(name, true);
       return;
@@ -360,3 +363,17 @@ evtSource.addEventListener('message', (e) => {
 
 loadProjects();
 loadActive();
+
+// Sidebar collapse toggle with localStorage persistence
+if (sidebar && sidebarToggle) {
+  const saved = localStorage.getItem('workshop-sidebar-collapsed');
+  if (saved === 'true') {
+    sidebar.classList.add('collapsed');
+    sidebarToggle.setAttribute('aria-label', 'Expand sidebar');
+  }
+  sidebarToggle.addEventListener('click', () => {
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+    sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    localStorage.setItem('workshop-sidebar-collapsed', isCollapsed);
+  });
+}
