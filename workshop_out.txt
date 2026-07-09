@@ -1,2 +1,0 @@
-Workshop running at http://localhost:3000
-[sensorstream] SensorStream running at http://0.0.0.0:4006

@@ -215,11 +215,12 @@ function renderTestResults(results, title) {
         )
         .join('\n');
 
-      html += `<div class="test-all-row ${isPass ? 'pass' : 'fail'}" onclick="this.querySelector('.test-all-output').classList.toggle('hidden')">`;
+      const hasOutput = !!out;
+      html += `<div class="test-all-row ${isPass ? 'pass' : 'fail'}"${hasOutput ? ` onclick="this.querySelector('.test-all-output').classList.toggle('hidden')"` : ''}>`;
       html += `<span class="test-all-icon">${isPass ? '✓' : '✗'}</span>`;
       html += `<span class="test-all-name">${r.project}</span>`;
       html += `<span class="test-all-status ${isPass ? 'pass' : 'fail'}">${isPass ? 'passed' : r.error || 'failed'}</span>`;
-      if (out) {
+      if (hasOutput) {
         html += `<pre class="test-all-output${isPass ? ' hidden' : ''}">${escapeHtml(out)}</pre>`;
       }
       html += `</div>`;

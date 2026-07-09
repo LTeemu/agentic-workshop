@@ -22,15 +22,18 @@ Then open `http://localhost:3000`.
 
 ## Project structure
 
-| Path              | Purpose                                    |
-| ----------------- | ------------------------------------------ |
-| `app/server.js`   | Dashboard server (port 3000)               |
-| `app/public/`     | Dashboard frontend (HTML/CSS/JS)           |
-| `projects/`       | Each subdirectory is a project             |
-| `_backups/`       | Auto-generated backups on project deletion |
-| `.active-project` | Tracks which project is currently active   |
-| `AGENTS.md`       | Instructions for the AI assistant          |
-| `opencode.json`   | Configuration for the opencode AI tool     |
+| Path                   | Purpose                                    |
+| ---------------------- | ------------------------------------------ |
+| `app/server.js`        | Dashboard server (port 3000)               |
+| `app/project-utils.js` | Shared dependency/build infrastructure     |
+| `app/test-runner.js`   | Shared test execution logic                |
+| `app/public/`          | Dashboard frontend (HTML/CSS/JS)           |
+| `projects/`            | Each subdirectory is a project             |
+| `_backups/`            | Auto-generated backups on project deletion |
+| `scripts/test-all.js`  | CLI tool to run tests across all projects  |
+| `.active-project`      | Tracks which project is currently active   |
+| `AGENTS.md`            | Instructions for the AI assistant          |
+| `opencode.json`        | Configuration for the opencode AI tool     |
 
 ## API
 

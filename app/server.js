@@ -4,11 +4,22 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 
+const {
+  getProjects,
+  tryResolveBin,
+  runNpmInstall,
+  runNpmBuild,
+  ensureDependencies,
+  getFileDependencies,
+  hasBuildOutput,
+  PROJECTS_DIR,
+} = require('./project-utils');
+const { detectTest, runNpmTest, runTest } = require('./test-runner');
+
 const PORT = 3000;
 const PROJECTS_BASE = 4000;
 const ROOT = path.resolve(__dirname, '..');
 const ACTIVE_FILE = path.join(ROOT, '.active-project');
-const PROJECTS_DIR = path.join(ROOT, 'projects');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const BACKUPS_DIR = path.join(ROOT, '_backups');
 
@@ -104,16 +115,6 @@ let activeWatcher = null;
 let projectsWatcher = null;
 const projectLogs = {};
 const startTime = Date.now();
-
-function getProjects() {
-  try {
-    return fs
-      .readdirSync(PROJECTS_DIR)
-      .filter((f) => fs.statSync(path.join(PROJECTS_DIR, f)).isDirectory());
-  } catch {
-    return [];
-  }
-}
 
 function isProjectRunning(name) {
   return !!(runningProjects[name] && runningProjects[name].child);
@@ -213,314 +214,6 @@ function describeProject(projectPath) {
   )
     return 'Docker Compose';
   if (fs.existsSync(path.join(projectPath, '.csproj'))) return '.NET';
-  return null;
-}
-
-/**
- * Runs `npm install` in the given project directory, streaming output to logs.
- * @param {string} projectPath
- * @param {string} name - project name for log tagging
- * @returns {Promise<void>}
- */
-function runNpmInstall(projectPath, name) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('npm', ['install'], { cwd: projectPath, stdio: 'pipe', shell: true });
-    child.stdout.on('data', (d) => pushLog(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => pushLog(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`npm install exited with code ${code}`));
-    });
-    child.on('error', reject);
-  });
-}
-
-/**
- * Runs `npm run build` in the given project directory, streaming output to logs.
- * @param {string} projectPath
- * @param {string} name - project name for log tagging
- * @returns {Promise<void>}
- */
-function runNpmBuild(projectPath, name) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('npm', ['run', 'build'], { cwd: projectPath, stdio: 'pipe', shell: true });
-    child.stdout.on('data', (d) => pushLog(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => pushLog(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`npm run build exited with code ${code}`));
-    });
-    child.on('error', reject);
-  });
-}
-
-/**
- * Runs the project's test script directly from package.json, bypassing npm
- * lifecycle hooks (pretest/posttest). Resolves the first word to a binary in
- * node_modules/.bin when possible — same pattern as startProject().
- *
- * @param {string} projectPath
- * @param {string} name - project name for log tagging
- * @returns {Promise<void>}
- */
-function runNpmTest(projectPath, name) {
-  return new Promise((resolve, reject) => {
-    let pkg;
-    try {
-      pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
-    } catch (err) {
-      reject(new Error(`Failed to read package.json: ${err.message}`));
-      return;
-    }
-    const testScript = pkg.scripts && pkg.scripts.test;
-    if (!testScript) {
-      reject(new Error('No test script found in package.json'));
-      return;
-    }
-
-    pushLog(name, 'system', `Running: ${testScript}`);
-
-    const parts = testScript.trim().split(/\s+/).filter(Boolean);
-    const binPath = tryResolveBin(projectPath, testScript);
-    let child;
-
-    if (binPath) {
-      // Resolved to a binary in node_modules/.bin/ (e.g. vitest, jest).
-      // .cmd files on Windows need shell: true to execute.
-      child = spawn(binPath, parts.slice(1), { cwd: projectPath, stdio: 'pipe', shell: true });
-    } else if (parts[0] === 'node') {
-      // Use 'node' resolved via PATH (avoids quoting issues with shell: true
-      // on paths containing spaces like C:\Program Files).
-      child = spawn('node', parts.slice(1), { cwd: projectPath, stdio: 'pipe', shell: true });
-    } else {
-      // Complex script (cd &&, |, etc.) — run directly via cmd.exe.
-      // No shell: true here because we are the shell already — avoids
-      // double-wrapping (cmd /c "cmd /c ...").
-      child = spawn(process.env.COMSPEC || 'cmd.exe', ['/d', '/s', '/c', testScript], {
-        cwd: projectPath,
-        stdio: 'pipe',
-      });
-    }
-    child.stdout.on('data', (d) => pushLog(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => pushLog(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Tests exited with code ${code}`));
-    });
-    child.on('error', reject);
-  });
-}
-
-/**
- * Runs `npx playwright install chromium` for projects that need browser testing.
- * Skips if Playwright isn't a dependency or browsers are already installed.
- * @param {string} projectPath
- * @param {string} name - project name for log tagging
- * @returns {Promise<void>}
- */
-async function ensurePlaywrightBrowsers(projectPath, name) {
-  let pkg;
-  try {
-    pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
-  } catch {
-    return;
-  }
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  const hasPlaywright = Object.keys(deps).some(
-    (d) => d === 'playwright' || d === '@playwright/test' || d === '@vitest/browser',
-  );
-  if (!hasPlaywright) return;
-
-  // Check if browsers are already installed
-  const msPlaywright = path.join(
-    process.env.USERPROFILE || process.env.HOME || '',
-    'AppData',
-    'Local',
-    'ms-playwright',
-  );
-  let hasBrowser = false;
-  try {
-    const entries = fs.readdirSync(msPlaywright);
-    hasBrowser = entries.some((e) => /^chromium-/i.test(e));
-  } catch {
-    /* directory doesn't exist yet */
-  }
-  if (hasBrowser) return;
-
-  pushLog(name, 'system', 'Installing Playwright Chromium browser...');
-  return new Promise((resolve) => {
-    const child = spawn('npx', ['playwright', 'install', 'chromium'], {
-      cwd: projectPath,
-      stdio: 'pipe',
-      shell: true,
-    });
-    child.stdout.on('data', (d) => pushLog(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => pushLog(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) {
-        pushLog(name, 'system', 'Playwright Chromium installed');
-      } else {
-        pushLog(
-          name,
-          'system',
-          `Playwright install exited with code ${code} — browser tests may fail`,
-        );
-      }
-      resolve();
-    });
-    child.on('error', (err) => {
-      pushLog(name, 'system', `Playwright install failed: ${err.message}`);
-      resolve();
-    });
-  });
-}
-
-/**
- * Returns true if common build output directories exist for the project.
- * Used to determine if a project needs to be built before starting.
- *
- * Covers:
- *   - dist/  — standard for most bundlers (Vite, webpack, etc.)
- *   - build/ — common alternative (create-react-app, etc.)
- *   - .next/BUILD_ID — Next.js production build only (next dev creates
- *     .next/ without BUILD_ID; next start needs the production artifact)
- * @param {string} projectPath
- * @returns {boolean}
- */
-function hasBuildOutput(projectPath) {
-  if (fs.existsSync(path.join(projectPath, 'dist'))) return true;
-  if (fs.existsSync(path.join(projectPath, 'build'))) return true;
-  // Only count .next/ as build output when BUILD_ID exists (production build)
-  if (fs.existsSync(path.join(projectPath, '.next', 'BUILD_ID'))) return true;
-  return false;
-}
-
-/**
- * Auto-install node_modules and build file: dependencies if needed.
- * Returns null on success, or an error message string on failure.
- * This is shared between startProject() and runTest().
- *
- * @param {string} projectPath
- * @param {string} name - project name for log tagging
- * @returns {Promise<string|null>}
- */
-async function ensureDependencies(projectPath, name) {
-  const nmPath = path.join(projectPath, 'node_modules');
-  if (!fs.existsSync(nmPath)) {
-    pushLog(name, 'system', 'node_modules not found — running npm install...');
-    try {
-      await runNpmInstall(projectPath, name);
-      pushLog(name, 'system', 'npm install completed');
-    } catch (err) {
-      pushLog(name, 'system', `npm install failed: ${err.message}`);
-      return `npm install failed: ${err.message}`;
-    }
-  }
-
-  let pkg;
-  try {
-    pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
-  } catch (err) {
-    return `Failed to parse package.json for ${name}: ${err.message}`;
-  }
-
-  // Ensure Playwright browser binaries for projects that need them
-  await ensurePlaywrightBrowsers(projectPath, name);
-
-  // Build any workspace file: dependencies first
-  const fileDeps = getFileDependencies(projectPath, pkg);
-  for (const dep of fileDeps) {
-    const depPkgPath = path.join(dep.path, 'package.json');
-    if (!fs.existsSync(depPkgPath)) continue;
-    let depPkg;
-    try {
-      depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf-8'));
-    } catch {
-      pushLog(name, 'system', `Skipping dependency "${dep.name}" — unreadable package.json`);
-      continue;
-    }
-    const depNeedsBuild = depPkg.scripts && depPkg.scripts.build && !hasBuildOutput(dep.path);
-    const depNeedsInstall = !fs.existsSync(path.join(dep.path, 'node_modules'));
-    if (depNeedsInstall || depNeedsBuild) {
-      pushLog(name, 'system', `Preparing file: dependency "${dep.name}"...`);
-      if (depNeedsInstall) {
-        try {
-          await runNpmInstall(dep.path, `${name}:${dep.name}`);
-        } catch (err) {
-          pushLog(
-            name,
-            'system',
-            `npm install failed for dependency "${dep.name}": ${err.message}`,
-          );
-          return `Failed to install dependency "${dep.name}": ${err.message}`;
-        }
-      }
-      if (depNeedsBuild) {
-        try {
-          await runNpmBuild(dep.path, `${name}:${dep.name}`);
-          pushLog(name, 'system', `Dependency "${dep.name}" built successfully`);
-        } catch (err) {
-          pushLog(name, 'system', `Failed to build dependency "${dep.name}": ${err.message}`);
-          return `Failed to build dependency "${dep.name}": ${err.message}`;
-        }
-      }
-    }
-    // Install Playwright browsers for file: deps too
-    await ensurePlaywrightBrowsers(dep.path, `${name}:${dep.name}`);
-  }
-
-  return null;
-}
-
-/**
- * Returns workspace file: dependencies from a package.json.
- * These are `file:`-protocol deps that point to another project in the
- * projects/ directory. They must be built before the main project can start.
- * Also scans devDependencies and peerDependencies for completeness.
- * @param {string} projectPath
- * @param {object} pkg - parsed package.json
- * @returns {Array<{name: string, path: string}>}
- */
-function getFileDependencies(projectPath, pkg) {
-  const result = [];
-  const seen = new Set();
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies };
-  for (const [depName, depVersion] of Object.entries(deps)) {
-    if (typeof depVersion === 'string' && depVersion.startsWith('file:')) {
-      if (seen.has(depName)) continue;
-      seen.add(depName);
-      const depPath = path.resolve(projectPath, depVersion.slice(5));
-      if (depPath.startsWith(PROJECTS_DIR)) {
-        result.push({ name: depName, path: depPath });
-      }
-    }
-  }
-  return result;
-}
-
-/**
- * Try to find the binary for a simple npm script in node_modules/.bin/.
- * For simple scripts like "next dev" or "vite" this returns the full path
- * to the .cmd file, allowing direct invocation that bypasses npm's PATH
- * management. This is more reliable on Windows when node_modules has been
- * moved (e.g. after unzipping) because .cmd files use %~dp0 which is
- * relative to their own location.
- *
- * Returns null for complex scripts containing shell operators (&&, |, ;)
- * or when the .cmd file doesn't exist.
- *
- * @param {string} projectPath
- * @param {string} script - the npm script content (e.g. "next dev")
- * @returns {string|null} full path to .cmd file, or null
- */
-function tryResolveBin(projectPath, script) {
-  const parts = script.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return null;
-  // Only handle simple binary invocations — skip if there are shell operators
-  if (/[&|;<>]/.test(script)) return null;
-  const binName = parts[0];
-  const cmdPath = path.join(projectPath, 'node_modules', '.bin', `${binName}.cmd`);
-  if (fs.existsSync(cmdPath)) return cmdPath;
   return null;
 }
 
@@ -801,7 +494,7 @@ async function startProject(name, { autoStop = true } = {}) {
 
     // Auto-install dependencies if node_modules is missing and project uses npm
     if (run.type === 'npm') {
-      const depErr = await ensureDependencies(projectPath, name);
+      const depErr = await ensureDependencies(projectPath, name, (n, s, t) => pushLog(n, s, t));
       if (depErr) return { error: depErr };
 
       let pkg;
@@ -836,7 +529,7 @@ async function startProject(name, { autoStop = true } = {}) {
         } else if (pkg.scripts && pkg.scripts.build) {
           pushLog(name, 'system', 'Build output not found — running npm run build...');
           try {
-            await runNpmBuild(projectPath, name);
+            await runNpmBuild(projectPath, name, (n, s, t) => pushLog(n, s, t));
             pushLog(name, 'system', 'Build completed');
           } catch (err) {
             pushLog(name, 'system', `Build failed: ${err.message}`);
@@ -949,69 +642,6 @@ async function startProject(name, { autoStop = true } = {}) {
       active = null;
       broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
     }
-  }
-}
-
-/**
- * Determine the test runner for a project.
- * @param {string} projectPath
- * @returns {{ type: string, label: string } | null}
- */
-function detectTest(projectPath) {
-  const pkgPath = path.join(projectPath, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      if (pkg.scripts && pkg.scripts.test) {
-        return { type: 'npm', label: 'npm test' };
-      }
-    } catch {}
-  }
-  return null;
-}
-
-/**
- * Run tests for a project. Auto-installs dependencies if needed.
- * @param {string} name
- * @returns {Promise<{error?: string, passed?: boolean, runner?: string}>}
- */
-async function runTest(name) {
-  const projectPath = path.join(PROJECTS_DIR, name);
-  if (!fs.existsSync(projectPath)) return { error: 'not found' };
-
-  // Check for a test script first — avoids running npm install on projects
-  // that have no test script (e.g. Gradle/Android projects).
-  const runner = detectTest(projectPath);
-  if (!runner) {
-    pushLog(name, 'system', 'No test script found in package.json');
-    return { error: 'No test script found' };
-  }
-
-  pushLog(name, 'system', 'Running tests...');
-  const logStart = (projectLogs[name] || []).length;
-
-  // Auto-install dependencies if needed
-  const depErr = await ensureDependencies(projectPath, name);
-  if (depErr) return { error: depErr };
-
-  pushLog(name, 'system', `Running: ${runner.label}...`);
-
-  try {
-    if (runner.type === 'npm') {
-      await runNpmTest(projectPath, name);
-    }
-    pushLog(name, 'system', 'Tests passed');
-    const logs = (projectLogs[name] || []).slice(logStart);
-    return { passed: true, runner: runner.label, output: logs.map((l) => l.line) };
-  } catch (err) {
-    pushLog(name, 'system', `Tests failed: ${err.message}`);
-    const logs = (projectLogs[name] || []).slice(logStart);
-    return {
-      passed: false,
-      error: err.message,
-      runner: runner.label,
-      output: logs.map((l) => l.line),
-    };
   }
 }
 
@@ -1182,42 +812,14 @@ async function handleAPI(req, res) {
     if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
     const projects = getProjects();
     const results = [];
+    const logWrapper = (n, s, t) => pushLog(n, s, t);
     for (const name of projects) {
       const projectPath = path.join(PROJECTS_DIR, name);
-
-      // Skip projects without a test script
-      let pkg;
-      try {
-        pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
-      } catch {
-        continue;
-      }
-      if (!pkg.scripts || !pkg.scripts.test) continue;
-
-      pushLog(name, 'system', 'Running tests...');
-      // Capture only logs from this test run (save starting offset)
+      if (!detectTest(projectPath)) continue;
       const logStart = (projectLogs[name] || []).length;
-      const depErr = await ensureDependencies(projectPath, name);
-      if (depErr) {
-        results.push({ project: name, passed: false, error: depErr });
-        continue;
-      }
-
-      try {
-        await runNpmTest(projectPath, name);
-        pushLog(name, 'system', 'Tests passed');
-        const logs = (projectLogs[name] || []).slice(logStart);
-        results.push({ project: name, passed: true, output: logs.map((l) => l.line) });
-      } catch (err) {
-        pushLog(name, 'system', `Tests failed: ${err.message}`);
-        const logs = (projectLogs[name] || []).slice(logStart);
-        results.push({
-          project: name,
-          passed: false,
-          error: err.message,
-          output: logs.map((l) => l.line),
-        });
-      }
+      const result = await runTest(name, logWrapper);
+      const logs = (projectLogs[name] || []).slice(logStart);
+      results.push({ project: name, ...result, output: logs.map((l) => l.line) });
     }
     return json(res, { results });
   }
@@ -1345,7 +947,7 @@ async function handleAPI(req, res) {
 
     if (parts[3] === 'test') {
       if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
-      const result = await runTest(name);
+      const result = await runTest(name, (n, s, t) => pushLog(n, s, t));
       return json(res, result, result.error ? 400 : 200);
     }
   }
