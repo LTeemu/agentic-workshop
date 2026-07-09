@@ -1,6 +1,8 @@
 const projectList = document.getElementById('project-list');
 const placeholder = document.getElementById('placeholder');
 const preview = document.getElementById('preview');
+const testOutput = document.getElementById('test-output');
+const runTestsBtn = document.getElementById('run-tests');
 const previewFrame = document.getElementById('preview-frame');
 const projectNameEl = document.getElementById('project-name');
 const projectStatusEl = document.getElementById('project-status');
@@ -17,6 +19,9 @@ const sidebarToggle = document.getElementById('sidebar-toggle');
 let projects = [];
 let activeProject = null; // { name, url, runType }
 let autoStop = true;
+const testAllSummary = document.getElementById('test-all-summary');
+const testAllResults = document.getElementById('test-all-results');
+const testAllBtn = document.getElementById('test-all');
 
 async function api(url, options = {}) {
   const res = await fetch(url, {
@@ -188,6 +193,88 @@ async function stopProject(name) {
   }
 }
 
+function renderTestResults(results, title) {
+  document.querySelector('#test-all-header h3').textContent = title;
+  let html = '';
+  let passedCount = 0;
+  let failedCount = 0;
+
+  if (results && results.length > 0) {
+    for (const r of results) {
+      const isPass = r.passed;
+      if (isPass) passedCount++;
+      else failedCount++;
+
+      const out = (r.output || [])
+        .filter(
+          (l) =>
+            !l.includes('Tests passed') &&
+            !l.includes('Tests failed') &&
+            !l.includes('Running tests') &&
+            !l.includes('Running:'),
+        )
+        .join('\n');
+
+      html += `<div class="test-all-row ${isPass ? 'pass' : 'fail'}" onclick="this.querySelector('.test-all-output').classList.toggle('hidden')">`;
+      html += `<span class="test-all-icon">${isPass ? '✓' : '✗'}</span>`;
+      html += `<span class="test-all-name">${r.project}</span>`;
+      html += `<span class="test-all-status ${isPass ? 'pass' : 'fail'}">${isPass ? 'passed' : r.error || 'failed'}</span>`;
+      if (out) {
+        html += `<pre class="test-all-output${isPass ? ' hidden' : ''}">${escapeHtml(out)}</pre>`;
+      }
+      html += `</div>`;
+    }
+    html += `<p style="margin-top:12px;">${passedCount} passed, ${failedCount} failed, ${results.length} total</p>`;
+  } else {
+    html = '<p>No test results.</p>';
+  }
+
+  testAllResults.innerHTML = html;
+  testAllSummary.classList.remove('hidden');
+}
+
+async function runTests(name) {
+  runTestsBtn.disabled = true;
+  runTestsBtn.textContent = 'Running...';
+
+  const result = await api(`/api/projects/${name}/test`, { method: 'POST' });
+
+  const results = [
+    {
+      project: name,
+      passed: result.passed,
+      error: result.error,
+      output: result.output || [],
+    },
+  ];
+  renderTestResults(results, `Tests: ${name}`);
+
+  if (result.passed) {
+    runTestsBtn.textContent = 'Tests Passed';
+  } else {
+    runTestsBtn.textContent = 'Tests Failed';
+  }
+
+  setTimeout(() => {
+    runTestsBtn.disabled = false;
+    runTestsBtn.textContent = 'Run Tests';
+  }, 3000);
+}
+
+async function testAll() {
+  testAllBtn.disabled = true;
+  testAllBtn.textContent = 'Running...';
+  testAllSummary.classList.remove('hidden');
+  testAllResults.innerHTML = 'Running tests for all projects...';
+
+  const result = await api('/api/projects/test-all', { method: 'POST' });
+
+  renderTestResults(result.results || [], 'Test All');
+
+  testAllBtn.disabled = false;
+  testAllBtn.textContent = 'Test All';
+}
+
 async function stopAll() {
   const result = await api('/api/projects/stop-all', { method: 'POST' });
   if (result.stopped) {
@@ -225,6 +312,15 @@ function hideNotice() {
   previewFrame.classList.remove('hidden');
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function showPlaceholder() {
   placeholder.classList.remove('hidden');
   preview.classList.add('hidden');
@@ -236,6 +332,14 @@ openTabBtn.addEventListener('click', () => {
     window.open(activeProject.url, '_blank');
   }
 });
+
+runTestsBtn.addEventListener('click', () => {
+  if (activeProject && activeProject.name) {
+    runTests(activeProject.name);
+  }
+});
+
+testAllBtn.addEventListener('click', testAll);
 
 stopAllBtn.addEventListener('click', async () => {
   const runningCount = projects.filter((p) => p.running).length;
@@ -338,6 +442,17 @@ evtSource.onmessage = (e) => {
 // Also handle older SSE format (plain message)
 evtSource.addEventListener('message', (e) => {
   // Already handled by onmessage above
+});
+
+// Dismiss test-all modal on background click, close button, or Escape
+testAllSummary.addEventListener('click', (e) => {
+  if (e.target === testAllSummary) testAllSummary.classList.add('hidden');
+});
+document.getElementById('test-all-close').addEventListener('click', () => {
+  testAllSummary.classList.add('hidden');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') testAllSummary.classList.add('hidden');
 });
 
 loadProjects();

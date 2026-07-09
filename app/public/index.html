@@ -24,6 +24,7 @@
             Auto-stop on switch
           </label>
           <button id="stop-all" class="sidebar-btn danger">Stop All</button>
+          <button id="test-all" class="sidebar-btn">Test All</button>
         </div>
       </aside>
       <main id="main">
@@ -38,6 +39,7 @@
             <span id="project-status"></span>
             <span id="project-url"></span>
             <button id="open-tab">Open in Tab</button>
+            <button id="run-tests">Run Tests</button>
           </div>
           <div id="preview-frame-container">
             <div id="preview-notice" class="hidden">
@@ -48,9 +50,19 @@
               title="Project preview"
               sandbox="allow-scripts allow-same-origin allow-forms"
             ></iframe>
+            <pre id="test-output"></pre>
           </div>
         </div>
       </main>
+    </div>
+    <div id="test-all-summary" class="hidden">
+      <div id="test-all-modal">
+        <div id="test-all-header">
+          <h3>Test All</h3>
+          <button id="test-all-close">✕</button>
+        </div>
+        <div id="test-all-results"></div>
+      </div>
     </div>
     <script src="/app.js"></script>
   </body>

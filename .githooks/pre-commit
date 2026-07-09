@@ -29,15 +29,15 @@ for pkg in "$PROJECTS_DIR"/*/package.json; do
   [ -f "$pkg" ] || continue
   PROJECT="$(basename "$(dirname "$pkg")")"
 
-  # Check if it has a test script
-  HAS_TEST=$(node -e "
+  # Get the raw test script (skip pretest lifecycle hooks)
+  TEST_SCRIPT=$(node -e "
     const p = require('$pkg');
-    console.log(p.scripts && p.scripts.test ? 'yes' : '');
+    console.log(p.scripts && p.scripts.test ? p.scripts.test : '');
   ")
-  [ -z "$HAS_TEST" ] && continue
+  [ -z "$TEST_SCRIPT" ] && continue
 
-  echo "[pre-commit] Running tests for $PROJECT..."
-  if ! (cd "$PROJECTS_DIR/$PROJECT" && npm test); then
+  echo "[pre-commit] Running tests for $PROJECT... ($TEST_SCRIPT)"
+  if ! (cd "$PROJECTS_DIR/$PROJECT" && PATH="node_modules/.bin:$PATH" && eval "$TEST_SCRIPT"); then
     echo "[pre-commit] FAILED: $PROJECT tests"
     FAILED=1
   fi

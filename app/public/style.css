@@ -213,9 +213,10 @@ body {
   background: #fff;
 }
 
-#stop-all {
+#stop-all,
+#test-all {
   width: 100%;
-  background: transparent;
+  background: #21262d;
   color: #c9d1d9;
   border: 1px solid #30363d;
   border-radius: 6px;
@@ -225,24 +226,168 @@ body {
   margin-top: 6px;
 }
 
-#stop-all:hover:not(:disabled) {
-  background: #1c2128;
+#stop-all:hover:not(:disabled),
+#test-all:hover:not(:disabled) {
+  background: #30363d;
 }
 
-#stop-all:disabled {
+#stop-all:disabled,
+#test-all:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-#stop-all:hover:not(:disabled) {
+#test-all-summary {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+#test-all-summary.hidden {
+  display: none;
+}
+
+#test-all-modal {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+#test-all-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #30363d;
+}
+
+#test-all-header h3 {
+  font-size: 18px;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+#test-all-close {
+  background: none;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+#test-all-close:hover {
   background: #1c2128;
-  border-color: #8b949e;
   color: #c9d1d9;
 }
 
-#stop-all:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+#test-all-results {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 8px;
+}
+
+#test-all-summary .pass {
+  color: #3fb950;
+}
+
+#test-all-summary .fail {
+  color: #f85149;
+}
+
+#test-all-summary pre {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  color: #8b949e;
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.test-all-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  border-radius: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.test-all-row:hover {
+  background: #1c2128;
+}
+
+.test-all-row.pass {
+  color: #3fb950;
+}
+
+.test-all-row.fail {
+  color: #f85149;
+}
+
+.test-all-icon {
+  flex-shrink: 0;
+  width: 16px;
+}
+
+.test-all-name {
+  font-weight: 500;
+  min-width: 180px;
+}
+
+.test-all-status {
+  font-size: 12px;
+}
+
+.test-all-status.pass {
+  color: #3fb950;
+}
+
+.test-all-status.fail {
+  color: #f85149;
+}
+
+.test-all-output {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8b949e;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.test-all-output.hidden {
+  display: none;
 }
 
 #main {
@@ -367,6 +512,55 @@ body {
 
 #open-tab:disabled:hover {
   background: #21262d;
+}
+
+#run-tests {
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#run-tests:hover {
+  background: #30363d;
+}
+
+#run-tests:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#test-output {
+  background: #0d1117;
+  border-top: 1px solid #30363d;
+  max-height: 240px;
+  overflow-y: auto;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 16px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #8b949e;
+}
+
+#test-output .pass {
+  color: #3fb950;
+}
+
+#test-output .fail {
+  color: #f85149;
+}
+
+#test-output .info {
+  color: #8b949e;
+}
+
+#test-output:empty {
+  display: none;
 }
 
 #preview-frame-container {

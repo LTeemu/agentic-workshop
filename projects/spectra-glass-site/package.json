@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "pretest": "node -e \"var f=require('fs'),p=require('path'),c=require('child_process');var d=p.join('node_modules','spectra-glass-ui','dist');if(!f.existsSync(d)){console.log('Building spectra-glass-ui...');c.execSync('npm run build',{cwd:p.resolve('..','spectra-glass-ui'),stdio:'inherit',shell:true})}\"",
     "test": "vitest run"
   },
   "dependencies": {
