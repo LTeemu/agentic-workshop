@@ -2,6 +2,7 @@
   "name": "spotify-playlist-analyzer",
   "private": true,
   "scripts": {
-    "start": "cd python && python server.py"
+    "start": "cd python && python server.py",
+    "test": "cd python && python test_analyze.py"
   }
 }

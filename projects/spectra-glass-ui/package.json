@@ -29,6 +29,7 @@
   "scripts": {
     "build": "vite build && node scripts/copy-assets.mjs && cem analyze --litelement --globs \"src/components/**/*.ts\" --outdir .",
     "dev": "storybook dev -p 4812",
+    "pretest": "npx playwright install chromium 2>nul || exit 0",
     "test": "vitest run",
     "test:watch": "vitest",
     "build-storybook": "storybook build",

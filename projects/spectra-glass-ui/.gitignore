@@ -1,0 +1,7 @@
+node_modules/
+dist/
+storybook-static/
+.vitest-attachments/
+test-results/
+.DS_Store
+Thumbs.db

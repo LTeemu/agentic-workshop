@@ -101,6 +101,7 @@ async function selectProject(name, start = true) {
   placeholder.classList.add('hidden');
   preview.classList.remove('hidden');
   projectUrlEl.textContent = '';
+  previewFrame.src = ''; // Clear old project content immediately
 
   if (start) {
     const result = await api(`/api/projects/${name}/select?autoStop=${autoStop}`, {
