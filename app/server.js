@@ -930,6 +930,34 @@ async function handleAPI(req, res) {
       });
     }
 
+    if (parts[3] === 'details') {
+      const pkgPath = path.join(projectPath, 'package.json');
+      const details = {
+        name,
+        runType: describeProject(projectPath),
+        hasPackageJson: false,
+        version: null,
+        description: null,
+        scripts: {},
+        dependencies: {},
+        devDependencies: {},
+        hasTestScript: false,
+      };
+      if (fs.existsSync(pkgPath)) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+          details.hasPackageJson = true;
+          details.version = pkg.version || null;
+          details.description = pkg.description || null;
+          details.scripts = pkg.scripts || {};
+          details.dependencies = pkg.dependencies || {};
+          details.devDependencies = pkg.devDependencies || {};
+          details.hasTestScript = !!(pkg.scripts && pkg.scripts.test);
+        } catch {}
+      }
+      return json(res, details);
+    }
+
     if (parts[3] === 'logs') {
       const limit = Math.min(
         parseInt(url.searchParams.get('limit')) || MAX_LOG_LINES,

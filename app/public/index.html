@@ -33,27 +33,64 @@
           <p>Choose a project from the sidebar to preview it.</p>
         </div>
         <div id="preview" class="hidden">
-          <div id="preview-header">
-            <span id="project-name"></span>
-            <span id="project-type"></span>
-            <span id="project-status"></span>
-            <span id="project-url"></span>
-            <button id="open-tab">Open in Tab</button>
-            <button id="run-tests">Run Tests</button>
-          </div>
-          <div id="preview-frame-container">
-            <div id="preview-notice" class="hidden">
-              <span id="preview-notice-text"></span>
+          <div id="preview-body">
+            <div id="preview-frame-container">
+              <div id="preview-notice" class="hidden">
+                <span id="preview-notice-text"></span>
+              </div>
+              <iframe
+                id="preview-frame"
+                title="Project preview"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+              ></iframe>
             </div>
-            <iframe
-              id="preview-frame"
-              title="Project preview"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            ></iframe>
-            <pre id="test-output"></pre>
+            <div id="log-panel" class="collapsed">
+              <div class="resize-handle"></div>
+              <div id="log-panel-header">
+                <div id="log-panel-header-left">
+                  <span id="project-url"></span>
+                  <button id="open-tab">Open in Tab</button>
+                  <button id="run-tests">Run Tests</button>
+                </div>
+                <div id="log-panel-header-right">
+                  <input id="log-filter" type="text" placeholder="Filter..." />
+                  <label id="log-auto-scroll-label" title="Auto-scroll to bottom">
+                    <input type="checkbox" id="log-auto-scroll" checked />
+                    <span class="toggle-track small">
+                      <span class="toggle-knob"></span>
+                    </span>
+                  </label>
+                  <button id="log-clear" title="Clear output">Clear</button>
+                  <button id="log-toggle" title="Toggle output panel">▲</button>
+                </div>
+                <span id="project-type" class="hidden"></span>
+              </div>
+              <pre id="log-output"></pre>
+            </div>
           </div>
         </div>
       </main>
+      <aside id="details-panel" class="hidden">
+        <div id="details-header">
+          <span id="details-title"></span>
+          <button id="details-close">✕</button>
+        </div>
+        <div id="details-body">
+          <div id="details-description" class="hidden"></div>
+          <section id="details-scripts">
+            <h4>Scripts</h4>
+            <div id="details-scripts-list"></div>
+          </section>
+          <section id="details-deps">
+            <h4>Dependencies</h4>
+            <div id="details-deps-list"></div>
+          </section>
+          <section id="details-devdeps">
+            <h4>Dev Dependencies</h4>
+            <div id="details-devdeps-list"></div>
+          </section>
+        </div>
+      </aside>
     </div>
     <div id="test-all-summary" class="hidden">
       <div id="test-all-modal">
