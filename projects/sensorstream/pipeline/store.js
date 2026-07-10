@@ -139,7 +139,19 @@ export function pruneOldReadings() {
   const db = getDb();
   const maxRetain = config.pipeline.maxHistoryRetention;
 
-  const result = db
+  // Delete child rows (anomalies) first to respect FOREIGN KEY constraint
+  const anomalyResult = db
+    .prepare(
+      `
+      DELETE FROM anomalies WHERE reading_id NOT IN (
+        SELECT id FROM readings ORDER BY timestamp DESC LIMIT ?
+      )
+    `,
+    )
+    .run(maxRetain);
+
+  // Then delete old readings
+  const readingResult = db
     .prepare(
       `
     DELETE FROM readings WHERE id NOT IN (
@@ -149,14 +161,5 @@ export function pruneOldReadings() {
     )
     .run(maxRetain);
 
-  if (result.changes > 0) {
-    // Clean up orphaned anomalies
-    db.prepare(
-      `
-      DELETE FROM anomalies WHERE reading_id NOT IN (SELECT id FROM readings)
-    `,
-    ).run();
-  }
-
-  return result.changes;
+  return readingResult.changes;
 }
