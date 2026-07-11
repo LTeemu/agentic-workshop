@@ -24,11 +24,11 @@ test('renders label text', async () => {
   expect(label?.textContent).toBe('Section');
 });
 
-test('defaults to glass variant', async () => {
+test('defaults to gradient variant', async () => {
   render(html`<sg-divider></sg-divider>`);
   const el = document.body.querySelector('sg-divider')!;
   await waitForLit(el);
-  expect(el.variant).toBe('glass');
+  expect(el.variant).toBe('gradient');
 });
 
 test('reflects label-position attribute', async () => {
@@ -36,4 +36,17 @@ test('reflects label-position attribute', async () => {
   const el = document.body.querySelector('sg-divider')!;
   await waitForLit(el);
   expect(el.getAttribute('label-position')).toBe('right');
+});
+
+test('updates label when property changes after mount', async () => {
+  render(html`<sg-divider></sg-divider>`);
+  const el = document.body.querySelector('sg-divider')!;
+  await waitForLit(el);
+  expect(el.shadowRoot?.querySelector('.label')).toBeFalsy();
+
+  el.label = 'Updated';
+  await waitForLit(el);
+  const label = el.shadowRoot?.querySelector('.label');
+  expect(label).toBeTruthy();
+  expect(label?.textContent).toBe('Updated');
 });

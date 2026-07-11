@@ -24,7 +24,7 @@ type Story = StoryObj;
 export const Default: Story = {
   render: (args) => html`
     <sg-breadcrumb
-      .items=${args.items}
+      .items=${[...(args.items ?? [])]}
       separator=${args.separator || '/'}
     ></sg-breadcrumb>
   `,
@@ -42,7 +42,7 @@ export const Default: Story = {
 export const WithLinks: Story = {
   render: (args) => html`
     <sg-breadcrumb
-      .items=${args.items}
+      .items=${[...(args.items ?? [])]}
       separator=${args.separator || '/'}
     ></sg-breadcrumb>
   `,
@@ -60,7 +60,7 @@ export const WithLinks: Story = {
 export const Short: Story = {
   render: (args) => html`
     <sg-breadcrumb
-      .items=${args.items}
+      .items=${[...(args.items ?? [])]}
       separator=${args.separator || '/'}
     ></sg-breadcrumb>
   `,
@@ -76,7 +76,7 @@ export const Short: Story = {
 export const Long: Story = {
   render: (args) => html`
     <sg-breadcrumb
-      .items=${args.items}
+      .items=${[...(args.items ?? [])]}
       separator=${args.separator || '/'}
     ></sg-breadcrumb>
   `,

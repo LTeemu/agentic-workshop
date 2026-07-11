@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Spectra Glass Theme — ocean (spectra-ocean)
+   ==========================================================================
+   A cool aquatic palette — faded coral, seafoam, ocean blue through
+   twilight indigo. Glass surfaces sit deeper to evoke submersion.
+     @import 'spectra-glass-ui/themes/sg-theme-spectra-ocean.css';
+   ========================================================================== */
+
+:root {
+  /* ─── Glass surfaces ───
+     Slightly more transparent than the default — the glass effect
+     reads like being underwater, with deeper shadows.  */
+  --sg-glass-bg: rgba(255, 255, 255, 0.06);
+  --sg-glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --sg-glass-bg-active: rgba(255, 255, 255, 0.16);
+  --sg-glass-border: rgba(255, 255, 255, 0.1);
+  --sg-glass-border-hover: rgba(255, 255, 255, 0.22);
+  --sg-glass-border-strong: rgba(255, 255, 255, 0.3);
+  --sg-glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  --sg-glass-shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.22);
+  --sg-glass-blur: blur(20px);
+  --sg-glass-blur-sm: blur(12px);
+
+  /* ─── Spectral colour palette ───
+     A cool shift — dusty rose brings a subtle warm accent that
+     doesn't compete with the blues, then the palette dives through
+     seaweed gold, seafoam, ocean blue, steel blue, twilight indigo,
+     and dusk lavender.  */
+  --sg-spectral-color1: #a06a7a;
+  --sg-spectral-color2: #a89a5a;
+  --sg-spectral-color3: #5aaa8a;
+  --sg-spectral-color4: #4a8aaa;
+  --sg-spectral-color5: #3a7a9a;
+  --sg-spectral-color6: #5a6aaa;
+  --sg-spectral-color7: #7a6aaa;
+
+  /* ─── Semantic colours ───
+     Aquatic-toned semantic colours — seafoam for success, seaweed
+     gold for warning, brick rose for error, ocean blue for info.  */
+  --sg-color-success: #5aaa8a;
+  --sg-color-warning: #a89a5a;
+  --sg-color-error: #b06a6a;
+  --sg-color-info: #4a8aaa;
+
+  /* 4-colour gradient at 90° — a horizontal sweep like an ocean
+     horizon built from steel blue → ocean blue → seafoam → indigo.
+     Completely blue-heavy — no warm accent — so it reads purely
+     aquatic.  */
+  --sg-gradient-spectral: linear-gradient(
+    90deg,
+    rgba(58, 122, 154, 0.35),
+    rgba(74, 138, 170, 0.35),
+    rgba(90, 170, 138, 0.35),
+    rgba(90, 106, 170, 0.35)
+  );
+
+  --sg-gradient-spectral-warm: linear-gradient(
+    90deg,
+    rgba(160, 106, 122, 0.35),
+    rgba(168, 154, 90, 0.35),
+    rgba(90, 170, 138, 0.35)
+  );
+
+  --sg-gradient-spectral-cool: linear-gradient(
+    90deg,
+    rgba(74, 138, 170, 0.4),
+    rgba(58, 122, 154, 0.4),
+    rgba(90, 106, 170, 0.4)
+  );
+
+  /* Strong variant (65 % opacity) for interactive elements.  */
+  --sg-gradient-spectral-strong: linear-gradient(
+    90deg,
+    rgba(58, 122, 154, 0.65),
+    rgba(74, 138, 170, 0.65),
+    rgba(90, 170, 138, 0.65),
+    rgba(90, 106, 170, 0.65)
+  );
+
+  /* ─── Button hover glow ───
+     Steel blue + indigo — an aquatic glow that matches Ocean's
+     cool-tone character.  */
+  --sg-button-glow-primary:
+    0 0 6px rgba(90, 138, 154, 0.18), 0 0 16px rgba(90, 138, 154, 0.25),
+    0 0 28px rgba(106, 106, 154, 0.1);
+  --sg-button-glow-secondary:
+    0 0 6px rgba(90, 138, 154, 0.05), 0 0 16px rgba(90, 138, 154, 0.06),
+    0 0 28px rgba(106, 106, 154, 0.03);
+
+  /* ─── Typography ───
+     Slightly dimmer text reduces contrast fatigue on cool-toned
+     backgrounds while staying highly legible.  */
+  --sg-text-primary: rgba(255, 255, 255, 0.88);
+  --sg-text-secondary: rgba(255, 255, 255, 0.58);
+  --sg-text-tertiary: rgba(255, 255, 255, 0.38);
+  --sg-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ─── Spacing & radii ─── */
+  --sg-radius-xs: 4px;
+  --sg-radius-sm: 8px;
+  --sg-radius-md: 12px;
+  --sg-radius-lg: 20px;
+  --sg-radius-xl: 28px;
+  --sg-radius-full: 9999px;
+
+  /* ─── Motion ─── */
+  --sg-transition-fast: 150ms ease;
+  --sg-transition-base: 250ms ease;
+  --sg-transition-slow: 400ms ease;
+}

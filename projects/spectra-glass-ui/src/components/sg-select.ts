@@ -76,7 +76,7 @@ export class SgSelect extends LitElement {
     }
 
     .trigger--error {
-      border-color: var(--sg-spectral-color1, #d4869f) !important;
+      border-color: var(--sg-color-error, #d4869f) !important;
     }
 
     .trigger--disabled {
@@ -161,7 +161,7 @@ export class SgSelect extends LitElement {
       display: block;
       margin-top: 4px;
       font-size: 0.75rem;
-      color: var(--sg-spectral-color1, #d4869f);
+      color: var(--sg-color-error, #d4869f);
     }
   `;
 

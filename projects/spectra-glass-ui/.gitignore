@@ -1,5 +1,6 @@
 node_modules/
 dist/
+custom-elements.json
 storybook-static/
 .vitest-attachments/
 test-results/

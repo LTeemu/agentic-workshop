@@ -26,7 +26,11 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: (args) => html`
-    <sg-header ?sticky=${args.sticky ?? true} mobile-breakpoint=${args.mobileBreakpoint || '768px'}>
+    <sg-header
+      ?sticky=${args.sticky ?? true}
+      ?menu-open=${args.menuOpen ?? false}
+      mobile-breakpoint=${args.mobileBreakpoint || '768px'}
+    >
       <span slot="logo" style="font-weight:700;font-size:1.25rem;color:rgba(255,255,255,0.9);">
         Spectra
       </span>
@@ -36,5 +40,5 @@ export const Default: Story = {
       <sg-button slot="cta" variant="primary" size="sm">Get Started</sg-button>
     </sg-header>
   `,
-  args: { sticky: true, mobileBreakpoint: '768px' },
+  args: { sticky: true, menuOpen: false, mobileBreakpoint: '768px' },
 };

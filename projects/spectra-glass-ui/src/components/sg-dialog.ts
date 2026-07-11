@@ -180,6 +180,11 @@ export class SgDialog extends LitElement {
         this._previousFocus?.focus();
         this._previousFocus = null;
       }
+    } else if (
+      this.open &&
+      (changed.has('closable') || changed.has('accent') || changed.has('title'))
+    ) {
+      this.#updatePortal();
     }
   }
 
@@ -288,6 +293,13 @@ export class SgDialog extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /** Re-render the portal template in-place (used when properties change while open). */
+  #updatePortal(): void {
+    if (this._portalEl && this._portalEl.parentNode) {
+      render(this.#portalTemplate(), this._portalEl);
+    }
   }
 
   // ── Slot helpers ──

@@ -15,6 +15,16 @@ export class SgRadioGroup extends LitElement {
       gap: 8px;
       font-family: var(--sg-font-family, 'Inter', -apple-system, sans-serif);
     }
+
+    .group-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--sg-text-secondary, rgba(255, 255, 255, 0.6));
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      user-select: none;
+    }
   `;
 
   @property({ type: String, reflect: true })
@@ -25,6 +35,9 @@ export class SgRadioGroup extends LitElement {
 
   @property({ type: Boolean, reflect: true })
   disabled: boolean = false;
+
+  @property({ type: String })
+  label: string = '';
 
   @queryAssignedElements({ selector: 'sg-radio' })
   private _radios!: SgRadio[];
@@ -56,7 +69,10 @@ export class SgRadioGroup extends LitElement {
   }
 
   override render() {
-    return html`<slot @slotchange=${this._slotChangeHandler}></slot>`;
+    return html`
+      ${this.label ? html`<div class="group-label">${this.label}</div>` : ''}
+      <slot @slotchange=${this._slotChangeHandler}></slot>
+    `;
   }
 
   #syncRadios(): void {

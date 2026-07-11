@@ -1,0 +1,114 @@
+/* ==========================================================================
+   Spectra Glass Theme — midnight (spectra-midnight)
+   ==========================================================================
+   The deepest variant — dark rose, dark amber, deep teal, sapphire,
+   deep blue, indigo, and amethyst. Glass is highly transparent so
+   the background gradient reads as a luminous deep-space glow.
+     @import 'spectra-glass-ui/themes/sg-theme-spectra-midnight.css';
+   ========================================================================== */
+
+:root {
+  /* ─── Glass surfaces ───
+     Very low opacity — the glass is barely there, letting the
+     background be the star. Shadows are deeper to anchor
+     translucent surfaces.  */
+  --sg-glass-bg: rgba(255, 255, 255, 0.03);
+  --sg-glass-bg-hover: rgba(255, 255, 255, 0.08);
+  --sg-glass-bg-active: rgba(255, 255, 255, 0.12);
+  --sg-glass-border: rgba(255, 255, 255, 0.06);
+  --sg-glass-border-hover: rgba(255, 255, 255, 0.15);
+  --sg-glass-border-strong: rgba(255, 255, 255, 0.25);
+  --sg-glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --sg-glass-shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.4);
+  --sg-glass-blur: blur(20px);
+  --sg-glass-blur-sm: blur(12px);
+
+  /* ─── Spectral colour palette ───
+     Deep jewel tones on a near-black canvas — dark rose, dark amber,
+     deep teal, sapphire, deep blue, indigo, and amethyst. Saturation
+     is moderate so the palette reads as elegant, not neon.  */
+  --sg-spectral-color1: #8a4a6a;
+  --sg-spectral-color2: #8a6a3a;
+  --sg-spectral-color3: #3a7a5a;
+  --sg-spectral-color4: #3a5a8a;
+  --sg-spectral-color5: #2a4a7a;
+  --sg-spectral-color6: #4a4a8a;
+  --sg-spectral-color7: #6a4a8a;
+
+  /* ─── Semantic colours ───
+     Deep jewel semantic colours — dark teal for success, dark amber
+     for warning, dark rose for error, sapphire for info.  */
+  --sg-color-success: #3a7a5a;
+  --sg-color-warning: #8a6a3a;
+  --sg-color-error: #8a4a6a;
+  --sg-color-info: #3a5a8a;
+
+  /* 5-colour gradient at 150° — a rich jewel progression:
+     dark rose → indigo → amethyst → sapphire → deep blue.
+     Five stops create a more complex, gem-like interplay.  */
+  --sg-gradient-spectral: linear-gradient(
+    150deg,
+    rgba(138, 74, 106, 0.22),
+    rgba(74, 74, 138, 0.22),
+    rgba(106, 74, 138, 0.22),
+    rgba(58, 90, 138, 0.22),
+    rgba(42, 74, 122, 0.22)
+  );
+
+  --sg-gradient-spectral-warm: linear-gradient(
+    150deg,
+    rgba(138, 74, 106, 0.22),
+    rgba(138, 106, 58, 0.22),
+    rgba(58, 122, 90, 0.22)
+  );
+
+  --sg-gradient-spectral-cool: linear-gradient(
+    150deg,
+    rgba(42, 74, 122, 0.25),
+    rgba(74, 74, 138, 0.25),
+    rgba(58, 90, 138, 0.25)
+  );
+
+  /* Strong variant (50 % opacity) — still subdued enough to keep the
+     dark mood but legible on interactive elements.  */
+  --sg-gradient-spectral-strong: linear-gradient(
+    150deg,
+    rgba(138, 74, 106, 0.5),
+    rgba(74, 74, 138, 0.5),
+    rgba(106, 74, 138, 0.5),
+    rgba(58, 90, 138, 0.5),
+    rgba(42, 74, 122, 0.5)
+  );
+
+  /* ─── Button hover glow ───
+     Higher opacity to cut through the dark backdrop.  Dark rose +
+     indigo — a subtle jewel shimmer.  */
+  --sg-button-glow-primary:
+    0 0 6px rgba(138, 74, 106, 0.22), 0 0 16px rgba(138, 74, 106, 0.3),
+    0 0 28px rgba(74, 74, 138, 0.15);
+  --sg-button-glow-secondary:
+    0 0 6px rgba(138, 74, 106, 0.06), 0 0 16px rgba(138, 74, 106, 0.08),
+    0 0 28px rgba(74, 74, 138, 0.05);
+
+  /* ─── Typography ───
+     Dimmer still — on a very dark background, bright white text
+     causes uncomfortable halation. These values keep the UI
+     comfortable for extended use.  */
+  --sg-text-primary: rgba(255, 255, 255, 0.82);
+  --sg-text-secondary: rgba(255, 255, 255, 0.52);
+  --sg-text-tertiary: rgba(255, 255, 255, 0.32);
+  --sg-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ─── Spacing & radii ─── */
+  --sg-radius-xs: 4px;
+  --sg-radius-sm: 8px;
+  --sg-radius-md: 12px;
+  --sg-radius-lg: 20px;
+  --sg-radius-xl: 28px;
+  --sg-radius-full: 9999px;
+
+  /* ─── Motion ─── */
+  --sg-transition-fast: 150ms ease;
+  --sg-transition-base: 250ms ease;
+  --sg-transition-slow: 400ms ease;
+}

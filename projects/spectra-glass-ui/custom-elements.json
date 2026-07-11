@@ -810,7 +810,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home' }, { label: 'Products' }, { label: 'Category' }, { label: 'Item' }, ], separator: '/', }, }"
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${[...(args.items ?? [])]} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home' }, { label: 'Products' }, { label: 'Category' }, { label: 'Item' }, ], separator: '/', }, }"
         },
         {
           "kind": "variable",
@@ -818,7 +818,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Documentation', href: '/docs' }, { label: 'Components', href: '/docs/components' }, { label: 'Breadcrumb' }, ], separator: '/', }, }"
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${[...(args.items ?? [])]} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Documentation', href: '/docs' }, { label: 'Components', href: '/docs/components' }, { label: 'Breadcrumb' }, ], separator: '/', }, }"
         },
         {
           "kind": "variable",
@@ -826,7 +826,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Current Page' }, ], separator: '/', }, }"
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${[...(args.items ?? [])]} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Current Page' }, ], separator: '/', }, }"
         },
         {
           "kind": "variable",
@@ -834,7 +834,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-breadcrumb .items=${args.items} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Library', href: '/library' }, { label: 'Components', href: '/library/components' }, { label: 'Navigation' }, { label: 'Breadcrumb' }, { label: 'Examples' }, ], separator: '/', }, }"
+          "default": "{ render: (args) => html` <sg-breadcrumb .items=${[...(args.items ?? [])]} separator=${args.separator || '/'} ></sg-breadcrumb> `, args: { items: [ { label: 'Home', href: '/' }, { label: 'Library', href: '/library' }, { label: 'Components', href: '/library/components' }, { label: 'Navigation' }, { label: 'Breadcrumb' }, { label: 'Examples' }, ], separator: '/', }, }"
         }
       ],
       "exports": [
@@ -2282,6 +2282,17 @@
             },
             {
               "kind": "method",
+              "name": "#updatePortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Re-render the portal template in-place (used when properties change while open)."
+            },
+            {
+              "kind": "method",
               "name": "#getSlotContent",
               "privacy": "private",
               "return": {
@@ -2455,7 +2466,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgDivider', component: 'sg-divider', argTypes: { variant: { control: 'select', options: ['solid', 'glass', 'gradient'], }, label: { control: 'text' }, labelPosition: { control: 'select', options: ['left', 'center', 'right'], }, }, parameters: { docs: { description: { component: 'A horizontal divider with optional label. Use `variant=\"gradient\"` for the spectral gradient line.', }, }, }, }"
+          "default": "{ title: 'Components/SgDivider', component: 'sg-divider', argTypes: { variant: { control: 'select', options: ['solid', 'glass', 'gradient'], }, label: { control: 'text' }, labelPosition: { control: 'select', options: ['left', 'center', 'right'], }, }, parameters: { docs: { description: { component: 'A horizontal divider with optional label. Defaults to the spectral gradient variant.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -2463,7 +2474,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html`<sg-divider variant=${args.variant || 'glass'} label=${args.label || ''} label-position=${args.labelPosition || 'center'}></sg-divider>`, args: { variant: 'glass', label: '', labelPosition: 'center' }, }"
+          "default": "{ render: (args) => html` <sg-divider variant=${args.variant || 'gradient'} label=${args.label ?? ''} .labelPosition=${args.labelPosition || 'center'} ></sg-divider> `, args: { variant: 'gradient' }, }"
         },
         {
           "kind": "variable",
@@ -2471,7 +2482,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html`<sg-divider label=\"Section\"></sg-divider>`, }"
+          "default": "{ render: (args) => html` <sg-divider variant=${args.variant || 'gradient'} label=${args.label || 'Section'} .labelPosition=${args.labelPosition || 'center'} ></sg-divider> `, args: { label: 'Section', variant: 'gradient', labelPosition: 'center' }, }"
         },
         {
           "kind": "variable",
@@ -2543,7 +2554,7 @@
           "name": "SgDivider",
           "cssProperties": [
             {
-              "description": "Line colour.",
+              "description": "Line colour (solid variant).",
               "name": "--sg-divider-color",
               "default": "var(--sg-glass-border)"
             },
@@ -2560,7 +2571,7 @@
               "type": {
                 "text": "'solid' | 'glass' | 'gradient'"
               },
-              "default": "'glass'",
+              "default": "'gradient'",
               "description": "Visual variant.",
               "attribute": "variant"
             },
@@ -2591,7 +2602,7 @@
               "type": {
                 "text": "'solid' | 'glass' | 'gradient'"
               },
-              "default": "'glass'",
+              "default": "'gradient'",
               "description": "Visual variant.",
               "fieldName": "variant"
             },
@@ -2651,7 +2662,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgFooter', component: 'sg-footer', argTypes: { columns: { control: { type: 'number', min: 1, max: 4 }, }, }, parameters: { docs: { description: { component: 'Multi-column footer with link columns, social icons slot, and copyright bar. Responsive — collapses from 4 to 2 to 1 columns.', }, }, }, }"
+          "default": "{ title: 'Components/SgFooter', component: 'sg-footer', argTypes: { columns: { control: { type: 'number', min: 1, max: 6 }, }, }, parameters: { docs: { description: { component: 'Multi-column footer with link columns, social icons slot, and copyright bar. Responsive — collapses from 6 to 2 to 1 columns.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -2659,7 +2670,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-footer columns=${args.columns ?? 4}> <div slot=\"column-1\"> <h4>Product</h4> <a href=\"#\">Features</a> <a href=\"#\">Pricing</a> <a href=\"#\">Changelog</a> </div> <div slot=\"column-2\"> <h4>Company</h4> <a href=\"#\">About</a> <a href=\"#\">Blog</a> <a href=\"#\">Careers</a> </div> <div slot=\"column-3\"> <h4>Resources</h4> <a href=\"#\">Documentation</a> <a href=\"#\">API Reference</a> <a href=\"#\">Community</a> </div> <div slot=\"column-4\"> <h4>Legal</h4> <a href=\"#\">Privacy</a> <a href=\"#\">Terms</a> <a href=\"#\">Cookies</a> </div> <a slot=\"social\" href=\"#\" aria-label=\"Twitter\"><sg-icon name=\"external-link\" size=\"sm\"></sg-icon></a> <a slot=\"social\" href=\"#\" aria-label=\"GitHub\"><sg-icon name=\"external-link\" size=\"sm\"></sg-icon></a> <span slot=\"copyright\">&copy; 2026 Spectra Glass UI. All rights reserved.</span> </sg-footer> `, args: { columns: 4 }, }"
+          "default": "{ render: (args) => html` <sg-footer columns=${args.columns ?? 4}> <h4 slot=\"column-1\">Product</h4> <a slot=\"column-1\" href=\"#\">Features</a> <a slot=\"column-1\" href=\"#\">Pricing</a> <a slot=\"column-1\" href=\"#\">Changelog</a> <a slot=\"column-1\" href=\"#\">Integrations</a> <h4 slot=\"column-2\">Company</h4> <a slot=\"column-2\" href=\"#\">About</a> <a slot=\"column-2\" href=\"#\">Blog</a> <a slot=\"column-2\" href=\"#\">Careers</a> <a slot=\"column-2\" href=\"#\">Contact</a> <h4 slot=\"column-3\">Resources</h4> <a slot=\"column-3\" href=\"#\">Documentation</a> <a slot=\"column-3\" href=\"#\">API Reference</a> <a slot=\"column-3\" href=\"#\">Community</a> <a slot=\"column-3\" href=\"#\">Tutorials</a> <h4 slot=\"column-4\">Legal</h4> <a slot=\"column-4\" href=\"#\">Privacy</a> <a slot=\"column-4\" href=\"#\">Terms</a> <a slot=\"column-4\" href=\"#\">Cookies</a> <a slot=\"social\" href=\"#\" aria-label=\"Twitter\"><sg-icon name=\"home\" size=\"sm\"></sg-icon></a> <a slot=\"social\" href=\"#\" aria-label=\"GitHub\"><sg-icon name=\"user\" size=\"sm\"></sg-icon></a> <a slot=\"social\" href=\"#\" aria-label=\"Email\"><sg-icon name=\"mail\" size=\"sm\"></sg-icon></a> <span slot=\"copyright\">&copy; 2026 Spectra Glass UI. All rights reserved.</span> </sg-footer> `, args: { columns: 4 }, }"
         }
       ],
       "exports": [
@@ -2726,7 +2737,7 @@
               "kind": "field",
               "name": "columns",
               "type": {
-                "text": "1 | 2 | 3 | 4"
+                "text": "1 | 2 | 3 | 4 | 5 | 6"
               },
               "default": "4",
               "description": "Number of footer link columns.",
@@ -2737,7 +2748,7 @@
             {
               "name": "columns",
               "type": {
-                "text": "1 | 2 | 3 | 4"
+                "text": "1 | 2 | 3 | 4 | 5 | 6"
               },
               "default": "4",
               "description": "Number of footer link columns.",
@@ -2789,7 +2800,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-header ?sticky=${args.sticky ?? true} mobile-breakpoint=${args.mobileBreakpoint || '768px'}> <span slot=\"logo\" style=\"font-weight:700;font-size:1.25rem;color:rgba(255,255,255,0.9);\"> Spectra </span> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Features</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Pricing</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Docs</a> <sg-button slot=\"cta\" variant=\"primary\" size=\"sm\">Get Started</sg-button> </sg-header> `, args: { sticky: true, mobileBreakpoint: '768px' }, }"
+          "default": "{ render: (args) => html` <sg-header ?sticky=${args.sticky ?? true} ?menu-open=${args.menuOpen ?? false} mobile-breakpoint=${args.mobileBreakpoint || '768px'} > <span slot=\"logo\" style=\"font-weight:700;font-size:1.25rem;color:rgba(255,255,255,0.9);\"> Spectra </span> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Features</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Pricing</a> <a slot=\"nav\" href=\"#\" style=\"color:rgba(255,255,255,0.6);text-decoration:none;padding:0 12px;\">Docs</a> <sg-button slot=\"cta\" variant=\"primary\" size=\"sm\">Get Started</sg-button> </sg-header> `, args: { sticky: true, menuOpen: false, mobileBreakpoint: '768px' }, }"
         }
       ],
       "exports": [
@@ -2932,6 +2943,17 @@
                 "text": "() => void | undefined"
               },
               "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "#initMediaQuery",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Set up (or tear down + re-create) the responsive media query."
             },
             {
               "kind": "method",
@@ -4488,6 +4510,15 @@
             },
             {
               "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "attribute": "label"
+            },
+            {
+              "kind": "field",
               "name": "_radios",
               "type": {
                 "text": "SgRadio[]"
@@ -4581,6 +4612,14 @@
               },
               "default": "false",
               "fieldName": "disabled"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''",
+              "fieldName": "label"
             }
           ],
           "superclass": {
@@ -4628,7 +4667,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-radio ?checked=${args.checked ?? false} ?disabled=${args.disabled ?? false} label=${args.label || 'Option'} value=${args.value || 'option'} ></sg-radio> `, args: { checked: false, disabled: false, label: 'Single option', value: 'single' }, }"
+          "default": "{ render: (args) => html` <sg-radio ?checked=${args.checked ?? false} ?disabled=${args.disabled ?? false} label=${args.label || 'Option'} value=${args.value || 'option'} ></sg-radio> `, args: { checked: false, disabled: false, label: 'Single option', value: 'single' }, parameters: { docs: { description: { story: 'Standalone radio — `checked` control works directly.' }, }, }, }"
         },
         {
           "kind": "variable",
@@ -4636,7 +4675,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-radio-group name=\"fruit\"> <sg-radio label=\"Apple\" value=\"apple\"></sg-radio> <sg-radio label=\"Banana\" value=\"banana\"></sg-radio> <sg-radio label=\"Cherry\" value=\"cherry\"></sg-radio> </sg-radio-group> `, }"
+          "default": "{ render: (args) => html` <sg-radio-group name=${args.name ?? 'group'} value=${args.value ?? ''} ?disabled=${args.disabled ?? false} label=${args.label || ''} > <sg-radio label=\"Option A\" value=\"a\"></sg-radio> <sg-radio label=\"Option B\" value=\"b\"></sg-radio> <sg-radio label=\"Option C\" value=\"c\"></sg-radio> </sg-radio-group> `, args: { label: 'Choose an option', name: 'group', value: 'a', disabled: false, }, argTypes: { label: { control: 'text' }, name: { control: 'text' }, value: { control: 'select', options: ['', 'a', 'b', 'c'], }, disabled: { control: 'boolean' }, }, parameters: { docs: { description: { story: 'Use the **`value`** control to toggle which radio is checked — the group overrides individual `checked` attributes.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -4644,7 +4683,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-radio-group name=\"os\" value=\"linux\"> <sg-radio label=\"Windows\" value=\"windows\"></sg-radio> <sg-radio label=\"macOS\" value=\"macos\"></sg-radio> <sg-radio label=\"Linux\" value=\"linux\"></sg-radio> </sg-radio-group> `, }"
+          "default": "{ render: (args) => html` <sg-radio-group name=${args.name ?? 'os'} value=${args.value ?? 'linux'} ?disabled=${args.disabled ?? false} label=${args.label || ''} > <sg-radio label=\"Windows\" value=\"windows\"></sg-radio> <sg-radio label=\"macOS\" value=\"macos\"></sg-radio> <sg-radio label=\"Linux\" value=\"linux\"></sg-radio> </sg-radio-group> `, args: { label: 'Select your OS', name: 'os', value: 'linux', disabled: false, }, argTypes: { label: { control: 'text' }, name: { control: 'text' }, value: { control: 'select', options: ['', 'windows', 'macos', 'linux'], }, disabled: { control: 'boolean' }, }, parameters: { docs: { description: { story: '**`value`** controls the checked radio. Change it to a different OS to switch selection.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -4652,7 +4691,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-radio-group name=\"frozen\" disabled> <sg-radio label=\"Option A\" value=\"a\"></sg-radio> <sg-radio label=\"Option B\" value=\"b\" checked></sg-radio> <sg-radio label=\"Option C\" value=\"c\"></sg-radio> </sg-radio-group> `, }"
+          "default": "{ render: (args) => html` <sg-radio-group name=${args.name ?? 'frozen'} value=${args.value ?? 'b'} ?disabled=${args.disabled ?? true} label=${args.label || ''} > <sg-radio label=\"Option A\" value=\"a\"></sg-radio> <sg-radio label=\"Option B\" value=\"b\"></sg-radio> <sg-radio label=\"Option C\" value=\"c\"></sg-radio> </sg-radio-group> `, args: { label: 'Frozen settings', name: 'frozen', value: 'b', disabled: true, }, argTypes: { label: { control: 'text' }, name: { control: 'text' }, value: { control: 'select', options: ['', 'a', 'b', 'c'], }, disabled: { control: 'boolean' }, }, parameters: { docs: { description: { story: 'When **`disabled`** is on, all radios are non-interactive. **`value`** still controls which appears checked.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -4660,7 +4699,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <div style=\"display:flex;flex-direction:row;gap:24px;align-items:center;\"> <sg-radio label=\"Unchecked\" value=\"unchecked\"></sg-radio> <sg-radio label=\"Checked\" value=\"checked\" checked></sg-radio> <sg-radio label=\"Disabled\" value=\"disabled\" disabled></sg-radio> <sg-radio label=\"Disabled checked\" value=\"disabled-checked\" disabled checked></sg-radio> </div> `, }"
+          "default": "{ render: (args) => html` <div style=\"display:flex;flex-direction:row;gap:24px;align-items:center;\"> <sg-radio label=\"Unchecked\" value=\"unchecked\" ?disabled=${args.disabled ?? false} ></sg-radio> <sg-radio label=\"Checked\" value=\"checked\" checked ?disabled=${args.disabled ?? false} ></sg-radio> <sg-radio label=\"Disabled\" value=\"disabled\" disabled ></sg-radio> <sg-radio label=\"Disabled checked\" value=\"disabled-checked\" disabled checked ></sg-radio> </div> `, args: { disabled: false, }, argTypes: { disabled: { control: 'boolean' }, }, }"
         }
       ],
       "exports": [
@@ -4928,7 +4967,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-section padding=${args.padding || 'lg'} max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? false} accent=${args.accent || 'none'} > <div style=\"padding:2rem;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center;\"> Section content </div> </sg-section> `, args: { padding: 'lg', maxWidth: 'lg', glass: false, accent: 'none' }, }"
+          "default": "{ render: (args) => html` <sg-section padding=${args.padding || 'lg'} max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? true} accent=${args.accent || 'none'} > <div style=\"padding:2rem;text-align:center;\">Section content with glass background</div> </sg-section> `, args: { padding: 'lg', maxWidth: 'lg', glass: true, accent: 'none' }, }"
         },
         {
           "kind": "variable",
@@ -4936,7 +4975,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-section glass> <div style=\"padding:2rem;text-align:center;\">Glass section with blur</div> </sg-section> `, }"
+          "default": "{ render: (args) => html` <sg-section ?glass=${args.glass ?? true} padding=${args.padding || 'lg'} max-width=${args.maxWidth || 'lg'} accent=${args.accent || 'none'} > <div style=\"padding:2rem;text-align:center;\">Glass section with blur</div> </sg-section> `, args: { glass: true, padding: 'lg', maxWidth: 'lg', accent: 'none' }, argTypes: { glass: { control: 'boolean' }, padding: { control: 'select', options: ['none', 'sm', 'md', 'lg', 'xl'] }, maxWidth: { control: 'select', options: ['sm', 'md', 'lg', 'full'] }, accent: { control: 'select', options: ['none', 'top', 'bottom', 'both'] }, }, }"
         },
         {
           "kind": "variable",
@@ -4944,7 +4983,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-section accent=\"both\" padding=\"md\"> <div style=\"padding:2rem;text-align:center;\">Section with gradient top and bottom edges</div> </sg-section> `, }"
+          "default": "{ render: (args) => html` <sg-section accent=${args.accent || 'both'} padding=${args.padding || 'md'} max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? false} > <div style=\"padding:2rem;text-align:center;\">Section with gradient top and bottom edges</div> </sg-section> `, args: { accent: 'both', padding: 'md', maxWidth: 'lg', glass: false }, argTypes: { accent: { control: 'select', options: ['none', 'top', 'bottom', 'both'] }, padding: { control: 'select', options: ['none', 'sm', 'md', 'lg', 'xl'] }, maxWidth: { control: 'select', options: ['sm', 'md', 'lg', 'full'] }, glass: { control: 'boolean' }, }, }"
         },
         {
           "kind": "variable",
@@ -4952,7 +4991,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-section padding=\"sm\" glass> <div style=\"text-align:center;\">Small padding</div> </sg-section> <sg-section padding=\"xl\" glass> <div style=\"text-align:center;\">Extra-large padding</div> </sg-section> `, }"
+          "default": "{ render: (args) => html` <sg-section padding=\"sm\" max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? true} accent=${args.accent || 'none'} > <div style=\"text-align:center;\">Small padding (sm)</div> </sg-section> <sg-section padding=\"xl\" max-width=${args.maxWidth || 'lg'} ?glass=${args.glass ?? true} accent=${args.accent || 'none'} > <div style=\"text-align:center;\">Extra-large padding (xl)</div> </sg-section> `, args: { maxWidth: 'lg', glass: true, accent: 'none' }, argTypes: { maxWidth: { control: 'select', options: ['sm', 'md', 'lg', 'full'] }, glass: { control: 'boolean' }, accent: { control: 'select', options: ['none', 'top', 'bottom', 'both'] }, }, }"
         }
       ],
       "exports": [
@@ -5179,7 +5218,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgSelect', component: 'sg-select', argTypes: { label: { control: 'text' }, placeholder: { control: 'text' }, value: { control: 'text' }, error: { control: 'text' }, disabled: { control: 'boolean' }, multiple: { control: 'boolean' }, clearable: { control: 'boolean' }, options: { control: 'object' }, }, parameters: { docs: { description: { component: 'A glass-styled select dropdown with spectral gradient focus ring. Supports single and multiple selection, clearable, and error states.', }, }, }, }"
+          "default": "{ title: 'Components/SgSelect', component: 'sg-select', argTypes: { label: { control: 'text' }, placeholder: { control: 'text' }, value: { control: 'text' }, error: { control: 'text' }, disabled: { control: 'boolean' }, multiple: { control: 'boolean' }, clearable: { control: 'boolean' }, accent: { control: 'boolean' }, options: { control: 'object' }, }, parameters: { docs: { description: { component: 'A glass-styled select dropdown with spectral gradient focus ring. Supports single and multiple selection, clearable, and error states.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -5187,7 +5226,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <sg-select label=${args.label || ''} placeholder=${args.placeholder || 'Select an option'} .value=${args.value || ''} error=${args.error || ''} .options=${args.options || []} ?disabled=${args.disabled} ?multiple=${args.multiple} ?clearable=${args.clearable} ></sg-select> `, args: { label: '', placeholder: 'Select an option', value: '', error: '', disabled: false, multiple: false, clearable: false, options: [ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ], }, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || ''} placeholder=${args.placeholder || 'Select an option'} .value=${args.value || ''} error=${args.error || ''} .options=${[...(args.options ?? [])]} ?disabled=${args.disabled} ?multiple=${args.multiple} ?clearable=${args.clearable} ?accent=${args.accent} ></sg-select> `, args: { label: '', placeholder: 'Select an option', value: '', error: '', disabled: false, multiple: false, clearable: false, accent: false, options: [...SHARED_OPTIONS], }, }"
         },
         {
           "kind": "variable",
@@ -5195,7 +5234,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" placeholder=\"Choose a fruit\" .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Favorite fruit'} placeholder=${args.placeholder || 'Choose a fruit'} .value=${args.value || ''} .options=${[...(args.options ?? [...SHARED_OPTIONS])]} ?disabled=${args.disabled} ?multiple=${args.multiple} ?clearable=${args.clearable} ?accent=${args.accent} ></sg-select> `, args: { label: 'Favorite fruit', placeholder: 'Choose a fruit', value: '', disabled: false, multiple: false, clearable: false, accent: false, options: [...SHARED_OPTIONS], }, }"
         },
         {
           "kind": "variable",
@@ -5203,7 +5242,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" value=\"banana\" .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Favorite fruit'} placeholder=${args.placeholder || 'Choose a fruit'} .value=${args.value || 'banana'} .options=${[...(args.options ?? [...SHARED_OPTIONS])]} ?disabled=${args.disabled} ?accent=${args.accent} ></sg-select> `, args: { label: 'Favorite fruit', placeholder: 'Choose a fruit', value: 'banana', disabled: false, accent: false, options: [...SHARED_OPTIONS], }, }"
         },
         {
           "kind": "variable",
@@ -5211,7 +5250,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Country\" placeholder=\"Select a country\" .value=${''} error=\"Please select a country\" .options=${[ { value: 'us', label: 'United States' }, { value: 'ca', label: 'Canada' }, { value: 'uk', label: 'United Kingdom' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Country'} placeholder=${args.placeholder || 'Select a country'} .value=${args.value || ''} error=${args.error || 'Please select a country'} .options=${[...(args.options ?? [ { value: 'us', label: 'United States' }, { value: 'ca', label: 'Canada' }, { value: 'uk', label: 'United Kingdom' }, ])]} ?disabled=${args.disabled} ?accent=${args.accent} ></sg-select> `, args: { label: 'Country', placeholder: 'Select a country', value: '', error: 'Please select a country', disabled: false, accent: false, options: [ { value: 'us', label: 'United States' }, { value: 'ca', label: 'Canada' }, { value: 'uk', label: 'United Kingdom' }, ], }, }"
         },
         {
           "kind": "variable",
@@ -5219,7 +5258,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Disabled\" placeholder=\"Cannot interact\" disabled .options=${[ { value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Disabled'} placeholder=${args.placeholder || 'Cannot interact'} .value=${args.value || ''} ?disabled=${args.disabled ?? true} .options=${[...(args.options ?? [ { value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, ])]} ?multiple=${args.multiple} ?clearable=${args.clearable} ?accent=${args.accent} ></sg-select> `, args: { label: 'Disabled', placeholder: 'Cannot interact', value: '', disabled: true, multiple: false, clearable: false, accent: false, options: [ { value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, ], }, }"
         },
         {
           "kind": "variable",
@@ -5227,7 +5266,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Tags\" placeholder=\"Select tags…\" multiple .options=${[ { value: 'design', label: 'Design' }, { value: 'development', label: 'Development' }, { value: 'marketing', label: 'Marketing' }, { value: 'product', label: 'Product' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Tags'} placeholder=${args.placeholder || 'Select tags\\u2026'} .value=${args.value || ''} ?multiple=${args.multiple ?? true} .options=${[...(args.options ?? [ { value: 'design', label: 'Design' }, { value: 'development', label: 'Development' }, { value: 'marketing', label: 'Marketing' }, { value: 'product', label: 'Product' }, ])]} ?disabled=${args.disabled} ?clearable=${args.clearable} ?accent=${args.accent} ></sg-select> `, args: { label: 'Tags', placeholder: 'Select tags\\u2026', value: '', multiple: true, disabled: false, clearable: false, accent: false, options: [ { value: 'design', label: 'Design' }, { value: 'development', label: 'Development' }, { value: 'marketing', label: 'Marketing' }, { value: 'product', label: 'Product' }, ], }, }"
         },
         {
           "kind": "variable",
@@ -5235,7 +5274,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: () => html` <sg-select label=\"Favorite fruit\" value=\"apple\" clearable .options=${[ { value: 'apple', label: 'Apple' }, { value: 'banana', label: 'Banana' }, { value: 'orange', label: 'Orange' }, { value: 'grape', label: 'Grape' }, ]} ></sg-select> `, }"
+          "default": "{ render: (args) => html` <sg-select label=${args.label || 'Favorite fruit'} placeholder=${args.placeholder || 'Choose a fruit'} .value=${args.value || 'apple'} ?clearable=${args.clearable ?? true} .options=${[...(args.options ?? [...SHARED_OPTIONS])]} ?disabled=${args.disabled} ?multiple=${args.multiple} ?accent=${args.accent} ></sg-select> `, args: { label: 'Favorite fruit', placeholder: 'Choose a fruit', value: 'apple', clearable: true, disabled: false, multiple: false, accent: false, options: [...SHARED_OPTIONS], }, }"
         }
       ],
       "exports": [
@@ -7744,7 +7783,7 @@
           "type": {
             "text": "Meta"
           },
-          "default": "{ title: 'Components/SgTooltip', component: 'sg-tooltip', argTypes: { label: { control: 'text' }, position: { control: 'select', options: ['top', 'bottom', 'left', 'right'] }, }, parameters: { docs: { description: { component: 'A glassmorphic tooltip that appears on hover or focus.', }, }, }, }"
+          "default": "{ title: 'Components/SgTooltip', component: 'sg-tooltip', argTypes: { label: { control: 'text' }, position: { control: 'select', options: ['auto', 'top', 'bottom', 'left', 'right'] }, }, parameters: { docs: { description: { component: 'A glassmorphic tooltip that appears on hover or focus.', }, }, }, }"
         },
         {
           "kind": "variable",
@@ -7752,7 +7791,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on top'} position=\"top\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on top', position: 'top' }, }"
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on top'} position=${args.position || 'top'}> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on top', position: 'top' }, }"
         },
         {
           "kind": "variable",
@@ -7760,7 +7799,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on bottom'} position=\"bottom\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on bottom', position: 'bottom' }, }"
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on bottom'} position=${args.position || 'bottom'}> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on bottom', position: 'bottom' }, }"
         },
         {
           "kind": "variable",
@@ -7768,7 +7807,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on left'} position=\"left\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on left', position: 'left' }, }"
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on left'} position=${args.position || 'left'}> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on left', position: 'left' }, }"
         },
         {
           "kind": "variable",
@@ -7776,7 +7815,7 @@
           "type": {
             "text": "Story"
           },
-          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on right'} position=\"right\"> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on right', position: 'right' }, }"
+          "default": "{ render: (args) => html` <div style=\"display:flex;justify-content:center;padding:60px 0;\"> <sg-tooltip label=${args.label || 'Tooltip on right'} position=${args.position || 'right'}> <button style=\"padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;\">Hover me</button> </sg-tooltip> </div> `, args: { label: 'Tooltip on right', position: 'right' }, }"
         },
         {
           "kind": "variable",
@@ -7967,6 +8006,25 @@
                 }
               },
               "description": "Create and show the portal with the tooltip content."
+            },
+            {
+              "kind": "method",
+              "name": "#clampPortal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "portal",
+                  "type": {
+                    "text": "HTMLDivElement"
+                  }
+                }
+              ],
+              "description": "Push the tooltip back on-screen if it overflows the viewport."
             },
             {
               "kind": "method",

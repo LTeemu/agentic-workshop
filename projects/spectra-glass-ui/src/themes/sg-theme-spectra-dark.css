@@ -1,8 +1,8 @@
 /* ==========================================================================
    Spectra Glass Theme — dark (spectra-dark)
    ==========================================================================
-   A dark variant with muted jewel-tone spectral slots — less neon
-   than the original, more sophisticated. Glass surfaces are more
+   A dark variant with muted jewel-tone spectral slots — deeper and
+   more sophisticated than the default. Glass surfaces are more
    transparent to let the background gradient breathe.
      @import 'spectra-glass-ui/themes/sg-theme-spectra-dark.css';
    ========================================================================== */
@@ -34,25 +34,37 @@
   --sg-spectral-color6: #7a7aba;
   --sg-spectral-color7: #9a7ab0;
 
-  /* 4-colour glass-stained gradient at 35 % opacity — lower than
-     the default so the backdrop blur reads through clearly.  */
+  /* ─── Semantic colours ───
+     Muted jewel-tone semantic colours that stay readable on dark
+     backgrounds without screaming "neon".  Error leans coral-red
+     rather than ruby, warning gets a touch more amber — each
+     tuned for legibility and meaning, not just copied from the
+     spectral palette.  */
+  --sg-color-success: #5a9a7a;
+  --sg-color-warning: #c8a040;
+  --sg-color-error: #c85a6a;
+  --sg-color-info: #5a8a9a;
+
+  /* 3-colour glass-stained gradient at 145° — one fewer stop than
+     the default (4) so the dark variant feels simpler and cleaner.
+     Ruby → teal → lavender gives a wide chromatic spread with no
+     muddiness.  */
   --sg-gradient-spectral: linear-gradient(
-    135deg,
+    145deg,
     rgba(196, 90, 122, 0.35),
-    rgba(188, 160, 74, 0.35),
     rgba(90, 154, 122, 0.35),
     rgba(122, 122, 186, 0.35)
   );
 
   --sg-gradient-spectral-warm: linear-gradient(
-    135deg,
+    145deg,
     rgba(196, 90, 122, 0.35),
     rgba(196, 138, 90, 0.35),
     rgba(188, 160, 74, 0.35)
   );
 
   --sg-gradient-spectral-cool: linear-gradient(
-    135deg,
+    145deg,
     rgba(90, 154, 122, 0.35),
     rgba(90, 138, 154, 0.35),
     rgba(122, 122, 186, 0.35)
@@ -61,12 +73,21 @@
   /* Strong variant (60 % opacity) for interactive elements —
      legible on dark backgrounds without overwhelming.  */
   --sg-gradient-spectral-strong: linear-gradient(
-    135deg,
+    145deg,
     rgba(196, 90, 122, 0.6),
-    rgba(188, 160, 74, 0.6),
     rgba(90, 154, 122, 0.6),
     rgba(122, 122, 186, 0.6)
   );
+
+  /* ─── Button hover glow ───
+     Slightly higher opacity than the default to stay visible on
+     dark backgrounds.  Ruby + lavender from the palette.  */
+  --sg-button-glow-primary:
+    0 0 6px rgba(196, 90, 122, 0.22), 0 0 16px rgba(196, 90, 122, 0.3),
+    0 0 28px rgba(122, 122, 186, 0.15);
+  --sg-button-glow-secondary:
+    0 0 6px rgba(196, 90, 122, 0.06), 0 0 16px rgba(196, 90, 122, 0.08),
+    0 0 28px rgba(122, 122, 186, 0.05);
 
   /* ─── Typography ───
      Slightly dimmer primary text reduces eye strain on dark

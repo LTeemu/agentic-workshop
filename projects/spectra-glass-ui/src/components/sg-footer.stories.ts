@@ -8,14 +8,14 @@ const meta: Meta = {
   component: 'sg-footer',
   argTypes: {
     columns: {
-      control: { type: 'number', min: 1, max: 4 },
+      control: { type: 'number', min: 1, max: 6 },
     },
   },
   parameters: {
     docs: {
       description: {
         component:
-          'Multi-column footer with link columns, social icons slot, and copyright bar. Responsive — collapses from 4 to 2 to 1 columns.',
+          'Multi-column footer with link columns, social icons slot, and copyright bar. Responsive — collapses from 6 to 2 to 1 columns.',
       },
     },
   },
@@ -27,32 +27,32 @@ type Story = StoryObj;
 export const Default: Story = {
   render: (args) => html`
     <sg-footer columns=${args.columns ?? 4}>
-      <div slot="column-1">
-        <h4>Product</h4>
-        <a href="#">Features</a>
-        <a href="#">Pricing</a>
-        <a href="#">Changelog</a>
-      </div>
-      <div slot="column-2">
-        <h4>Company</h4>
-        <a href="#">About</a>
-        <a href="#">Blog</a>
-        <a href="#">Careers</a>
-      </div>
-      <div slot="column-3">
-        <h4>Resources</h4>
-        <a href="#">Documentation</a>
-        <a href="#">API Reference</a>
-        <a href="#">Community</a>
-      </div>
-      <div slot="column-4">
-        <h4>Legal</h4>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Cookies</a>
-      </div>
-      <a slot="social" href="#" aria-label="Twitter"><sg-icon name="external-link" size="sm"></sg-icon></a>
-      <a slot="social" href="#" aria-label="GitHub"><sg-icon name="external-link" size="sm"></sg-icon></a>
+      <h4 slot="column-1">Product</h4>
+      <a slot="column-1" href="#">Features</a>
+      <a slot="column-1" href="#">Pricing</a>
+      <a slot="column-1" href="#">Changelog</a>
+      <a slot="column-1" href="#">Integrations</a>
+
+      <h4 slot="column-2">Company</h4>
+      <a slot="column-2" href="#">About</a>
+      <a slot="column-2" href="#">Blog</a>
+      <a slot="column-2" href="#">Careers</a>
+      <a slot="column-2" href="#">Contact</a>
+
+      <h4 slot="column-3">Resources</h4>
+      <a slot="column-3" href="#">Documentation</a>
+      <a slot="column-3" href="#">API Reference</a>
+      <a slot="column-3" href="#">Community</a>
+      <a slot="column-3" href="#">Tutorials</a>
+
+      <h4 slot="column-4">Legal</h4>
+      <a slot="column-4" href="#">Privacy</a>
+      <a slot="column-4" href="#">Terms</a>
+      <a slot="column-4" href="#">Cookies</a>
+
+      <a slot="social" href="#" aria-label="Twitter"><sg-icon name="home" size="sm"></sg-icon></a>
+      <a slot="social" href="#" aria-label="GitHub"><sg-icon name="user" size="sm"></sg-icon></a>
+      <a slot="social" href="#" aria-label="Email"><sg-icon name="mail" size="sm"></sg-icon></a>
       <span slot="copyright">&copy; 2026 Spectra Glass UI. All rights reserved.</span>
     </sg-footer>
   `,

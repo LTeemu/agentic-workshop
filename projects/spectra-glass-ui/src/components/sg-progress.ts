@@ -40,7 +40,7 @@ export class SgProgress extends LitElement {
     }
 
     .fill--default {
-      background: var(--sg-spectral-color5, #6fa0b5);
+      background: var(--sg-color-info, #6fa0b5);
     }
 
     .fill--spectral {

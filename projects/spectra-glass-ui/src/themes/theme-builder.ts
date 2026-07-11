@@ -85,6 +85,12 @@ const PROPERTY_DEFS: PropertyDef[] = [
   { name: '--sg-spectral-color6',   label: 'Color 6',        category: 'Spectral Colors', type: 'hex', default: '#7a80c0' },
   { name: '--sg-spectral-color7',   label: 'Color 7',        category: 'Spectral Colors', type: 'hex', default: '#9a7ab5' },
 
+  // Semantic Colors
+  { name: '--sg-color-success', label: 'Success', category: 'Semantic Colors', type: 'hex', default: '#7fa88d' },
+  { name: '--sg-color-warning', label: 'Warning', category: 'Semantic Colors', type: 'hex', default: '#c4a050' },
+  { name: '--sg-color-error',   label: 'Error',   category: 'Semantic Colors', type: 'hex', default: '#d4869f' },
+  { name: '--sg-color-info',    label: 'Info',    category: 'Semantic Colors', type: 'hex', default: '#6fa0b5' },
+
   // Typography
   { name: '--sg-text-primary',   label: 'Text Primary',   category: 'Typography', type: 'rgba', default: 'rgba(255, 255, 255, 0.9)' },
   { name: '--sg-text-secondary', label: 'Text Secondary', category: 'Typography', type: 'rgba', default: 'rgba(255, 255, 255, 0.6)' },
@@ -170,7 +176,7 @@ const TRACKED_PROPS: { name: string; label: string }[] = [
   ...GRADIENT_DEFS.map(g => ({ name: g.name, label: g.label })),
 ];
 
-const CATEGORIES = ['Glass Surfaces', 'Spectral Colors', 'Gradients', 'Typography', 'Spacing & Radii', 'Motion'];
+const CATEGORIES = ['Glass Surfaces', 'Spectral Colors', 'Semantic Colors', 'Gradients', 'Typography', 'Spacing & Radii', 'Motion'];
 
 // ─── Helpers ───
 
@@ -2064,6 +2070,43 @@ export class SgThemeBuilder extends LitElement {
     `;
   }
 
+  private _renderSemanticColorsCategory(): TemplateResult {
+    const cat = 'Semantic Colors';
+    const defs = PROPERTY_DEFS.filter(d => d.category === cat);
+    const isOpen = !this._collapsed[cat];
+    const chevronClass = classMap({
+      'category__chevron': true,
+      'category__chevron--open': isOpen,
+    });
+    const bodyClass = classMap({
+      'category__body': true,
+      'category__body--closed': !isOpen,
+    });
+
+    return html`
+      <div class="category">
+        <div class="category__header" @click=${() => this._toggleCategory(cat)}>
+          <h4 class="category__title">Semantic Colours</h4>
+          <span class=${chevronClass}>▼</span>
+        </div>
+        <div class=${bodyClass}>
+          ${defs.map(d => {
+            const hex = this._properties[d.name] ?? d.default;
+            return html`
+              <div class="spectral-row">
+                <label class="spectral-row__swatch" style="background:${hex}" title="Click to pick colour">
+                  <input type="color" .value=${hex} @input=${(e: Event) => this._onHexChange(d, e)} style="position:absolute;opacity:0;width:0;height:0;pointer-events:none" />
+                </label>
+                <span class="spectral-row__hex">${hex}</span>
+                <span class="spectral-row__name" title="${d.name}">${d.label}</span>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderHistoryPanel(): TemplateResult {
     const history = this._historyByTheme[this._activeTheme] ?? [];
     const idx = this._historyIndexByTheme[this._activeTheme] ?? history.length - 1;
@@ -2424,6 +2467,7 @@ export class SgThemeBuilder extends LitElement {
             ${CATEGORIES.map(cat => {
               if (cat === 'Gradients') return this._renderGradientsCategory();
               if (cat === 'Spectral Colors') return this._renderSpectralColorsCategory();
+              if (cat === 'Semantic Colors') return this._renderSemanticColorsCategory();
               return this._renderCategory(cat);
             })}
           </div>

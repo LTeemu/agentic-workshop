@@ -20,7 +20,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'A horizontal divider with optional label. Use `variant="gradient"` for the spectral gradient line.',
+          'A horizontal divider with optional label. Defaults to the spectral gradient variant.',
       },
     },
   },
@@ -30,12 +30,25 @@ export default meta;
 type Story = StoryObj;
 
 export const Default: Story = {
-  render: (args) => html`<sg-divider variant=${args.variant || 'glass'} label=${args.label || ''} label-position=${args.labelPosition || 'center'}></sg-divider>`,
-  args: { variant: 'glass', label: '', labelPosition: 'center' },
+  render: (args) => html`
+    <sg-divider
+      variant=${args.variant || 'gradient'}
+      label=${args.label ?? ''}
+      .labelPosition=${args.labelPosition || 'center'}
+    ></sg-divider>
+  `,
+  args: { variant: 'gradient' },
 };
 
 export const WithLabel: Story = {
-  render: () => html`<sg-divider label="Section"></sg-divider>`,
+  render: (args) => html`
+    <sg-divider
+      variant=${args.variant || 'gradient'}
+      label=${args.label || 'Section'}
+      .labelPosition=${args.labelPosition || 'center'}
+    ></sg-divider>
+  `,
+  args: { label: 'Section', variant: 'gradient', labelPosition: 'center' },
 };
 
 export const Gradient: Story = {

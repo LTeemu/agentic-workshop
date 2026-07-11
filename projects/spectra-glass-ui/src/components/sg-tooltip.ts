@@ -144,6 +144,22 @@ export class SgTooltip extends LitElement {
 
     render(this.#portalTemplate(slideX, slideY), portal);
     document.body.appendChild(portal);
+    this.#clampPortal(portal);
+  }
+
+  /** Push the tooltip back on-screen if it overflows the viewport. */
+  #clampPortal(portal: HTMLDivElement): void {
+    const rect = portal.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let dx = 0, dy = 0;
+    if (rect.right > vw) dx = vw - rect.right;
+    if (rect.left < 0) dx = -rect.left;
+    if (rect.bottom > vh) dy = vh - rect.bottom;
+    if (rect.top < 0) dy = -rect.top;
+    if (dx !== 0 || dy !== 0) {
+      portal.style.transform += ` translate(${dx}px, ${dy}px)`;
+    }
   }
 
   #ensurePortal(): HTMLDivElement {

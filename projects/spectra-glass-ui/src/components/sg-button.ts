@@ -99,10 +99,14 @@ export class SgButton extends LitElement {
     }
 
     .btn--primary:hover:not(:disabled) {
-      filter: brightness(1.1);
-      box-shadow:
-        0 4px 20px rgba(218, 119, 242, 0.25),
-        0 0 40px rgba(77, 171, 247, 0.15);
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+      box-shadow: var(
+        --sg-button-glow-primary,
+        0 0 6px rgba(218, 119, 242, 0.18),
+        0 0 16px rgba(218, 119, 242, 0.25),
+        0 0 28px rgba(77, 171, 247, 0.10)
+      );
     }
 
     .btn--primary:active:not(:disabled) {
@@ -121,9 +125,13 @@ export class SgButton extends LitElement {
     .btn--secondary:hover:not(:disabled) {
       border-color: var(--sg-glass-border-hover, rgba(255, 255, 255, 0.25));
       background: var(--sg-glass-bg-hover, rgba(255, 255, 255, 0.14));
-      box-shadow:
-        0 0 20px rgba(218, 119, 242, 0.06),
-        0 0 40px rgba(77, 171, 247, 0.04);
+      transform: translateY(-1px);
+      box-shadow: var(
+        --sg-button-glow-secondary,
+        0 0 6px rgba(218, 119, 242, 0.05),
+        0 0 16px rgba(218, 119, 242, 0.06),
+        0 0 28px rgba(77, 171, 247, 0.03)
+      );
     }
 
     .btn--secondary:active:not(:disabled) {

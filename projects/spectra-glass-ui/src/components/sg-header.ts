@@ -223,17 +223,15 @@ export class SgHeader extends LitElement {
       color: rgba(255, 255, 255, 0.9);
     }
 
-    /* ─── Responsive ─── */
+    /* ─── Responsive (driven by _match state, not hardcoded px) ─── */
 
-    @media (max-width: 768px) {
-      .desktop-nav,
-      .desktop-cta {
-        display: none;
-      }
+    .bar--mobile .desktop-nav,
+    .bar--mobile .desktop-cta {
+      display: none;
+    }
 
-      .hamburger {
-        display: flex;
-      }
+    .bar--mobile .hamburger {
+      display: flex;
     }
   `;
 
@@ -267,8 +265,12 @@ export class SgHeader extends LitElement {
   private _mq?: MediaQueryList;
   private _mqHandler?: () => void;
 
-  override connectedCallback(): void {
-    super.connectedCallback();
+  /** Set up (or tear down + re-create) the responsive media query. */
+  #initMediaQuery(): void {
+    // Tear down previous listener
+    if (this._mq && this._mqHandler) {
+      this._mq.removeEventListener('change', this._mqHandler);
+    }
     this._mq = window.matchMedia(`(max-width: ${this.mobileBreakpoint})`);
     this._match = this._mq.matches;
     this._mqHandler = () => {
@@ -276,6 +278,11 @@ export class SgHeader extends LitElement {
       if (!this._match) this.menuOpen = false;
     };
     this._mq.addEventListener('change', this._mqHandler);
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.#initMediaQuery();
   }
 
   override disconnectedCallback(): void {
@@ -313,6 +320,9 @@ export class SgHeader extends LitElement {
         this.#unlockScroll();
       }
     }
+    if (changed.has('mobileBreakpoint')) {
+      this.#initMediaQuery();
+    }
   }
 
   override render(): TemplateResult {
@@ -326,8 +336,13 @@ export class SgHeader extends LitElement {
       'backdrop--open': this.menuOpen,
     };
 
+    const barClasses = {
+      bar: true,
+      'bar--mobile': this._match,
+    };
+
     return html`
-      <header class="bar">
+      <header class=${classMap(barClasses)}>
         <div class="logo"><slot name="logo"></slot></div>
         <div class="spacer"></div>
         <nav class="desktop-nav"><slot name="nav"></slot></nav>

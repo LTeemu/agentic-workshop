@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Spectra Glass Theme — sunset (spectra-sunset)
+   ==========================================================================
+   A warm, glowing palette — sunset red, amber, gold through to mauve
+   and plum. Glass surfaces are slightly warmer to echo the golden-hour
+   mood.
+     @import 'spectra-glass-ui/themes/sg-theme-spectra-sunset.css';
+   ========================================================================== */
+
+:root {
+  /* ─── Glass surfaces ───
+     Standard opacity but with a warm undertone — the glass feels
+     sunlit, matching the golden-hour atmosphere.  */
+  --sg-glass-bg: rgba(255, 255, 255, 0.08);
+  --sg-glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --sg-glass-bg-active: rgba(255, 255, 255, 0.18);
+  --sg-glass-border: rgba(255, 255, 255, 0.12);
+  --sg-glass-border-hover: rgba(255, 255, 255, 0.25);
+  --sg-glass-border-strong: rgba(255, 255, 255, 0.35);
+  --sg-glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  --sg-glass-shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.18);
+  --sg-glass-blur: blur(20px);
+  --sg-glass-blur-sm: blur(12px);
+
+  /* ─── Spectral colour palette ───
+     Fired earth and sky at dusk — sunset red, amber, golden yellow,
+     terracotta, dusty rose, mauve, and plum. Rich without being
+     overpowering.  */
+  --sg-spectral-color1: #d46a6a;
+  --sg-spectral-color2: #d48a4a;
+  --sg-spectral-color3: #d4a84a;
+  --sg-spectral-color4: #c47a5a;
+  --sg-spectral-color5: #b06a7a;
+  --sg-spectral-color6: #9a6a9a;
+  --sg-spectral-color7: #8a5aaa;
+
+  /* ─── Semantic colours ───
+     Warm sunset-toned semantic colours — a warm sage for success
+     (green enough to recognise, warm enough to fit), golden for
+     warning, sunset red for error, and slate blue for info.  */
+  --sg-color-success: #8aa06a;
+  --sg-color-warning: #d4a84a;
+  --sg-color-error: #d46a6a;
+  --sg-color-info: #7a8aaa;
+
+  /* 4-colour gradient at 45° — diagonal rays with an all-warm
+     composition: sunset red → amber → golden → terracotta. No cool
+     colours — this gradient is pure golden-hour glow.  */
+  --sg-gradient-spectral: linear-gradient(
+    45deg,
+    rgba(212, 106, 106, 0.55),
+    rgba(212, 138, 74, 0.55),
+    rgba(212, 168, 74, 0.55),
+    rgba(196, 122, 90, 0.55)
+  );
+
+  --sg-gradient-spectral-warm: linear-gradient(
+    45deg,
+    rgba(212, 106, 106, 0.55),
+    rgba(212, 138, 74, 0.55),
+    rgba(212, 168, 74, 0.55)
+  );
+
+  --sg-gradient-spectral-cool: linear-gradient(
+    45deg,
+    rgba(196, 122, 90, 0.5),
+    rgba(176, 106, 122, 0.5),
+    rgba(154, 106, 154, 0.5)
+  );
+
+  /* Strong variant (80 % opacity) for interactive elements.  */
+  --sg-gradient-spectral-strong: linear-gradient(
+    45deg,
+    rgba(212, 106, 106, 0.8),
+    rgba(212, 138, 74, 0.8),
+    rgba(212, 168, 74, 0.8),
+    rgba(196, 122, 90, 0.8)
+  );
+
+  /* ─── Button hover glow ───
+     Terracotta + mauve — a warm, fiery glow that matches Sunset's
+     character.  */
+  --sg-button-glow-primary:
+    0 0 6px rgba(192, 122, 90, 0.18), 0 0 16px rgba(192, 122, 90, 0.25),
+    0 0 28px rgba(154, 106, 122, 0.1);
+  --sg-button-glow-secondary:
+    0 0 6px rgba(192, 122, 90, 0.05), 0 0 16px rgba(192, 122, 90, 0.06),
+    0 0 28px rgba(154, 106, 122, 0.03);
+
+  /* ─── Typography ─── */
+  --sg-text-primary: rgba(255, 255, 255, 0.9);
+  --sg-text-secondary: rgba(255, 255, 255, 0.6);
+  --sg-text-tertiary: rgba(255, 255, 255, 0.4);
+  --sg-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ─── Spacing & radii ─── */
+  --sg-radius-xs: 4px;
+  --sg-radius-sm: 8px;
+  --sg-radius-md: 12px;
+  --sg-radius-lg: 20px;
+  --sg-radius-xl: 28px;
+  --sg-radius-full: 9999px;
+
+  /* ─── Motion ─── */
+  --sg-transition-fast: 150ms ease;
+  --sg-transition-base: 250ms ease;
+  --sg-transition-slow: 400ms ease;
+}

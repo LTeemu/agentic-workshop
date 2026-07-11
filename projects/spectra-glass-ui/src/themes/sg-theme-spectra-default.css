@@ -1,7 +1,9 @@
 /* ==========================================================================
    Spectra Glass Theme — default (spectra-default)
    ==========================================================================
-   Copy this :root block into your app or import via:
+   The signature palette — rose, amber, gold, teal, steel blue,
+   lavender, and amethyst. A balanced rainbow across warm and cool,
+   designed to showcase the full range of glass-stained gradients.
      @import 'spectra-glass-ui/themes/sg-theme-spectra-default.css';
    ========================================================================== */
 
@@ -18,11 +20,11 @@
   --sg-glass-blur: blur(20px);
   --sg-glass-blur-sm: blur(12px);
 
-  /* ─── Spectral colour palette (neutral indexed slots) ───
-     These are deliberately desaturated and deep — think dried
-     roses, antique brass, moss, dusty teal, aged lavender.
-     Themes can remap these to any hue; component styles reference
-     the variable name, not the colour name.  */
+  /* ─── Spectral colour palette ───
+     A balanced rainbow — dried rose, antique brass, gold, dusty
+     teal, steel blue, aged lavender, and amethyst.  The default
+     spans warm (rose → gold) through cool (teal → amethyst) so
+     every gradient direction reads clearly.  */
   --sg-spectral-color1: #d4869f;
   --sg-spectral-color2: #d4956a;
   --sg-spectral-color3: #c4a050;
@@ -30,6 +32,16 @@
   --sg-spectral-color5: #6fa0b5;
   --sg-spectral-color6: #7a80c0;
   --sg-spectral-color7: #9a7ab5;
+
+  /* ─── Semantic colours ───
+     Dedicated tokens for component variant states, decoupled from
+     the spectral palette.  Each is tuned for its meaning — error
+     leans coral (not rose), warning pops amber (not muted gold),
+     success keeps the natural teal, and info the steel blue.  */
+  --sg-color-success: #7fa88d;
+  --sg-color-warning: #c8a040;
+  --sg-color-error: #d46a7a;
+  --sg-color-info: #6fa0b5;
 
   /* 4-colour glass-stained gradient — semi-transparent rgba so the
      glass surface and background blur show through underneath.
@@ -65,6 +77,17 @@
     rgba(127, 168, 141, 0.75),
     rgba(122, 128, 192, 0.75)
   );
+
+  /* ─── Button hover glow ───
+     Thematic glow colours for button hover shadows.  Derived from
+     the spectral palette so the glow shifts per theme instead of
+     being stuck pink.  */
+  --sg-button-glow-primary:
+    0 0 6px rgba(212, 134, 159, 0.18), 0 0 16px rgba(212, 134, 159, 0.25),
+    0 0 28px rgba(122, 128, 192, 0.1);
+  --sg-button-glow-secondary:
+    0 0 6px rgba(212, 134, 159, 0.05), 0 0 16px rgba(212, 134, 159, 0.06),
+    0 0 28px rgba(122, 128, 192, 0.03);
 
   /* ─── Typography ─── */
   --sg-text-primary: rgba(255, 255, 255, 0.9);

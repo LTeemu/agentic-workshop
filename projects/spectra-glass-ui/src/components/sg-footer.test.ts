@@ -11,8 +11,10 @@ async function waitForLit(el: Element) {
 test('renders slotted columns', async () => {
   render(html`
     <sg-footer>
-      <div slot="column-1"><h4>Product</h4><a href="#">Features</a></div>
-      <div slot="column-2"><h4>Company</h4><a href="#">About</a></div>
+      <h4 slot="column-1">Product</h4>
+      <a slot="column-1" href="#">Features</a>
+      <h4 slot="column-2">Company</h4>
+      <a slot="column-2" href="#">About</a>
     </sg-footer>
   `);
   const el = document.body.querySelector('sg-footer')!;
