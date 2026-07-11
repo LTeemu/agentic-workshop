@@ -376,16 +376,17 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 0;
+  padding: 6px 4px;
   font-size: 13px;
   flex-wrap: wrap;
-  cursor: pointer;
   border-radius: 4px;
-  padding-left: 4px;
-  padding-right: 4px;
 }
 
-.test-all-row:hover {
+.test-all-row.expandable {
+  cursor: pointer;
+}
+
+.test-all-row.expandable:hover {
   background: #1c2128;
 }
 
@@ -397,9 +398,16 @@ body {
   color: #f85149;
 }
 
-.test-all-icon {
+.test-all-icon,
+.test-all-arrow {
   flex-shrink: 0;
   width: 16px;
+}
+
+.test-all-arrow {
+  font-size: 11px;
+  color: #8b949e;
+  margin-left: auto;
 }
 
 .test-all-name {

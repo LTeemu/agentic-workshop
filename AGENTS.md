@@ -6,15 +6,13 @@
 
 ## Comments
 
-- Self-documenting code > comments. Comments explain WHY, not WHAT.
-- Never commit commented-out code.
-- Doc comments for public APIs. Inline comments for non-obvious tradeoffs only.
+- Prefer self-documenting code. Comments: WHY, not WHAT. Keep them concise.
+- No commented-out code.
 
 ## Architecture
 
 - Keep it simple. Favor composition over inheritance.
 - Separate concerns: I/O, business logic, presentation.
-- Use dependency injection for testability.
 
 ## Workshop
 

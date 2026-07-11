@@ -95,7 +95,13 @@ function renderProjectList() {
     });
     item.querySelector('.details-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      showDetails(p.name);
+      const panelHidden = detailsPanel.classList.contains('hidden');
+      const sameProject = detailsTitle.dataset.project === p.name;
+      if (!panelHidden && sameProject) {
+        closeDetails();
+      } else {
+        showDetails(p.name);
+      }
     });
     item.querySelector('.remove').addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -190,7 +196,7 @@ function renderLogs() {
     if (filterText && !entry.line.toLowerCase().includes(filterText)) continue;
     const cls =
       entry.stream === 'stderr' ? 'log-stderr' : entry.stream === 'system' ? 'log-system' : '';
-    html += `<span class="log-line ${cls}">${escapeHtml(entry.line)}\n</span>`;
+    html += `<span class="log-line ${cls}">${escapeHtml(stripAnsi(entry.line))}\n</span>`;
   }
   logOutput.innerHTML = html;
   if (logAutoScroll.checked) {
@@ -431,12 +437,15 @@ function renderTestResults(results, title) {
         .join('\n');
 
       const hasOutput = !!out;
-      html += `<div class="test-all-row ${isPass ? 'pass' : 'fail'}"${hasOutput ? ` onclick="this.querySelector('.test-all-output').classList.toggle('hidden')"` : ''}>`;
+      const rowClasses = ['test-all-row', isPass ? 'pass' : 'fail'];
+      if (hasOutput) rowClasses.push('expandable');
+      html += `<div class="${rowClasses.join(' ')}"${hasOutput ? ` onclick="var o=this.querySelector('.test-all-output'),a=this.querySelector('.test-all-arrow');a.textContent=o.classList.toggle('hidden')?'▼':'▲'"` : ''}>`;
       html += `<span class="test-all-icon">${isPass ? '✓' : '✗'}</span>`;
       html += `<span class="test-all-name">${r.project}</span>`;
       html += `<span class="test-all-status ${isPass ? 'pass' : 'fail'}">${isPass ? 'passed' : r.error || 'failed'}</span>`;
       if (hasOutput) {
-        html += `<pre class="test-all-output${isPass ? ' hidden' : ''}">${escapeHtml(out)}</pre>`;
+        html += `<span class="test-all-arrow">${isPass ? '▼' : '▲'}</span>`;
+        html += `<pre class="test-all-output${isPass ? ' hidden' : ''}">${escapeHtml(stripAnsi(out))}</pre>`;
       }
       html += `</div>`;
     }
@@ -481,6 +490,7 @@ async function testAll() {
   testAllBtn.disabled = true;
   testAllBtn.textContent = 'Running...';
   testAllSummary.classList.remove('hidden');
+  document.querySelector('#test-all-header h3').textContent = 'Test All';
   testAllResults.innerHTML = 'Running tests for all projects...';
 
   const result = await api('/api/projects/test-all', { method: 'POST' });
@@ -525,6 +535,11 @@ function showNotice(text) {
 function hideNotice() {
   previewNotice.classList.add('hidden');
   previewFrame.classList.remove('hidden');
+}
+
+function stripAnsi(str) {
+  if (!str) return '';
+  return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
 }
 
 function escapeHtml(str) {
