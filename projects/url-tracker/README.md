@@ -134,7 +134,7 @@ src/
 | `npm run lint`        | Run ESLint                  |
 | `npm run test`        | Run Vitest                  |
 
-For scheduled scraping, configure an external cron job to hit `/api/cron/scrape` every 15 minutes. It scrapes all pages whose interval is due.
+For scheduled scraping, configure an external cron job to hit `/api/cron/scrape` periodically (e.g. every 15 minutes, hourly, or however often you like). The code checks each page's own interval and skips pages not yet due.
 
 ## Environment Variables
 

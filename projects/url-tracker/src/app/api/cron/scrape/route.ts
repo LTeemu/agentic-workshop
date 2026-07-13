@@ -7,8 +7,9 @@ const createCaller = createCallerFactory(appRouter);
 /**
  * Cron endpoint for scheduled scraping.
  *
- * Call this every 15 minutes from an external cron service (cron-job.org, Vercel Cron, etc.).
+ * Call this periodically from an external cron service (cron-job.org, Vercel Cron, etc.).
  * It will scrape all pages with `hourly` or `daily` intervals that are due.
+ * The cron frequency is flexible — the code checks each page's own interval and skips pages not yet due.
  */
 export async function GET() {
   try {

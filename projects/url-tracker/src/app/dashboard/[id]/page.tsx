@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   usePageDetail, useFieldHistory, useScrapePage, useRemovePage,
   useFolders, useMovePage, useUpdateField, useAddField, useDeleteField,
   useUpdatePage,
 } from "@/lib/hooks/usePages";
-import { createChart, LineSeries, type IChartApi, type ISeriesApi, type LineData, type Time } from "lightweight-charts";
+import { createChart, LineSeries, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
 
 // ── Types ──
 
@@ -30,7 +31,7 @@ export default function PageDetail() {
   const router = useRouter();
   const pageId = Number(params.id);
 
-  const { data: page, isLoading } = usePageDetail(pageId);
+  const { data: page, isLoading, isError, error } = usePageDetail(pageId);
   const scrapePage = useScrapePage();
   const removePage = useRemovePage();
   const { data: folders = [] } = useFolders();
@@ -80,6 +81,19 @@ export default function PageDetail() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl p-8 text-center" style={{ border: '1px solid var(--color-error)', background: 'rgba(239,68,68,0.06)' }}>
+        <p className="text-sm font-medium" style={{ color: 'var(--color-error)' }}>
+          Failed to load page
+        </p>
+        <p className="mt-1 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+          {error instanceof Error ? error.message : "Check your connection and try again."}
+        </p>
+      </div>
+    );
+  }
+
   if (!page) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -88,7 +102,8 @@ export default function PageDetail() {
     );
   }
 
-  const domain = new URL(page.url).hostname.replace(/^www\./, "");
+  let domain = page.url;
+  try { domain = new URL(page.url).hostname.replace(/^www\./, ""); } catch { /* keep full url */ }
 
   // Scrape interval options
   const intervals = [
@@ -108,7 +123,7 @@ export default function PageDetail() {
     <div className="flex flex-col gap-6">
       {/* Back link */}
       <div>
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex items-center gap-1 text-sm transition-colors"
           style={{ color: 'var(--color-text-tertiary)' }}
@@ -117,7 +132,7 @@ export default function PageDetail() {
             <path d="M8.5 3L5 6.5 8.5 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Back
-        </a>
+        </Link>
       </div>
 
       {/* Header */}
@@ -172,7 +187,7 @@ export default function PageDetail() {
             onClick={handleScrape}
             disabled={scrapePage.isPending || page.fields.length === 0}
             style={{ ...btnBase, background: 'var(--color-accent)', color: '#0c0c0f' }}
-            className="w-full justify-center disabled:opacity-40 sm:w-auto"
+            className="cursor-pointer w-full justify-center disabled:opacity-40 hover:opacity-90 transition-all sm:w-auto"
           >
             {scrapePage.isPending ? (
               <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 14 14" fill="none">
@@ -189,10 +204,11 @@ export default function PageDetail() {
 
           <button
             onClick={handleDelete}
+            disabled={removePage.isPending}
             style={{ ...btnBase, border: '1px solid var(--color-border)', color: 'var(--color-error)' }}
-            className="w-full justify-center sm:w-auto"
+            className="cursor-pointer w-full justify-center disabled:opacity-40 hover:opacity-80 transition-all sm:w-auto"
           >
-            Delete
+            {removePage.isPending ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>
@@ -208,7 +224,7 @@ export default function PageDetail() {
         {page.fields.map((field: Field) => {
           const error = scrapeErrors[field.id];
           if (field.valueType === "number") {
-            return <NumericFieldCard key={field.id} pageId={pageId} field={field} scrapeError={error} />;
+            return <NumericFieldCard key={field.id} field={field} scrapeError={error} />;
           }
           return <TextFieldCard key={field.id} field={field} scrapeError={error} />;
         })}
@@ -243,7 +259,7 @@ function AddFieldForm({ pageId, fieldsCount }: { pageId: number; fieldsCount: nu
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center gap-2 rounded-xl p-4 text-sm transition-all"
+        className="cursor-pointer flex items-center justify-center gap-2 rounded-xl p-4 text-sm transition-all hover:opacity-80"
         style={{ border: '1px dashed var(--color-border)', color: 'var(--color-text-tertiary)', background: 'var(--color-surface)' }}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -264,7 +280,7 @@ function AddFieldForm({ pageId, fieldsCount }: { pageId: number; fieldsCount: nu
     <form onSubmit={handleSubmit} className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-tertiary)' }}>New Field #{fieldsCount + 1}</span>
-        <button type="button" onClick={() => setOpen(false)} style={{ color: 'var(--color-text-tertiary)' }}>
+        <button type="button" onClick={() => setOpen(false)} className="cursor-pointer transition-all hover:opacity-80" style={{ color: 'var(--color-text-tertiary)' }}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
@@ -277,14 +293,14 @@ function AddFieldForm({ pageId, fieldsCount }: { pageId: number; fieldsCount: nu
         <input type="text" value={cssSelector} onChange={(e) => setCssSelector(e.target.value)} placeholder="CSS selector"
           className="rounded-md px-2.5 py-1.5 text-sm font-mono placeholder:opacity-40 focus:outline-none focus:ring-1"
           style={{ ...inputStyle, '--tw-ring-color': 'var(--color-accent)' } as React.CSSProperties} required />
-        <select value={attribute} onChange={(e) => setAttribute(e.target.value as any)}
+        <select value={attribute} onChange={(e) => setAttribute(e.target.value as "text" | "href" | "src")}
           className="rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1"
           style={{ ...inputStyle, '--tw-ring-color': 'var(--color-accent)' } as React.CSSProperties}>
           <option value="text" style={{ background: 'var(--color-surface)' }}>Text</option>
               <option value="href" style={{ background: 'var(--color-surface)' }}>Link</option>
               <option value="src" style={{ background: 'var(--color-surface)' }}>Image</option>
         </select>
-        <select value={valueType} onChange={(e) => setValueType(e.target.value as any)}
+        <select value={valueType} onChange={(e) => setValueType(e.target.value as "text" | "number" | "boolean")}
           className="rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1"
           style={{ ...inputStyle, '--tw-ring-color': 'var(--color-accent)' } as React.CSSProperties}>
           <option value="number" style={{ background: 'var(--color-surface)' }}>Number</option>
@@ -303,7 +319,7 @@ function AddFieldForm({ pageId, fieldsCount }: { pageId: number; fieldsCount: nu
 
 // ── Numeric Field Card ──
 
-function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; field: Field; scrapeError?: string }) {
+function NumericFieldCard({ field, scrapeError }: { field: Field; scrapeError?: string }) {
   const { data: history = [] } = useFieldHistory(field.id, 500);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -326,8 +342,8 @@ function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; fiel
       fieldId: field.id,
       label: editLabel,
       cssSelector: editSelector,
-      attribute: editAttr as any,
-      valueType: editType as any,
+      attribute: editAttr as "text" | "href" | "src",
+      valueType: editType as "text" | "number" | "boolean",
       notifyOnChange: editNotify,
       alertMin: editAlertMin || null,
       alertMax: editAlertMax || null,
@@ -357,7 +373,7 @@ function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; fiel
   const change = current !== null && previous !== null ? current - previous : null;
   const changeDir = change !== null ? (change > 0 ? "up" : change < 0 ? "down" : "flat") : null;
 
-  // Chart setup
+  // Chart setup — create once when field id changes or values appear
   useEffect(() => {
     if (!chartContainerRef.current || values.length === 0) return;
     const chart = createChart(chartContainerRef.current, {
@@ -376,7 +392,7 @@ function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; fiel
     chartRef.current = chart;
     seriesRef.current = series;
     return () => { chart.remove(); chartRef.current = null; seriesRef.current = null; };
-  }, [field.id]);
+  }, [field.id, values.length]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -421,37 +437,40 @@ function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; fiel
                <option value="text" style={{ background: 'var(--color-surface)' }}>Text</option>
                <option value="boolean" style={{ background: 'var(--color-surface)' }}>Boolean</option>
              </select>
-             <button onClick={saveEdit} style={{ color: 'var(--color-accent)' }}
-               className="rounded-md px-2 py-1 text-xs font-semibold">Save</button>
-             <button onClick={() => setEditing(false)} style={{ color: 'var(--color-text-tertiary)' }}
-               className="rounded-md px-2 py-1 text-xs">Cancel</button>
-           </div>
-         ) : (
-           <>
-             <div className="flex items-center gap-2 min-w-0">
-              <h3 className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{field.label}</h3>
-              <span className="data-value shrink-0 text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{field.cssSelector}</span>
+               <button onClick={saveEdit} disabled={updateField.isPending}
+                  style={{ color: 'var(--color-accent)' }}
+                  className="cursor-pointer rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-40 hover:opacity-80 transition-all">Save</button>
+               <button onClick={() => setEditing(false)} style={{ color: 'var(--color-text-tertiary)' }}
+                  className="cursor-pointer rounded-md px-2 py-1 text-xs hover:opacity-80 transition-all">Cancel</button>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Change direction badge */}
-              {changeDir === "up" && <span className="chip text-[10px]" style={{ color: 'var(--color-success)', background: 'rgba(34,197,94,0.12)' }}>↑</span>}
-              {changeDir === "down" && <span className="chip text-[10px]" style={{ color: 'var(--color-error)', background: 'rgba(239,68,68,0.12)' }}>↓</span>}
-              {field.notifyOnChange && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>🔔</span>}
-              <button onClick={() => {
-                setEditLabel(field.label); setEditSelector(field.cssSelector);
-                setEditAttr(field.attribute); setEditType(field.valueType);
-                setEditNotify(field.notifyOnChange);
-                setEditAlertMin(field.alertMin ?? ""); setEditAlertMax(field.alertMax ?? "");
-                setEditing(true);
-              }} className="rounded p-0.5 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2L4 11H2V9l7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-              <button onClick={handleDelete} className="rounded p-0.5 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9.5 3v7a1 1 0 01-1 1h-5a1 1 0 01-1-1V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-            </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+               <h3 className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{field.label}</h3>
+               <span className="data-value shrink-0 text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{field.cssSelector}</span>
+             </div>
+             <div className="flex items-center gap-1 shrink-0">
+               {/* Change direction badge */}
+               {changeDir === "up" && <span className="chip text-[10px]" style={{ color: 'var(--color-success)', background: 'rgba(34,197,94,0.12)' }}>↑</span>}
+               {changeDir === "down" && <span className="chip text-[10px]" style={{ color: 'var(--color-error)', background: 'rgba(239,68,68,0.12)' }}>↓</span>}
+               {field.notifyOnChange && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>🔔</span>}
+                <button onClick={() => {
+                  setEditLabel(field.label); setEditSelector(field.cssSelector);
+                  setEditAttr(field.attribute); setEditType(field.valueType);
+                  setEditNotify(field.notifyOnChange);
+                  setEditAlertMin(field.alertMin ?? ""); setEditAlertMax(field.alertMax ?? "");
+                  setEditing(true);
+                }} className="cursor-pointer rounded p-0.5 transition-all hover:opacity-80" style={{ color: 'var(--color-text-tertiary)' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2L4 11H2V9l7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
+                <button onClick={handleDelete} disabled={deleteField.isPending}
+                  className="cursor-pointer rounded p-0.5 transition-all hover:opacity-80 disabled:opacity-40"
+                  style={{ color: 'var(--color-text-tertiary)' }}>
+                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9.5 3v7a1 1 0 01-1 1h-5a1 1 0 01-1-1V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+               </button>
+             </div>
+           </>
+         )}
       </div>
 
       {/* Scrape error banner */}
@@ -517,7 +536,7 @@ function NumericFieldCard({ pageId, field, scrapeError }: { pageId: number; fiel
         <div ref={chartContainerRef} className="w-full rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }} />
       ) : (
         <div className="flex h-32 items-center justify-center rounded-lg text-sm" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--color-text-tertiary)' }}>
-          No data yet — click "Scrape Now" to start tracking
+          No data yet — click &quot;Scrape Now&quot; to start tracking
         </div>
       )}
 
@@ -572,8 +591,8 @@ function TextFieldCard({ field, scrapeError }: { field: Field; scrapeError?: str
       fieldId: field.id,
       label: editLabel,
       cssSelector: editSelector,
-      attribute: editAttr as any,
-      valueType: editType as any,
+      attribute: editAttr as "text" | "href" | "src",
+      valueType: editType as "text" | "number" | "boolean",
       notifyOnChange: editNotify,
     });
     setEditing(false);
@@ -631,33 +650,36 @@ function TextFieldCard({ field, scrapeError }: { field: Field; scrapeError?: str
                 className="rounded" style={{ accentColor: 'var(--color-accent)' }} />
               Notify
             </label>
-            <button onClick={saveEdit} style={{ color: 'var(--color-accent)' }}
-              className="rounded-md px-2 py-1 text-xs font-semibold">Save</button>
-            <button onClick={() => setEditing(false)} style={{ color: 'var(--color-text-tertiary)' }}
-              className="rounded-md px-2 py-1 text-xs">Cancel</button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{field.label}</h3>
-              {field.valueType === "boolean" && (
-                <span className="inline-block h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: isTruthy ? 'var(--color-success)' : 'var(--color-text-tertiary)' }} />
-              )}
-              {hasChanged && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>Changed</span>}
-              {field.notifyOnChange && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>🔔</span>}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="data-value shrink-0 text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{field.cssSelector}</span>
-              <button onClick={() => {
-                setEditLabel(field.label); setEditSelector(field.cssSelector);
-                setEditAttr(field.attribute); setEditType(field.valueType);
-                setEditNotify(field.notifyOnChange);
-                setEditing(true);
-              }} className="rounded p-0.5 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2L4 11H2V9l7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-              <button onClick={handleDelete} className="rounded p-0.5 transition-colors" style={{ color: 'var(--color-text-tertiary)' }}>
+             <button onClick={saveEdit} disabled={updateField.isPending}
+                style={{ color: 'var(--color-accent)' }}
+                className="cursor-pointer rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-40 hover:opacity-80 transition-all">Save</button>
+             <button onClick={() => setEditing(false)} style={{ color: 'var(--color-text-tertiary)' }}
+                className="cursor-pointer rounded-md px-2 py-1 text-xs hover:opacity-80 transition-all">Cancel</button>
+           </div>
+         ) : (
+           <>
+             <div className="flex items-center gap-2 min-w-0">
+               <h3 className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{field.label}</h3>
+               {field.valueType === "boolean" && (
+                 <span className="inline-block h-2 w-2 shrink-0 rounded-full"
+                   style={{ background: isTruthy ? 'var(--color-success)' : 'var(--color-text-tertiary)' }} />
+               )}
+               {hasChanged && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>Changed</span>}
+               {field.notifyOnChange && <span className="chip text-[10px]" style={{ color: 'var(--color-accent)' }}>🔔</span>}
+             </div>
+             <div className="flex items-center gap-1 shrink-0">
+               <span className="data-value shrink-0 text-[10px]" style={{ color: 'var(--color-text-tertiary)' }}>{field.cssSelector}</span>
+               <button onClick={() => {
+                 setEditLabel(field.label); setEditSelector(field.cssSelector);
+                 setEditAttr(field.attribute); setEditType(field.valueType);
+                 setEditNotify(field.notifyOnChange);
+                 setEditing(true);
+               }} className="cursor-pointer rounded p-0.5 transition-all hover:opacity-80" style={{ color: 'var(--color-text-tertiary)' }}>
+                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2L4 11H2V9l7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+               </button>
+               <button onClick={handleDelete} disabled={deleteField.isPending}
+                 className="cursor-pointer rounded p-0.5 transition-all hover:opacity-80 disabled:opacity-40"
+                 style={{ color: 'var(--color-text-tertiary)' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9.5 3v7a1 1 0 01-1 1h-5a1 1 0 01-1-1V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
@@ -728,7 +750,7 @@ function TextFieldCard({ field, scrapeError }: { field: Field; scrapeError?: str
         </details>
       ) : (
         <div className="flex h-16 items-center justify-center rounded-lg text-sm" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--color-text-tertiary)' }}>
-          No data yet — click "Scrape Now" to start tracking
+          No data yet — click &quot;Scrape Now&quot; to start tracking
         </div>
       )}
     </section>

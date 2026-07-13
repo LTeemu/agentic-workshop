@@ -16,7 +16,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     /** Update the session in the database every hour to keep it alive */
     updateAge: 60 * 60,
-    /** Rotate the session token every 24 hours */
+    /** Session is considered "fresh" for 24 hours before re-validation */
     freshAge: 60 * 60 * 24,
   },
   /** Dynamic base URL so it works on any localhost port in development */

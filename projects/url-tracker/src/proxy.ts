@@ -6,9 +6,19 @@ export async function proxy(request: NextRequest) {
 
   // Protect dashboard routes — redirect unauthenticated users
   if (pathname.startsWith("/dashboard")) {
-    const { auth } = await import("@/auth");
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session) {
+    // Use the auth API route instead of importing the DB directly
+    // (DB driver isn't compatible with Edge Runtime)
+    const sessionRes = await fetch(
+      new URL("/api/auth/get-session", request.url),
+      { headers: request.headers },
+    );
+    if (!sessionRes.ok) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    const body = await sessionRes.json();
+    if (!body || !body.session) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);

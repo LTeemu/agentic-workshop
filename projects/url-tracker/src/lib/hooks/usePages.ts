@@ -210,7 +210,7 @@ export function useUpdateField() {
 
   return useMutation({
     ...trpc.pages.updateField.mutationOptions(),
-    onSuccess: (_data, vars) => {
+    onSuccess: () => {
       // Invalidate any page detail query that might contain this field
       // We don't know the pageId here, so we invalidate all page detail queries
       void queryClient.invalidateQueries({ queryKey: trpc.pages.getPageDetail.queryKey() });

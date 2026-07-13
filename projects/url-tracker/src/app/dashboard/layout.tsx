@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Mobile menu toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-md p-1.5 lg:hidden"
+              className="cursor-pointer rounded-md p-1.5 transition-all hover:opacity-80 lg:hidden"
               style={{ color: 'var(--color-text-secondary)' }}
               aria-label="Toggle sidebar"
             >
@@ -44,19 +44,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </svg>
             </button>
-            <Link href="/dashboard" className="flex items-center gap-2 text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-              <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: 'var(--color-accent-subtle)' }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" style={{ color: 'var(--color-accent)' }} />
-                  <path d="M4 4h4M4 6h4M4 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" style={{ color: 'var(--color-accent)' }} />
-                </svg>
-              </span>
-              Url Tracker
+            <Link href="/dashboard" className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+              URL Tracker
             </Link>
           </div>
           <button
             onClick={handleSignOut}
-            className="rounded-md px-3 py-1.5 text-sm transition-colors"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-sm transition-all hover:opacity-80"
             style={{ color: 'var(--color-text-tertiary)' }}
           >
             Sign Out

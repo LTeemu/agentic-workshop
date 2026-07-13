@@ -626,7 +626,7 @@ export const pagesRouter = router({
 
   scrapeScheduledPages: publicProcedure.mutation(async ({ ctx }) => {
     // No auth check — this is called by cron (auth will be null)
-    // It scapes all pages whose scrapeInterval is not "manual" and whose
+    // It scrapes all pages whose scrapeInterval is not "manual" and whose
     // lastScrapedAt is older than the interval.
 
     const now = new Date();

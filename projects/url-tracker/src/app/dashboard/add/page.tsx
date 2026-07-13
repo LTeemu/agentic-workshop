@@ -125,7 +125,7 @@ export default function AddPage() {
               onClick={handlePreview}
               disabled={!url.trim() || previewLoading}
               style={{ background: 'var(--color-accent)', color: '#0c0c0f', borderRadius: 'var(--radius-lg)' }}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+              className="cursor-pointer flex items-center gap-2 px-5 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
             >
               {previewLoading ? (
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 16 16" fill="none">
@@ -155,7 +155,7 @@ export default function AddPage() {
             {/* Page info */}
             <div className="mb-4 flex items-center gap-3 rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
               {preview.image && (
-                <img src={preview.image} alt="" className="h-12 w-12 flex-shrink-0 rounded-md object-cover" style={{ background: 'var(--color-bg)' }} />
+                <img src={preview.image} alt={preview.title} className="h-12 w-12 flex-shrink-0 rounded-md object-cover" style={{ background: 'var(--color-bg)' }} />
               )}
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{preview.title}</div>
@@ -172,7 +172,7 @@ export default function AddPage() {
                 {preview.detectedFields.length > 0 && !hasChanges && (
                   <button
                     onClick={syncDetected}
-                    className="rounded-md px-2 py-1 text-xs transition-colors"
+                    className="cursor-pointer rounded-md px-2 py-1 text-xs transition-all hover:opacity-80"
                     style={{ color: 'var(--color-accent)' }}
                   >
                     Reset
@@ -180,7 +180,7 @@ export default function AddPage() {
                 )}
                 <button
                   onClick={addCustomField}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors"
+                  className="cursor-pointer flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-all hover:opacity-80"
                   style={{ color: 'var(--color-accent)' }}
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -199,7 +199,7 @@ export default function AddPage() {
                     <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--color-text-tertiary)' }}>Field {i + 1}</span>
                     <button
                       onClick={() => removeField(field.id)}
-                      className="rounded p-0.5 transition-colors"
+                      className="cursor-pointer rounded p-0.5 transition-all hover:opacity-80"
                       style={{ color: 'var(--color-text-tertiary)' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -265,7 +265,7 @@ export default function AddPage() {
               <p className="py-4 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                 No fields defined.{" "}
                 {preview.detectedFields.length > 0 ? (
-                  <button onClick={syncDetected} className="hover:underline" style={{ color: 'var(--color-accent)' }}>
+                  <button onClick={syncDetected} className="cursor-pointer hover:underline" style={{ color: 'var(--color-accent)' }}>
                     Use auto-detected fields ({preview.detectedFields.length})
                   </button>
                 ) : (
@@ -307,7 +307,7 @@ export default function AddPage() {
                   <button
                     type="submit"
                     disabled={!newFolderName.trim()}
-                    className="rounded-md px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
+                    className="cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
                     style={{ color: 'var(--color-accent)' }}
                   >
                     Add
@@ -316,7 +316,7 @@ export default function AddPage() {
               ) : (
                 <button
                   onClick={() => setShowNewFolder(true)}
-                  className="text-xs transition-colors hover:underline"
+                  className="cursor-pointer text-xs transition-colors hover:underline"
                   style={{ color: 'var(--color-accent)' }}
                 >
                   + New
@@ -329,7 +329,7 @@ export default function AddPage() {
               onClick={handleSave}
               disabled={addPage.isPending || fields.length === 0 || fields.some((f) => !f.label || !f.cssSelector)}
               style={{ background: 'var(--color-accent)', color: '#0c0c0f', borderRadius: 'var(--radius-lg)' }}
-              className="mt-4 w-full px-4 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+              className="cursor-pointer mt-4 w-full px-4 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
             >
               {addPage.isPending ? "Saving..." : `Save Page (${fields.length} field${fields.length !== 1 ? "s" : ""})`}
             </button>

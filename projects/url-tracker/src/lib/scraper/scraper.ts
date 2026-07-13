@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import type { Element, AnyNode } from "domhandler";
 
 // ── Types ──
 
@@ -44,7 +45,7 @@ export interface ScrapeOptions {
 
 // ── Constants ──
 
-const OUR_UA = "URLTracker/1.0 (respects robots.txt; +https://github.com/user/url-tracker)";
+const OUR_UA = "URLTracker/1.0 (respects robots.txt; +https://github.com/url-tracker)";
 
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -413,32 +414,17 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
     fields.push({ label, cssSelector: selector, attribute, valueType });
   }
 
-  // 1. Schema.org JSON-LD
-  const ldScripts: DetectedField[] = [];
-  $('script[type="application/ld+json"]').each((_, el) => {
-    try {
-      const raw = $(el).html() ?? "";
-      const data = JSON.parse(raw);
-      extractLdFields(data, ldScripts, "");
-    } catch {
-      // skip
-    }
-  });
-  for (const f of ldScripts) {
-    const key = `${f.cssSelector}:${f.attribute}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      fields.push(f);
-    }
-  }
+  // Note: Schema.org JSON-LD is intentionally not extracted here. JSON-LD lives
+  // entirely inside a <script> tag — it can't be targeted by CSS selectors at
+  // scrape time. The microdata and common-pattern steps below handle HTML elements.
 
-  // 2. Microdata (itemprop)
+  // 1. Microdata (itemprop)
   $("[itemprop]").each((_, el) => {
     const $el = $(el);
     const prop = $el.attr("itemprop")?.trim();
     if (!prop || prop.includes(" ")) return;
 
-    const tag = el.type === "tag" ? (el as any).name?.toLowerCase() ?? "" : "";
+    const tag = el.type === "tag" ? (el as Element).name?.toLowerCase() ?? "" : "";
     const attr: ScrapeField["attribute"] =
       tag === "img" || tag === "video" ? "src" :
       tag === "a" ? "href" :
@@ -456,7 +442,7 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
     else add(prop, selector, attr, "text");
   });
 
-  // 3. Common CSS class/element patterns for prices
+  // 2. Common CSS class/element patterns for prices
   const pricePatterns = [
     ".price", ".product-price", ".sale-price", ".current-price",
     "[data-price]", "[class*='price']", ".amount", ".total",
@@ -475,7 +461,7 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
     }
   }
 
-  // 4. Common stock/availability patterns
+  // 3. Common stock/availability patterns
   const stockPatterns = [
     "[itemprop='availability']", ".stock", ".availability", ".in-stock",
     ".out-of-stock", ".product__stock", "#availability", ".a-stock",
@@ -489,7 +475,7 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
     }
   }
 
-  // 5. Rating patterns
+  // 4. Rating patterns
   const ratingPatterns = [
     ".rating", ".star-rating", ".stars", "[itemprop='ratingValue']",
     ".product-rating", ".review-rating",
@@ -505,115 +491,11 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
   return fields;
 }
 
-function extractLdFields(
-  data: unknown,
-  fields: DetectedField[],
-  prefix: string,
-): void {
-  if (typeof data !== "object" || data === null) return;
-
-  const obj = data as Record<string, unknown>;
-
-  if (obj["@graph"] && Array.isArray(obj["@graph"])) {
-    for (const item of obj["@graph"]) {
-      extractLdFields(item, fields, prefix);
-    }
-    return;
-  }
-
-  if (obj["@type"]) {
-    if (obj["name"] && typeof obj["name"] === "string") {
-      fields.push({
-        label: prefix ? `${prefix} Name` : "Name",
-        cssSelector: `[itemprop='name']`,
-        attribute: "text",
-        valueType: "text",
-      });
-    }
-
-    const priceProp = obj["offers"] || obj["price"];
-    if (priceProp && typeof priceProp === "object") {
-      const offer = priceProp as Record<string, unknown>;
-      if (offer["price"] !== undefined) {
-        fields.push({
-          label: "Price",
-          cssSelector: `[itemprop='price']`,
-          attribute: "text",
-          valueType: "number",
-        });
-      }
-      if (offer["priceCurrency"] !== undefined) {
-        fields.push({
-          label: "Currency",
-          cssSelector: `[itemprop='priceCurrency']`,
-          attribute: "text",
-          valueType: "text",
-        });
-      }
-      if (offer["availability"] !== undefined) {
-        fields.push({
-          label: "Availability",
-          cssSelector: `[itemprop='availability']`,
-          attribute: "text",
-          valueType: "boolean",
-        });
-      }
-    }
-
-    if (obj["image"]) {
-      fields.push({
-        label: "Image",
-        cssSelector: `[itemprop='image']`,
-        attribute: "src",
-        valueType: "text",
-      });
-    }
-
-    if (obj["sku"]) {
-      fields.push({
-        label: "SKU",
-        cssSelector: `[itemprop='sku']`,
-        attribute: "text",
-        valueType: "text",
-      });
-    }
-
-    if (obj["description"]) {
-      fields.push({
-        label: "Description",
-        cssSelector: `[itemprop='description']`,
-        attribute: "text",
-        valueType: "text",
-      });
-    }
-
-    if (obj["aggregateRating"]) {
-      const rating = obj["aggregateRating"] as Record<string, unknown>;
-      if (rating["ratingValue"] !== undefined) {
-        fields.push({
-          label: "Rating",
-          cssSelector: `[itemprop='ratingValue']`,
-          attribute: "text",
-          valueType: "number",
-        });
-      }
-      if (rating["ratingCount"] !== undefined) {
-        fields.push({
-          label: "Rating Count",
-          cssSelector: `[itemprop='ratingCount']`,
-          attribute: "text",
-          valueType: "number",
-        });
-      }
-    }
-  }
-}
-
-function buildSelector($el: cheerio.Cheerio<any>): string {
+function buildSelector($el: cheerio.Cheerio<AnyNode>): string {
   const id = $el.attr("id");
   if (id) return `#${cssEscape(id)}`;
 
-  const tag = ($el[0] as any)?.name ?? "";
+  const tag = ($el[0] as Element)?.name ?? "";
   const classes = $el.attr("class");
   if (classes) {
     const classList = classes.split(/\s+/).filter(Boolean);

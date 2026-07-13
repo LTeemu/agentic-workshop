@@ -43,6 +43,13 @@
       "when": 1787000000000,
       "tag": "0005_field_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788000000000,
+      "tag": "0006_cleanup_old_tables",
+      "breakpoints": true
     }
   ]
 }

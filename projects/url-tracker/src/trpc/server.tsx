@@ -7,7 +7,9 @@ import type { Context } from "./context";
 
 export const getQueryClient = cache(makeQueryClient);
 
-/** Server-side context — no headers available, minimal context for prefetching */
+/** Minimal context for server-side prefetching (RSC). userId is null because
+ *  prefetch happens before authentication is known — queries that need the user
+ *  will return empty/default data. */
 const serverContext: Context = { db, userId: null };
 
 export const trpc = createTRPCOptionsProxy({
