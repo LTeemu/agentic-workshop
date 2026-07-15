@@ -43,6 +43,10 @@ const BUILD_MIME = {
   '.js': 'application/javascript',
 };
 
+// Directories whose contents are transient artifacts — skip in file watchers
+// and build walkers to avoid unnecessary iframe reloads and traversal.
+const ARTIFACT_DIRS = new Set(['node_modules', '__pycache__', 'dist', 'build', 'data']);
+
 /**
  * Simple HTTP GET returning the status code.
  * @param {string} url
@@ -261,12 +265,13 @@ function watchProjectsDir() {
 
 /**
  * Returns true if the file path should be ignored by the watcher.
- * Skips node_modules, data dirs, and their contents.
+ * Skips artifact directories, dotfiles, and empty paths to avoid
+ * unnecessary iframe reloads from transient filesystem activity.
  */
 function isIgnoredPath(filename) {
   if (!filename) return true;
   const parts = filename.split(/[\\/]/);
-  return parts.some((p) => p === 'node_modules' || p === 'data' || p.startsWith('.'));
+  return parts.some((p) => ARTIFACT_DIRS.has(p) || p.startsWith('.'));
 }
 
 function watchProject(name) {
@@ -706,7 +711,7 @@ function walkDir(dir, fn) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name !== 'dist' && entry.name !== 'node_modules') walkDir(full, fn);
+        if (!ARTIFACT_DIRS.has(entry.name)) walkDir(full, fn);
       } else {
         fn(full);
       }
