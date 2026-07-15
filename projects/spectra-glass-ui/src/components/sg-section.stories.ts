@@ -108,6 +108,7 @@ export const PaddingCompare: Story = {
   `,
   args: { maxWidth: 'lg', glass: true, accent: 'none' },
   argTypes: {
+    padding: { table: { disable: true } },
     maxWidth: { control: 'select', options: ['sm', 'md', 'lg', 'full'] },
     glass: { control: 'boolean' },
     accent: { control: 'select', options: ['none', 'top', 'bottom', 'both'] },

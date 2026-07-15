@@ -24,45 +24,57 @@ type Story = StoryObj;
 export const Top: Story = {
   render: (args) => html`
     <div style="display:flex;justify-content:center;padding:60px 0;">
-      <sg-tooltip label=${args.label || 'Tooltip on top'} position=${args.position || 'top'}>
+      <sg-tooltip label=${args.label || 'Tooltip on top'} position=${'top'}>
         <button style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;">Hover me</button>
       </sg-tooltip>
     </div>
   `,
   args: { label: 'Tooltip on top', position: 'top' },
+  argTypes: {
+    position: { table: { disable: true } },
+  },
 };
 
 export const Bottom: Story = {
   render: (args) => html`
     <div style="display:flex;justify-content:center;padding:60px 0;">
-      <sg-tooltip label=${args.label || 'Tooltip on bottom'} position=${args.position || 'bottom'}>
+      <sg-tooltip label=${args.label || 'Tooltip on bottom'} position=${'bottom'}>
         <button style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;">Hover me</button>
       </sg-tooltip>
     </div>
   `,
   args: { label: 'Tooltip on bottom', position: 'bottom' },
+  argTypes: {
+    position: { table: { disable: true } },
+  },
 };
 
 export const Left: Story = {
   render: (args) => html`
     <div style="display:flex;justify-content:center;padding:60px 0;">
-      <sg-tooltip label=${args.label || 'Tooltip on left'} position=${args.position || 'left'}>
+      <sg-tooltip label=${args.label || 'Tooltip on left'} position=${'left'}>
         <button style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;">Hover me</button>
       </sg-tooltip>
     </div>
   `,
   args: { label: 'Tooltip on left', position: 'left' },
+  argTypes: {
+    position: { table: { disable: true } },
+  },
 };
 
 export const Right: Story = {
   render: (args) => html`
     <div style="display:flex;justify-content:center;padding:60px 0;">
-      <sg-tooltip label=${args.label || 'Tooltip on right'} position=${args.position || 'right'}>
+      <sg-tooltip label=${args.label || 'Tooltip on right'} position=${'right'}>
         <button style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;">Hover me</button>
       </sg-tooltip>
     </div>
   `,
   args: { label: 'Tooltip on right', position: 'right' },
+  argTypes: {
+    position: { table: { disable: true } },
+  },
 };
 
 export const AllPositions: Story = {
@@ -90,4 +102,5 @@ export const AllPositions: Story = {
       </div>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

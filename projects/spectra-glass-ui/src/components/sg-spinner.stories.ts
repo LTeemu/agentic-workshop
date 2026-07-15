@@ -6,8 +6,8 @@ const meta: Meta = {
   title: 'Components/SgSpinner',
   component: 'sg-spinner',
   argTypes: {
-    size: { control: 'select', options: ['sm', 'md', 'lg'] },
     variant: { control: 'select', options: ['spectral', 'glass'] },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
   },
   parameters: {
     docs: {
@@ -24,19 +24,26 @@ type Story = StoryObj;
 
 export const Spectral: Story = {
   render: (args) => html`
-    <sg-spinner size=${args.size || 'md'} variant=${args.variant || 'spectral'}></sg-spinner>
+    <sg-spinner size=${args.size || 'md'} variant=${'spectral'}></sg-spinner>
   `,
-  args: { size: 'md', variant: 'spectral' },
+  args: { variant: 'spectral', size: 'md' },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Glass: Story = {
   render: (args) => html`
-    <sg-spinner size=${args.size || 'md'} variant=${args.variant || 'glass'}></sg-spinner>
+    <sg-spinner size=${args.size || 'md'} variant=${'glass'}></sg-spinner>
   `,
-  args: { size: 'md', variant: 'glass' },
+  args: { variant: 'glass', size: 'md' },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Sizes: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;align-items:center;gap:16px;">
       <sg-spinner size="sm" variant="spectral"></sg-spinner>
@@ -47,6 +54,7 @@ export const Sizes: Story = {
 };
 
 export const Variants: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;align-items:center;gap:16px;">
       <sg-spinner size="md" variant="spectral"></sg-spinner>

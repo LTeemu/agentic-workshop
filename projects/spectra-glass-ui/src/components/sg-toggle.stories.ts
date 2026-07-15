@@ -56,6 +56,7 @@ export const LabelPositions: Story = {
       <sg-toggle label="No label"></sg-toggle>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const States: Story = {
@@ -67,4 +68,5 @@ export const States: Story = {
       <sg-toggle label="Disabled checked" disabled checked></sg-toggle>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

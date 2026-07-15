@@ -26,76 +26,89 @@ type Story = StoryObj;
 export const Info: Story = {
   render: (args) => html`
     <sg-toast
-      variant=${args.variant || 'info'}
+      variant=${'info'}
       ?open=${args.open}
       ?dismissible=${args.dismissible}
-      duration="0"
+      duration="3000"
     >
       Your changes have been saved successfully.
     </sg-toast>
   `,
   args: { variant: 'info', open: true, dismissible: true },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Success: Story = {
   render: (args) => html`
     <sg-toast
-      variant=${args.variant || 'success'}
+      variant=${'success'}
       ?open=${args.open}
       ?dismissible=${args.dismissible}
-      duration="0"
+      duration="3000"
     >
       Operation completed successfully.
     </sg-toast>
   `,
   args: { variant: 'success', open: true, dismissible: true },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Warning: Story = {
   render: (args) => html`
     <sg-toast
-      variant=${args.variant || 'warning'}
+      variant=${'warning'}
       ?open=${args.open}
       ?dismissible=${args.dismissible}
-      duration="0"
+      duration="3000"
     >
       Your session is about to expire.
     </sg-toast>
   `,
   args: { variant: 'warning', open: true, dismissible: true },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Error: Story = {
   render: (args) => html`
     <sg-toast
-      variant=${args.variant || 'error'}
+      variant=${'error'}
       ?open=${args.open}
       ?dismissible=${args.dismissible}
-      duration="0"
+      duration="3000"
     >
       Something went wrong. Please try again.
     </sg-toast>
   `,
   args: { variant: 'error', open: true, dismissible: true },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const AllVariants: Story = {
   render: () => html`
-    <sg-toast-container position="top-right" style="position:relative;min-height:260px;">
-      <sg-toast variant="info" open duration="0">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sg-toast variant="info" open duration="3000">
         Your changes have been saved successfully.
       </sg-toast>
-      <sg-toast variant="success" open duration="0">
+      <sg-toast variant="success" open duration="3000">
         Operation completed successfully.
       </sg-toast>
-      <sg-toast variant="warning" open duration="0">
+      <sg-toast variant="warning" open duration="3000">
         Your session is about to expire.
       </sg-toast>
-      <sg-toast variant="error" open duration="0">
+      <sg-toast variant="error" open duration="3000">
         Something went wrong. Please try again.
       </sg-toast>
-    </sg-toast-container>
+    </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const NotDismissible: Story = {
@@ -104,7 +117,7 @@ export const NotDismissible: Story = {
       variant=${args.variant || 'info'}
       ?open=${args.open}
       ?dismissible=${args.dismissible}
-      duration="0"
+      duration="3000"
     >
       This notification cannot be dismissed.
     </sg-toast>

@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spectra Glass — Glass‑themed Web Components</title>
+
+    <!-- Prevent FOUC: hide until Lit defines all custom elements.
+         @keyframes fadeIn is used instead of a CSS transition because
+         transitions require a prior computed style to animate from,
+         which may not exist on the first paint in all browsers. -->
+    <style>
+      body {
+        opacity: 0;
+      }
+      body.ready {
+        opacity: 1;
+        animation: fadeIn 0.35s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+    <noscript
+      ><style>
+        body {
+          opacity: 1 !important;
+        }
+      </style></noscript
+    >
     <meta
       name="description"
       content="A Web Component library with glassmorphism aesthetics and spectral gradients, built with Lit."
@@ -629,143 +658,7 @@
       <span slot="copyright">&copy; 2026 Spectra Glass UI. MIT License.</span>
     </sg-footer>
 
-    <!-- Event wiring and property binding (Lit @click / .foo syntax doesn't work in plain HTML) -->
-    <script>
-      // ── Smooth scroll CTA (via delegation — works on originals and drawer clones) ──
-      document.addEventListener('click', function (e) {
-        const path = e.composedPath();
-        if (
-          path.some(function (el) {
-            return el && el.id === 'header-cta';
-          }) ||
-          path.some(function (el) {
-            return el && el.id === 'hero-cta';
-          })
-        ) {
-          document.getElementById('showcase').scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-
-      // ── Dialog ──
-      var demoDialog = document.getElementById('demo-dialog');
-      document.getElementById('open-dialog-btn').addEventListener('click', function () {
-        demoDialog.open = true;
-      });
-      function closeDialog() {
-        demoDialog.open = false;
-      }
-      document.getElementById('close-dialog-btn').addEventListener('click', closeDialog);
-      // Confirm button also closes the dialog
-      var confirmBtn = demoDialog.querySelector('[slot="footer"] sg-button:last-child');
-      if (confirmBtn) {
-        confirmBtn.addEventListener('click', closeDialog);
-      }
-
-      // ── Select options ──
-      (function () {
-        var sel = document.getElementById('demo-select');
-        sel.options = [
-          { value: 'react', label: 'React' },
-          { value: 'vue', label: 'Vue' },
-          { value: 'angular', label: 'Angular' },
-          { value: 'svelte', label: 'Svelte' },
-          { value: 'lit', label: 'Lit' },
-        ];
-        var selMulti = document.getElementById('demo-select-multi');
-        selMulti.options = [
-          { value: 'ts', label: 'TypeScript' },
-          { value: 'js', label: 'JavaScript' },
-          { value: 'py', label: 'Python' },
-          { value: 'rs', label: 'Rust' },
-        ];
-      })();
-
-      // ── Accent select ──
-      (function () {
-        var selAccent = document.getElementById('demo-select-accent');
-        if (selAccent) {
-          selAccent.options = [
-            { value: 'opt1', label: 'Option One' },
-            { value: 'opt2', label: 'Option Two' },
-            { value: 'opt3', label: 'Option Three' },
-          ];
-        }
-      })();
-
-      // ── Tabs ──
-      (function () {
-        var tabs = document.getElementById('demo-tabs');
-        tabs.tabs = [
-          { id: 'preview', label: 'Preview' },
-          { id: 'code', label: 'Code' },
-          { id: 'settings', label: 'Settings', disabled: true },
-        ];
-      })();
-
-      // ── Breadcrumbs ──
-      (function () {
-        document.getElementById('demo-breadcrumb-1').items = [
-          { label: 'Home', href: '#' },
-          { label: 'Products', href: '#' },
-          { label: 'Category', href: '#' },
-          { label: 'Item' },
-        ];
-        document.getElementById('demo-breadcrumb-2').items = [
-          { label: 'Dashboard', href: '#' },
-          { label: 'Settings' },
-        ];
-        document.getElementById('demo-breadcrumb-3').items = [
-          { label: 'Docs', href: '#' },
-          { label: 'API', href: '#' },
-          { label: 'Reference' },
-        ];
-      })();
-
-      // ── Toast demo ──
-      (function () {
-        var container = document.getElementById('demo-toast-container');
-        var infoBtn = document.getElementById('toast-info-btn');
-        var successBtn = document.getElementById('toast-success-btn');
-        var warningBtn = document.getElementById('toast-warning-btn');
-        var errorBtn = document.getElementById('toast-error-btn');
-
-        function showToast(variant, message) {
-          var toast = document.createElement('sg-toast');
-          toast.variant = variant;
-          toast.duration = 3000;
-          toast.dismissible = true;
-          toast.textContent = message;
-          container.appendChild(toast);
-          // Trigger open after the element is in the DOM
-          requestAnimationFrame(function () {
-            toast.open = true;
-          });
-        }
-
-        infoBtn.addEventListener('click', function () {
-          showToast('info', 'This is an informational message.');
-        });
-        successBtn.addEventListener('click', function () {
-          showToast('success', 'Operation completed successfully!');
-        });
-        warningBtn.addEventListener('click', function () {
-          showToast('warning', 'Please review your input before continuing.');
-        });
-        errorBtn.addEventListener('click', function () {
-          showToast('error', 'Something went wrong. Please try again.');
-        });
-      })();
-
-      // ── Pagination tracking ──
-      (function () {
-        var pagination = document.getElementById('demo-pagination');
-        var display = document.getElementById('pagination-page-display');
-        if (pagination && display) {
-          pagination.addEventListener('change', function (e) {
-            display.textContent = e.detail;
-          });
-        }
-      })();
-    </script>
+    <!-- All component initialization and event wiring moved to src/main.ts
+         so Lit @property setters receive the values after upgrade. -->
   </body>
 </html>

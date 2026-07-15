@@ -6,9 +6,9 @@ const meta: Meta = {
   title: 'Components/SgProgress',
   component: 'sg-progress',
   argTypes: {
+    variant: { control: 'select', options: ['spectral', 'default'] },
     value: { control: { type: 'number', min: 0, max: 100 } },
     max: { control: { type: 'number', min: 1 } },
-    variant: { control: 'select', options: ['default', 'spectral'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
     indeterminate: { control: 'boolean' },
     label: { control: 'text' },
@@ -36,7 +36,7 @@ export const Default: Story = {
       ?indeterminate=${args.indeterminate}
     ></sg-progress>
   `,
-  args: { value: 60, max: 100, variant: 'spectral', size: 'md', indeterminate: false },
+  args: { variant: 'spectral', value: 60, max: 100, size: 'md', indeterminate: false },
 };
 
 export const WithLabel: Story = {
@@ -50,7 +50,7 @@ export const WithLabel: Story = {
       ?show-value=${args.showValue}
     ></sg-progress>
   `,
-  args: { value: 73, max: 100, variant: 'spectral', size: 'md', label: 'Upload progress', showValue: true },
+  args: { variant: 'spectral', value: 73, max: 100, size: 'md', label: 'Upload progress', showValue: true },
 };
 
 export const Small: Story = {
@@ -58,11 +58,14 @@ export const Small: Story = {
     <sg-progress
       value=${args.value ?? 60}
       max=${args.max ?? 100}
-      variant=${args.variant || 'spectral'}
-      size="sm"
+      variant="spectral"
+      size=${'sm'}
     ></sg-progress>
   `,
-  args: { value: 60, max: 100, variant: 'spectral' },
+  args: { value: 60, max: 100, size: 'sm' },
+  argTypes: {
+    size: { table: { disable: true } },
+  },
 };
 
 export const Large: Story = {
@@ -70,11 +73,14 @@ export const Large: Story = {
     <sg-progress
       value=${args.value ?? 60}
       max=${args.max ?? 100}
-      variant=${args.variant || 'spectral'}
-      size="lg"
+      variant="spectral"
+      size=${'lg'}
     ></sg-progress>
   `,
-  args: { value: 60, max: 100, variant: 'spectral' },
+  args: { value: 60, max: 100, size: 'lg' },
+  argTypes: {
+    size: { table: { disable: true } },
+  },
 };
 
 export const Determinate: Story = {
@@ -86,7 +92,7 @@ export const Determinate: Story = {
       size=${args.size || 'md'}
     ></sg-progress>
   `,
-  args: { value: 42, max: 100, variant: 'default', size: 'md' },
+  args: { variant: 'default', value: 42, max: 100, size: 'md' },
 };
 
 export const Indeterminate: Story = {
@@ -101,6 +107,7 @@ export const Indeterminate: Story = {
 };
 
 export const AllSizes: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;flex-direction:column;gap:16px;max-width:400px;">
       <sg-progress value="60" max="100" variant="spectral" size="sm"></sg-progress>
@@ -111,6 +118,7 @@ export const AllSizes: Story = {
 };
 
 export const Multiple: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;flex-direction:column;gap:16px;max-width:400px;">
       <sg-progress value="25" max="100" variant="spectral" size="md" label="Task 1" show-value></sg-progress>

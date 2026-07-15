@@ -1,5 +1,5 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { smoothTransition } from '../styles/shared.js';
 
@@ -165,8 +165,7 @@ export class SgAccordionItem extends LitElement {
   @property({ type: String })
   heading: string = '';
 
-  /** Measured content height for pixel-perfect animation. */
-  @state()
+  /** Measured content height for pixel-perfect animation. Non-reactive — only used internally. */
   private _contentHeight = 0;
 
   override render(): TemplateResult {

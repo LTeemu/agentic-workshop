@@ -46,6 +46,7 @@ export const AllIcons: Story = {
       )}
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Sizes: Story = {
@@ -56,4 +57,5 @@ export const Sizes: Story = {
       <sg-icon name="check" size="lg"></sg-icon>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

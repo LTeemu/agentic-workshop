@@ -6,10 +6,7 @@ const meta: Meta = {
   title: 'Components/SgDivider',
   component: 'sg-divider',
   argTypes: {
-    variant: {
-      control: 'select',
-      options: ['solid', 'glass', 'gradient'],
-    },
+    variant: { control: 'select', options: ['solid', 'glass', 'gradient'] },
     label: { control: 'text' },
     labelPosition: {
       control: 'select',
@@ -53,6 +50,7 @@ export const WithLabel: Story = {
 
 export const Gradient: Story = {
   render: () => html`<sg-divider variant="gradient" label="Spectra"></sg-divider>`,
+  parameters: { controls: { disable: true } },
 };
 
 export const Variants: Story = {
@@ -63,4 +61,5 @@ export const Variants: Story = {
       <sg-divider variant="gradient" label="Gradient"></sg-divider>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

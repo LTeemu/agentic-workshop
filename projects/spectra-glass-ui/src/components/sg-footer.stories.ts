@@ -50,6 +50,18 @@ export const Default: Story = {
       <a slot="column-4" href="#">Terms</a>
       <a slot="column-4" href="#">Cookies</a>
 
+      <h4 slot="column-5">Developers</h4>
+      <a slot="column-5" href="#">Getting Started</a>
+      <a slot="column-5" href="#">Components</a>
+      <a slot="column-5" href="#">Theming</a>
+      <a slot="column-5" href="#">Examples</a>
+
+      <h4 slot="column-6">Support</h4>
+      <a slot="column-6" href="#">Help Center</a>
+      <a slot="column-6" href="#">Status</a>
+      <a slot="column-6" href="#">Security</a>
+      <a slot="column-6" href="#">Accessibility</a>
+
       <a slot="social" href="#" aria-label="Twitter"><sg-icon name="home" size="sm"></sg-icon></a>
       <a slot="social" href="#" aria-label="GitHub"><sg-icon name="user" size="sm"></sg-icon></a>
       <a slot="social" href="#" aria-label="Email"><sg-icon name="mail" size="sm"></sg-icon></a>

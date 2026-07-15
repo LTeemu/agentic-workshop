@@ -48,6 +48,8 @@ export class SgSkeleton extends LitElement {
     }
 
     .skeleton--rect {
+      width: var(--sg-skeleton-rect-width, 100%);
+      height: var(--sg-skeleton-rect-height, 120px);
       border-radius: var(--sg-radius-sm, 8px);
     }
 
@@ -93,10 +95,15 @@ export class SgSkeleton extends LitElement {
   #lineWidths(): string[] {
     const n = this.lines;
     if (n <= 1) return [this.lastLineWidth];
+    // Linearly interpolate from ~85% down to `last-line-width`
+    // so each line is naturally shorter than the one above it.
+    const start = 85;
+    const end = Math.min(parseFloat(this.lastLineWidth) || 60, start - 5);
+    const step = (start - end) / (n - 1);
     const widths: string[] = [];
     for (let i = 0; i < n - 1; i++) {
-      const pct = 100 - i * 4;
-      widths.push(`${Math.max(pct, 40)}%`);
+      const pct = Math.round(start - i * step);
+      widths.push(`${pct}%`);
     }
     widths.push(this.lastLineWidth);
     return widths;
@@ -107,7 +114,16 @@ export class SgSkeleton extends LitElement {
 
     const styleParts: string[] = [];
     if (this.width) styleParts.push(`width: ${this.width};`);
-    if (this.height) styleParts.push(`height: ${this.height};`);
+    if (this.height) {
+      // Content-driven variants (text, card) use min-height so adding more
+      // lines grows the container instead of being capped at a fixed height.
+      // Fixed-shape variants (circle, rect) use fixed height since they have
+      // no intrinsic content.
+      const prop = this.variant === 'text' || this.variant === 'card'
+        ? 'min-height'
+        : 'height';
+      styleParts.push(`${prop}: ${this.height};`);
+    }
     const hostStyle = styleParts.join(' ');
 
     switch (this.variant) {

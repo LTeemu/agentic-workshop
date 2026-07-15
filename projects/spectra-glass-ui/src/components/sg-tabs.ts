@@ -1,4 +1,4 @@
-import { LitElement, html, css, type TemplateResult } from 'lit';
+import { LitElement, html, css, type PropertyValues, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { smoothTransition } from '../styles/shared.js';
@@ -104,18 +104,23 @@ export class SgTabs extends LitElement {
   @property({ type: String, reflect: true })
   variant: 'underline' | 'pills' | 'glass' = 'glass';
 
-  override firstUpdated(): void {
-    if (!this.activeTab && this.tabs.length > 0) {
+  /** Non-reactive: first non-disabled tab, updated when `tabs` changes. */
+  #defaultTab = '';
+
+  override willUpdate(changed: PropertyValues<this>): void {
+    // Cache the default tab in a non-reactive field so render() can fall back
+    // to it without setting any reactive property during the update cycle
+    // (which would trigger the "scheduled an update after an update completed" warning).
+    if (changed.has('tabs')) {
       const first = this.tabs.find((t) => !t.disabled);
-      if (first) {
-        this.activeTab = first.id;
-      }
+      this.#defaultTab = first?.id ?? '';
     }
   }
 
   override render(): TemplateResult {
+    const effectiveTab = this.activeTab || this.#defaultTab;
     const tabButtons = this.tabs.map((tab) => {
-      const isActive = tab.id === this.activeTab;
+      const isActive = tab.id === effectiveTab;
       const tabClasses = classMap({
         tab: true,
         'tab--active': isActive,
@@ -142,7 +147,7 @@ export class SgTabs extends LitElement {
         ${tabButtons}
       </div>
       <div class="content" role="tabpanel">
-        ${this.activeTab ? html`<slot name=${this.activeTab}></slot>` : ''}
+        ${effectiveTab ? html`<slot name=${effectiveTab}></slot>` : ''}
       </div>
     `;
   }

@@ -45,13 +45,14 @@ export const Default: Story = {
 };
 
 export const WithImage: Story = {
-  render: () => html`
+  render: (args) => html`
     <sg-avatar
-      src="https://i.pravatar.cc/80?img=11"
-      alt="Jane Doe"
-      size="lg"
+      src=${args.src || 'https://i.pravatar.cc/80?img=11'}
+      alt=${args.alt || 'Jane Doe'}
+      size=${args.size || 'lg'}
     ></sg-avatar>
   `,
+  args: { src: 'https://i.pravatar.cc/80?img=11', alt: 'Jane Doe', size: 'lg' },
 };
 
 export const Sizes: Story = {
@@ -63,6 +64,7 @@ export const Sizes: Story = {
       <sg-avatar initials="XL" size="xl"></sg-avatar>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const StatusOnline: Story = {
@@ -72,4 +74,5 @@ export const StatusOnline: Story = {
       <sg-avatar initials="AW" size="lg" status="away"></sg-avatar>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

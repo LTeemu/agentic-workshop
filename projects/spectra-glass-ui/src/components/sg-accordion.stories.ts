@@ -39,8 +39,8 @@ export const Default: Story = {
 };
 
 export const MultipleOpen: Story = {
-  render: () => html`
-    <sg-accordion multiple style="max-width:600px;">
+  render: (args) => html`
+    <sg-accordion ?multiple=${args.multiple ?? true} style="max-width:600px;">
       <sg-accordion-item heading="First item" open>
         This item starts open. Others can be opened independently.
       </sg-accordion-item>
@@ -49,4 +49,5 @@ export const MultipleOpen: Story = {
       </sg-accordion-item>
     </sg-accordion>
   `,
+  args: { multiple: true },
 };

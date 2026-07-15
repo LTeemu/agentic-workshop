@@ -52,51 +52,66 @@ export const Default: Story = {
 };
 
 export const WithValue: Story = {
-  render: () => html`
+  render: (args) => html`
     <sg-input
-      label="Full name"
-      placeholder="Enter your name"
-      value="Jane Doe"
+      variant=${args.variant || 'outlined'}
+      label=${args.label || 'Full name'}
+      placeholder=${args.placeholder || 'Enter your name'}
+      .value=${args.value || 'Jane Doe'}
+      error=${args.error || ''}
+      ?disabled=${args.disabled}
+      ?readonly=${args.readonly}
     ></sg-input>
   `,
+  args: { variant: 'outlined', label: 'Full name', placeholder: 'Enter your name', value: 'Jane Doe', error: '', disabled: false, readonly: false },
 };
 
 export const Variants: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;flex-direction:column;gap:16px;">
-      <sg-input label="Outlined" placeholder="Outlined variant"></sg-input>
-      <sg-input label="Ghost" placeholder="Ghost variant" variant="ghost"></sg-input>
+      <sg-input variant="outlined" label="Outlined" placeholder="Outlined variant"></sg-input>
+      <sg-input variant="ghost" label="Ghost" placeholder="Ghost variant"></sg-input>
     </div>
   `,
 };
 
 export const Error: Story = {
-  render: () => html`
+  render: (args) => html`
     <sg-input
-      label="Email"
-      placeholder="your@email.com"
-      value="invalid"
-      error="Please enter a valid email address"
+      variant=${args.variant || 'outlined'}
+      label=${args.label || 'Email'}
+      placeholder=${args.placeholder || 'your@email.com'}
+      .value=${args.value || 'invalid'}
+      error=${args.error || 'Please enter a valid email address'}
+      ?disabled=${args.disabled}
+      ?readonly=${args.readonly}
     ></sg-input>
   `,
+  args: { variant: 'outlined', label: 'Email', placeholder: 'your@email.com', value: 'invalid', error: 'Please enter a valid email address', disabled: false, readonly: false },
 };
 
 export const Disabled: Story = {
-  render: () => html`
+  render: (args) => html`
     <sg-input
-      label="Disabled"
-      placeholder="Can't edit this"
-      value="Read-only value"
-      disabled
+      variant=${args.variant || 'outlined'}
+      label=${args.label || 'Disabled'}
+      placeholder=${args.placeholder || "Can't edit this"}
+      .value=${args.value || 'Read-only value'}
+      error=${args.error || ''}
+      ?disabled=${args.disabled ?? true}
+      ?readonly=${args.readonly}
     ></sg-input>
   `,
+  args: { variant: 'outlined', label: 'Disabled', placeholder: "Can't edit this", value: 'Read-only value', error: '', disabled: true, readonly: false },
 };
 
 export const WithSlots: Story = {
   render: () => html`
-    <sg-input label="Search" placeholder="Search…" variant="outlined">
+    <sg-input variant="outlined" label="Search" placeholder="Search…">
       <span slot="prefix" style="font-size:0.875rem;">🔍</span>
       <span slot="suffix" style="font-size:0.75rem;cursor:pointer;">✕</span>
     </sg-input>
   `,
+  parameters: { controls: { disable: true } },
 };

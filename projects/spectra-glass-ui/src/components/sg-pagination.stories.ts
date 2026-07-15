@@ -103,8 +103,11 @@ export const Small: Story = {
       total=${args.total ?? 10}
       current=${args.current ?? 5}
       sibling-count=${args.siblingCount ?? 1}
-      size="sm"
+      size=${'sm'}
     ></sg-pagination>
   `,
-  args: { total: 10, current: 5, siblingCount: 1 },
+  args: { total: 10, current: 5, siblingCount: 1, size: 'sm' },
+  argTypes: {
+    size: { table: { disable: true } },
+  },
 };

@@ -6,10 +6,7 @@ const meta: Meta = {
   title: 'Components/SgBadge',
   component: 'sg-badge',
   argTypes: {
-    variant: {
-      control: 'select',
-      options: ['default', 'success', 'warning', 'error', 'info', 'spectral'],
-    },
+    variant: { control: 'select', options: ['default', 'success', 'warning', 'error', 'info', 'spectral'] },
     size: { control: 'select', options: ['sm', 'md'] },
     removable: { control: 'boolean' },
   },
@@ -50,6 +47,7 @@ export const Variants: Story = {
       <sg-badge variant="spectral">Spectral</sg-badge>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Sizes: Story = {
@@ -59,6 +57,7 @@ export const Sizes: Story = {
       <sg-badge variant="spectral" size="md">Medium</sg-badge>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Removable: Story = {
@@ -70,4 +69,5 @@ export const Removable: Story = {
       <sg-badge variant="spectral" removable>Spectral</sg-badge>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

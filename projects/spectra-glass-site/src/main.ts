@@ -1,13 +1,145 @@
 /* ─── Spectra Glass Site — Entry Point ───
-   Importing the library registers all custom elements. */
+   Importing the library registers all custom elements.
+   All component property initialization and event wiring runs here
+   (after components are upgraded) so the body can fade in fully ready. */
 
 import 'spectra-glass-ui';
 
-/* ─── Theme Switcher ───
-   Auto-discover all sg-theme-spectra-*.css files via Vite's
-   import.meta.glob — no manual imports needed when new themes
-   are added to spectra-glass-ui.  The ?inline query imports the
-   CSS as a string so we can inject/swap a <style> element. */
+// ═══════════════════════════════════════════════════════════════════════════
+// Property initialization — runs after components are upgraded by Lit,
+// so .options, .tabs, .items etc. go through @property setters correctly.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Select options ──
+const demoSelect = document.getElementById('demo-select') as any;
+if (demoSelect) {
+  demoSelect.options = [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'angular', label: 'Angular' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'lit', label: 'Lit' },
+  ];
+}
+
+const demoSelectMulti = document.getElementById('demo-select-multi') as any;
+if (demoSelectMulti) {
+  demoSelectMulti.options = [
+    { value: 'ts', label: 'TypeScript' },
+    { value: 'js', label: 'JavaScript' },
+    { value: 'py', label: 'Python' },
+    { value: 'rs', label: 'Rust' },
+  ];
+}
+
+const demoSelectAccent = document.getElementById('demo-select-accent') as any;
+if (demoSelectAccent) {
+  demoSelectAccent.options = [
+    { value: 'opt1', label: 'Option One' },
+    { value: 'opt2', label: 'Option Two' },
+    { value: 'opt3', label: 'Option Three' },
+  ];
+}
+
+// ── Tabs ──
+const demoTabs = document.getElementById('demo-tabs') as any;
+if (demoTabs) {
+  demoTabs.tabs = [
+    { id: 'preview', label: 'Preview' },
+    { id: 'code', label: 'Code' },
+    { id: 'settings', label: 'Settings', disabled: true },
+  ];
+}
+
+// ── Breadcrumbs ──
+const demoBreadcrumb1 = document.getElementById('demo-breadcrumb-1') as any;
+if (demoBreadcrumb1) {
+  demoBreadcrumb1.items = [
+    { label: 'Home', href: '#' },
+    { label: 'Products', href: '#' },
+    { label: 'Category', href: '#' },
+    { label: 'Item' },
+  ];
+}
+
+const demoBreadcrumb2 = document.getElementById('demo-breadcrumb-2') as any;
+if (demoBreadcrumb2) {
+  demoBreadcrumb2.items = [
+    { label: 'Dashboard', href: '#' },
+    { label: 'Settings' },
+  ];
+}
+
+const demoBreadcrumb3 = document.getElementById('demo-breadcrumb-3') as any;
+if (demoBreadcrumb3) {
+  demoBreadcrumb3.items = [
+    { label: 'Docs', href: '#' },
+    { label: 'API', href: '#' },
+    { label: 'Reference' },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Event wiring
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Smooth scroll CTA (delegation — works on originals and drawer clones) ──
+document.addEventListener('click', (e: Event) => {
+  const path = e.composedPath();
+  if (
+    path.some((el) => (el as Element)?.id === 'header-cta') ||
+    path.some((el) => (el as Element)?.id === 'hero-cta')
+  ) {
+    document.getElementById('showcase')?.scrollIntoView({ behavior: 'smooth' });
+  }
+});
+
+// ── Dialog ──
+const demoDialog = document.getElementById('demo-dialog') as any;
+const openBtn = document.getElementById('open-dialog-btn');
+const closeBtn = document.getElementById('close-dialog-btn');
+
+if (demoDialog && openBtn && closeBtn) {
+  openBtn.addEventListener('click', () => {
+    demoDialog.open = true;
+  });
+  const closeDialog = () => {
+    demoDialog.open = false;
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  // Confirm button also closes the dialog
+  const confirmBtn = demoDialog.querySelector('[slot="footer"] sg-button:last-child');
+  if (confirmBtn) confirmBtn.addEventListener('click', closeDialog);
+}
+
+// ── Toast demo ──
+const toastContainer = document.getElementById('demo-toast-container') as any;
+const infoBtn = document.getElementById('toast-info-btn');
+const successBtn = document.getElementById('toast-success-btn');
+const warningBtn = document.getElementById('toast-warning-btn');
+const errorBtn = document.getElementById('toast-error-btn');
+
+function showToast(variant: string, message: string) {
+  if (!toastContainer) return;
+  const toast = document.createElement('sg-toast') as any;
+  toast.variant = variant;
+  toast.duration = 3000;
+  toast.dismissible = true;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.open = true;
+  });
+}
+
+infoBtn?.addEventListener('click', () => showToast('info', 'This is an informational message.'));
+successBtn?.addEventListener('click', () => showToast('success', 'Operation completed successfully!'));
+warningBtn?.addEventListener('click', () => showToast('warning', 'Please review your input before continuing.'));
+errorBtn?.addEventListener('click', () => showToast('error', 'Something went wrong. Please try again.'));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Theme Switcher
+// ═══════════════════════════════════════════════════════════════════════════
 
 const themeModules = import.meta.glob(
   '../node_modules/spectra-glass-ui/dist/themes/sg-theme-spectra-*.css',
@@ -18,7 +150,7 @@ const themeModules = import.meta.glob(
 function displayName(key: string): string {
   return key
     .split('-')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 }
 
@@ -48,7 +180,9 @@ function getSavedTheme(): string {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && saved in THEMES) return saved;
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return 'spectra-default';
 }
 
@@ -62,7 +196,17 @@ function applyTheme(name: string): void {
   style.textContent = THEMES[name] ?? '';
   try {
     localStorage.setItem(STORAGE_KEY, name);
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
+  // Sync selection on all theme switcher selects (light DOM and shadow DOM clones)
+  document.querySelectorAll<HTMLSelectElement>('.theme-switcher').forEach((el) => {
+    el.value = name;
+  });
+  document.querySelectorAll('sg-header').forEach((header) => {
+    const clone = header.shadowRoot?.querySelector<HTMLSelectElement>('select[data-nav-clone]');
+    if (clone) clone.value = name;
+  });
 }
 
 /** Populate a <select> with options for every discovered theme. */
@@ -94,18 +238,21 @@ function initThemeSwitcher(): void {
 }
 
 // Use event delegation for theme changes — works on both original (light DOM)
-// and cloned (shadow DOM) selects.  We use composedPath() instead of e.target
-// because e.target is retargeted to the shadow host when crossing shadow boundaries.
+// and cloned (shadow DOM) selects.
 document.addEventListener('change', (e: Event) => {
   const path = e.composedPath();
-  const select = path.find((el) => (el as Element)?.matches?.('.theme-switcher')) as HTMLSelectElement | undefined;
+  const select = path.find(
+    (el) => (el as Element)?.matches?.('.theme-switcher'),
+  ) as HTMLSelectElement | undefined;
   if (select) {
     applyTheme(select.value);
   }
 });
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initThemeSwitcher);
-} else {
-  initThemeSwitcher();
-}
+initThemeSwitcher();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Reveal body — components are upgraded, properties are set, theme is applied.
+// ═══════════════════════════════════════════════════════════════════════════
+
+document.body.classList.add('ready');

@@ -75,16 +75,27 @@ export const Open: Story = {
 };
 
 export const NoFooter: Story = {
-  render: () => html`
-    <sg-dialog open title="Information">
+  render: (args) => html`
+    <sg-dialog
+      ?open=${args.open}
+      ?closable=${args.closable}
+      ?backdrop-dismiss=${args.backdropDismiss}
+      title=${args.title || 'Information'}
+    >
       <p>A simple dialog with no footer actions, just a close button.</p>
     </sg-dialog>
   `,
+  args: { open: true, closable: true, backdropDismiss: true, title: 'Information' },
 };
 
 export const LongContent: Story = {
-  render: () => html`
-    <sg-dialog open title="Terms of Service">
+  render: (args) => html`
+    <sg-dialog
+      ?open=${args.open}
+      ?closable=${args.closable}
+      ?backdrop-dismiss=${args.backdropDismiss}
+      title=${args.title || 'Terms of Service'}
+    >
       <p>1. Acceptance of Terms</p>
       <p>By accessing and using this service, you accept and agree to be bound by the terms and conditions.</p>
       <p>2. Description of Service</p>
@@ -99,4 +110,5 @@ export const LongContent: Story = {
       </span>
     </sg-dialog>
   `,
+  args: { open: true, closable: true, backdropDismiss: true, title: 'Terms of Service' },
 };

@@ -7,10 +7,7 @@ const meta: Meta = {
   title: 'Components/SgButton',
   component: 'sg-button',
   argTypes: {
-    variant: {
-      control: 'select',
-      options: ['primary', 'secondary', 'ghost'],
-    },
+    variant: { control: 'select', options: ['primary', 'secondary', 'ghost'] },
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
@@ -36,7 +33,7 @@ type Story = StoryObj;
 export const Primary: Story = {
   render: (args) => html`
     <sg-button
-      variant=${args.variant || 'primary'}
+      variant=${'primary'}
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
@@ -47,12 +44,15 @@ export const Primary: Story = {
     </sg-button>
   `,
   args: { variant: 'primary', size: 'md', disabled: false, loading: false, border: false, pill: false },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Secondary: Story = {
   render: (args) => html`
     <sg-button
-      variant=${args.variant || 'secondary'}
+      variant=${'secondary'}
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
@@ -63,12 +63,15 @@ export const Secondary: Story = {
     </sg-button>
   `,
   args: { variant: 'secondary', size: 'md', disabled: false, loading: false, border: false, pill: false },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Ghost: Story = {
   render: (args) => html`
     <sg-button
-      variant=${args.variant || 'ghost'}
+      variant=${'ghost'}
       size=${args.size || 'md'}
       ?disabled=${args.disabled}
       ?loading=${args.loading}
@@ -79,6 +82,9 @@ export const Ghost: Story = {
     </sg-button>
   `,
   args: { variant: 'ghost', size: 'md', disabled: false, loading: false, border: false, pill: false },
+  argTypes: {
+    variant: { table: { disable: true } },
+  },
 };
 
 export const Sizes: Story = {
@@ -89,6 +95,7 @@ export const Sizes: Story = {
       <sg-button variant="primary" size="lg">Large</sg-button>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const AllVariants: Story = {
@@ -111,12 +118,14 @@ export const AllVariants: Story = {
       </div>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Loading: Story = {
   render: () => html`
     <sg-button variant="primary" size="md" loading>Processing</sg-button>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Bordered: Story = {
@@ -127,6 +136,7 @@ export const Bordered: Story = {
       <sg-button variant="ghost" border>Ghost + Border</sg-button>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Pill: Story = {
@@ -137,4 +147,5 @@ export const Pill: Story = {
       <sg-button variant="ghost" pill>Ghost Pill</sg-button>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

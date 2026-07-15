@@ -8,8 +8,6 @@ const meta: Meta = {
   argTypes: {
     variant: { control: 'select', options: ['text', 'circle', 'rect', 'card'] },
     width: { control: 'text' },
-    height: { control: 'text' },
-    lines: { control: { type: 'number', min: 1, max: 10 } },
   },
   parameters: {
     docs: {
@@ -24,9 +22,14 @@ export default meta;
 type Story = StoryObj;
 
 export const Text: Story = {
+  argTypes: {
+    variant: { table: { disable: true } },
+    height: { control: false },
+    lines: { control: { type: 'number', min: 1, max: 10 } },
+  },
   render: (args) => html`
     <sg-skeleton
-      variant=${args.variant || 'text'}
+      variant=${'text'}
       width=${args.width || '280px'}
       .lines=${args.lines ?? 3}
     ></sg-skeleton>
@@ -35,9 +38,13 @@ export const Text: Story = {
 };
 
 export const Circle: Story = {
+  argTypes: {
+    variant: { table: { disable: true } },
+    height: { control: 'text' },
+  },
   render: (args) => html`
     <sg-skeleton
-      variant=${args.variant || 'circle'}
+      variant=${'circle'}
       width=${args.width || '40px'}
       height=${args.height || '40px'}
     ></sg-skeleton>
@@ -46,9 +53,13 @@ export const Circle: Story = {
 };
 
 export const Rect: Story = {
+  argTypes: {
+    variant: { table: { disable: true } },
+    height: { control: 'text' },
+  },
   render: (args) => html`
     <sg-skeleton
-      variant=${args.variant || 'rect'}
+      variant=${'rect'}
       width=${args.width || '200px'}
       height=${args.height || '120px'}
     ></sg-skeleton>
@@ -57,9 +68,13 @@ export const Rect: Story = {
 };
 
 export const Card: Story = {
+  argTypes: {
+    variant: { table: { disable: true } },
+    lines: { control: { type: 'number', min: 1, max: 10 } },
+  },
   render: (args) => html`
     <sg-skeleton
-      variant=${args.variant || 'card'}
+      variant=${'card'}
       width=${args.width || '280px'}
       .lines=${args.lines ?? 3}
     ></sg-skeleton>
@@ -67,18 +82,8 @@ export const Card: Story = {
   args: { variant: 'card', width: '280px', lines: 3 },
 };
 
-export const TextLinesCustom: Story = {
-  render: () => html`
-    <sg-skeleton
-      variant="text"
-      width="300px"
-      .lines=${5}
-      last-line-width="40%"
-    ></sg-skeleton>
-  `,
-};
-
 export const AllVariants: Story = {
+  parameters: { controls: { disable: true } },
   render: () => html`
     <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">
       <div>

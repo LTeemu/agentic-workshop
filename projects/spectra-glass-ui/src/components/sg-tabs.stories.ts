@@ -6,9 +6,9 @@ const meta: Meta = {
   title: 'Components/SgTabs',
   component: 'sg-tabs',
   argTypes: {
+    variant: { control: 'select', options: ['glass', 'underline', 'pills'] },
     tabs: { control: 'object' },
     activeTab: { control: 'text' },
-    variant: { control: 'select', options: ['underline', 'pills', 'glass'] },
   },
   parameters: {
     docs: {
@@ -35,12 +35,12 @@ export const Default: Story = {
     </sg-tabs>
   `,
   args: {
+    variant: 'glass',
     tabs: [
       { id: 'tab1', label: 'Overview' },
       { id: 'tab2', label: 'Settings' },
       { id: 'tab3', label: 'Security' },
     ],
-    variant: 'glass',
   },
 };
 
@@ -49,7 +49,7 @@ export const Underline: Story = {
     <sg-tabs
       .tabs=${args.tabs}
       .activeTab=${args.activeTab}
-      variant="underline"
+      variant=${'underline'}
     >
       <div slot="tab1">Underline style — simple and clean.</div>
       <div slot="tab2">An underline indicator shows the active tab.</div>
@@ -57,12 +57,15 @@ export const Underline: Story = {
     </sg-tabs>
   `,
   args: {
+    variant: 'underline',
     tabs: [
       { id: 'tab1', label: 'Design' },
       { id: 'tab2', label: 'Code' },
       { id: 'tab3', label: 'Deploy' },
     ],
-    variant: 'underline',
+  },
+  argTypes: {
+    variant: { table: { disable: true } },
   },
 };
 
@@ -71,7 +74,7 @@ export const Pills: Story = {
     <sg-tabs
       .tabs=${args.tabs}
       .activeTab=${args.activeTab}
-      variant="pills"
+      variant=${'pills'}
     >
       <div slot="tab1">Pills variant with rounded active indicator.</div>
       <div slot="tab2">Active tab has a solid background fill.</div>
@@ -79,12 +82,15 @@ export const Pills: Story = {
     </sg-tabs>
   `,
   args: {
+    variant: 'pills',
     tabs: [
       { id: 'tab1', label: 'All' },
       { id: 'tab2', label: 'Active' },
       { id: 'tab3', label: 'Archived' },
     ],
-    variant: 'pills',
+  },
+  argTypes: {
+    variant: { table: { disable: true } },
   },
 };
 
@@ -93,7 +99,7 @@ export const Preselected: Story = {
     <sg-tabs
       .tabs=${args.tabs}
       .activeTab=${args.activeTab}
-      variant="glass"
+      variant=${args.variant || 'glass'}
     >
       <div slot="general">General settings panel.</div>
       <div slot="advanced">Advanced configuration options for power users.</div>
@@ -101,13 +107,13 @@ export const Preselected: Story = {
     </sg-tabs>
   `,
   args: {
+    variant: 'glass',
     tabs: [
       { id: 'general', label: 'General' },
       { id: 'advanced', label: 'Advanced' },
       { id: 'admin', label: 'Admin' },
     ],
     activeTab: 'advanced',
-    variant: 'glass',
   },
 };
 
@@ -116,7 +122,7 @@ export const WithDisabled: Story = {
     <sg-tabs
       .tabs=${args.tabs}
       .activeTab=${args.activeTab}
-      variant="glass"
+      variant=${args.variant || 'glass'}
     >
       <div slot="public">Public profile visible to everyone.</div>
       <div slot="private">Private information — requires authentication.</div>
@@ -124,11 +130,11 @@ export const WithDisabled: Story = {
     </sg-tabs>
   `,
   args: {
+    variant: 'glass',
     tabs: [
       { id: 'public', label: 'Public' },
       { id: 'private', label: 'Private', disabled: true },
       { id: 'hidden', label: 'Hidden' },
     ],
-    variant: 'glass',
   },
 };

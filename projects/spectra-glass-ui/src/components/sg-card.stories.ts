@@ -6,10 +6,7 @@ const meta: Meta = {
   title: 'Components/SgCard',
   component: 'sg-card',
   argTypes: {
-    variant: {
-      control: 'select',
-      options: ['elevated', 'outlined', 'ghost'],
-    },
+    variant: { control: 'select', options: ['elevated', 'outlined', 'ghost'] },
     padding: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
@@ -139,6 +136,7 @@ export const Variants: Story = {
       </sg-card>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const AccentBorder: Story = {
@@ -150,6 +148,7 @@ export const AccentBorder: Story = {
       </div>
     </sg-card>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const Selected: Story = {
@@ -161,6 +160,7 @@ export const Selected: Story = {
       </div>
     </sg-card>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const SelectedVariants: Story = {
@@ -177,6 +177,7 @@ export const SelectedVariants: Story = {
       </sg-card>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
 
 export const PaddingSizes: Story = {
@@ -193,4 +194,5 @@ export const PaddingSizes: Story = {
       </sg-card>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };

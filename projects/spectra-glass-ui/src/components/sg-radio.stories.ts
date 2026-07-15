@@ -154,36 +154,13 @@ export const DisabledGroup: Story = {
 };
 
 export const AllStates: Story = {
-  render: (args) => html`
-    <div style="display:flex;flex-direction:row;gap:24px;align-items:center;">
-      <sg-radio
-        label="Unchecked"
-        value="unchecked"
-        ?disabled=${args.disabled ?? false}
-      ></sg-radio>
-      <sg-radio
-        label="Checked"
-        value="checked"
-        checked
-        ?disabled=${args.disabled ?? false}
-      ></sg-radio>
-      <sg-radio
-        label="Disabled"
-        value="disabled"
-        disabled
-      ></sg-radio>
-      <sg-radio
-        label="Disabled checked"
-        value="disabled-checked"
-        disabled
-        checked
-      ></sg-radio>
+  render: () => html`
+    <div style="display:flex;flex-direction:row;gap:24px;align-items:center;flex-wrap:wrap;">
+      <sg-radio label="Unchecked" value="unchecked"></sg-radio>
+      <sg-radio label="Checked" value="checked" checked></sg-radio>
+      <sg-radio label="Disabled" value="disabled" disabled></sg-radio>
+      <sg-radio label="Disabled checked" value="disabled-checked" disabled checked></sg-radio>
     </div>
   `,
-  args: {
-    disabled: false,
-  },
-  argTypes: {
-    disabled: { control: 'boolean' },
-  },
+  parameters: { controls: { disable: true } },
 };

@@ -3,6 +3,7 @@ dist/
 custom-elements.json
 storybook-static/
 .vitest-attachments/
+__screenshots__/
 test-results/
 .DS_Store
 Thumbs.db

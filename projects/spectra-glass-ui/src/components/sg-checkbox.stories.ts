@@ -37,27 +37,51 @@ export const Default: Story = {
 };
 
 export const Checked: Story = {
-  render: () => html`
-    <sg-checkbox label="I agree to the terms" checked></sg-checkbox>
+  render: (args) => html`
+    <sg-checkbox
+      ?checked=${args.checked ?? true}
+      ?disabled=${args.disabled ?? false}
+      ?indeterminate=${args.indeterminate ?? false}
+      label=${args.label || 'I agree to the terms'}
+    ></sg-checkbox>
   `,
+  args: { checked: true, disabled: false, indeterminate: false, label: 'I agree to the terms' },
 };
 
 export const Indeterminate: Story = {
-  render: () => html`
-    <sg-checkbox label="Select all items" indeterminate></sg-checkbox>
+  render: (args) => html`
+    <sg-checkbox
+      ?checked=${args.checked ?? false}
+      ?disabled=${args.disabled ?? false}
+      ?indeterminate=${args.indeterminate ?? true}
+      label=${args.label || 'Select all items'}
+    ></sg-checkbox>
   `,
+  args: { checked: false, disabled: false, indeterminate: true, label: 'Select all items' },
 };
 
 export const Disabled: Story = {
-  render: () => html`
-    <sg-checkbox label="Disabled option" disabled></sg-checkbox>
+  render: (args) => html`
+    <sg-checkbox
+      ?checked=${args.checked ?? false}
+      ?disabled=${args.disabled ?? true}
+      ?indeterminate=${args.indeterminate ?? false}
+      label=${args.label || 'Disabled option'}
+    ></sg-checkbox>
   `,
+  args: { checked: false, disabled: true, indeterminate: false, label: 'Disabled option' },
 };
 
 export const DisabledChecked: Story = {
-  render: () => html`
-    <sg-checkbox label="Already selected (read-only)" disabled checked></sg-checkbox>
+  render: (args) => html`
+    <sg-checkbox
+      ?checked=${args.checked ?? true}
+      ?disabled=${args.disabled ?? true}
+      ?indeterminate=${args.indeterminate ?? false}
+      label=${args.label || 'Already selected (read-only)'}
+    ></sg-checkbox>
   `,
+  args: { checked: true, disabled: true, indeterminate: false, label: 'Already selected (read-only)' },
 };
 
 export const AllStates: Story = {
@@ -71,4 +95,5 @@ export const AllStates: Story = {
       <sg-checkbox label="Disabled indeterminate" disabled indeterminate></sg-checkbox>
     </div>
   `,
+  parameters: { controls: { disable: true } },
 };
