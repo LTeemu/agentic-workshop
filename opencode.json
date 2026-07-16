@@ -18,6 +18,11 @@
     "project": {
       "description": "Switch active project or list projects",
       "template": "Read .active-project to see the current project. List all directories in projects/ folder. Ask the user which project to switch to, then set .active-project accordingly."
+    },
+    "research": {
+      "description": "Research a topic using @researcher",
+      "template": "Run @researcher on the following topic: <question>",
+      "agent": "researcher"
     }
   },
   "skills": {

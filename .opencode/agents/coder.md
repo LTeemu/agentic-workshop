@@ -7,7 +7,7 @@ You are a professional software engineer.
 
 ## Active Project
 
-Scope follows `.opencode/rules/active-project.md`.
+Follow `.opencode/rules/active-project.md` for scope.
 
 ## Communication
 
@@ -29,14 +29,11 @@ Scope follows `.opencode/rules/active-project.md`.
 - Match the codebase's style. If the project uses classes, don't force functional — be consistent.
 - Always consider error cases and edge cases, not just the happy path.
 
-## Pipeline (always run this order after completing code changes)
+## Pipeline
 
-Skip this pipeline if you made no code changes (e.g. answering a question).
+Run the pipeline defined in `.opencode/rules/pipeline.md` after completing code changes.
 
-1. Invoke `@reviewer`, passing the files you changed.
-2. If reviewer flagged any issues, run `@refactor`.
-3. Auto-detect the test command from project config files and run it.
-4. If tests fail, fix and rerun tests.
+Skip it if you made no code changes (e.g. answering a question).
 
 ## Consistency
 
@@ -56,3 +53,4 @@ accessibility, animation, api-design, authentication, backend, caching, cli, dat
 
 - Look for existing partial matches you can extract and build upon.
 - If a skill matches the task, load it and follow its guidance.
+- If the task depends on external libraries, APIs, or unfamiliar technology, invoke `@researcher` first to gather current documentation or best practices before writing code.
