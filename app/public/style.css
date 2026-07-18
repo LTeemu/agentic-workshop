@@ -69,7 +69,7 @@ body {
   gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid #21262d;
 }
 
 #sidebar-body {
@@ -108,14 +108,14 @@ body {
 #sidebar.collapsed {
   width: 38px;
   min-width: 38px;
-  padding: 16px 8px;
+  padding: 16px 0;
 }
 
 #sidebar.collapsed #sidebar-header {
   justify-content: center;
-  border-bottom: none;
+  border-bottom: 1px solid #21262d;
   margin-bottom: 0;
-  padding-bottom: 0;
+  padding-bottom: 12px;
 }
 
 #sidebar.collapsed #sidebar-header h1 {
@@ -137,7 +137,7 @@ body {
 }
 
 .project-item {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -157,7 +157,13 @@ body {
 .project-item.active {
   background: #1f6feb22;
   color: #58a6ff;
-  font-weight: 500;
+}
+
+.project-item .project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .project-item .dot {
@@ -172,6 +178,222 @@ body {
   background: #3fb950;
   box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
 }
+
+/* ── Compact Sidebar (collapsed) ── */
+
+#sidebar-compact {
+  display: none;
+}
+
+#sidebar.collapsed #sidebar-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+
+#sidebar-compact-projects {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.compact-project {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 0;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.compact-project:hover {
+  background: #1c2128;
+}
+
+.compact-project .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #484f58;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  margin-bottom: 2px;
+}
+
+.compact-project .dot.running {
+  background: #3fb950;
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+}
+
+.compact-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: #484f58;
+  line-height: 1;
+  user-select: none;
+  transition: color 0.2s;
+  margin-top: 2px;
+}
+
+.compact-project.running .compact-id {
+  color: #3fb950;
+}
+
+.compact-details {
+  background: none;
+  border: none;
+  color: #484f58;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 3px;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+  font-family: inherit;
+  margin-top: 3px;
+}
+
+.compact-project:hover .compact-details {
+  opacity: 1;
+}
+
+.compact-details:hover {
+  color: #58a6ff;
+  background: #30363d;
+}
+
+/* ── Compact Controls ── */
+
+#sidebar-compact-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid #21262d;
+  margin-top: auto;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+#compact-auto-stop {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#compact-auto-stop input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+#compact-auto-stop .toggle-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  background: #30363d;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+#compact-auto-stop .toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: #8b949e;
+  border-radius: 3px;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+
+#compact-auto-stop-input:checked + .toggle-track {
+  background: #238636;
+}
+
+#compact-auto-stop-input:checked + .toggle-track .toggle-knob {
+  transform: translateX(12px);
+  background: #fff;
+}
+
+.compact-ctrl-btn {
+  width: 28px;
+  height: 24px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.compact-ctrl-btn:hover:not(:disabled) {
+  background: #30363d;
+  color: #c9d1d9;
+}
+
+.compact-ctrl-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.compact-ctrl-btn.danger {
+  color: #f85149;
+}
+
+.compact-ctrl-btn.danger:hover:not(:disabled) {
+  color: #f85149;
+  background: #30363d;
+}
+
+#compact-test-all:disabled {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── End Compact Sidebar ── */
 
 .project-item-actions {
   display: flex;
@@ -200,16 +422,6 @@ body {
 
 .project-item .details-btn:hover {
   color: #58a6ff;
-}
-
-.project-item .remove {
-  background: none;
-  border: none;
-  color: #f85149;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0 4px;
-  line-height: 1;
 }
 
 #auto-stop-label {
@@ -286,6 +498,10 @@ body {
 #test-all:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+#test-all:disabled {
+  animation: pulse 1.2s ease-in-out infinite;
 }
 
 #test-all-summary {
@@ -488,6 +704,7 @@ body {
   font-size: 10px;
   color: #8b949e;
   margin-left: 4px;
+  white-space: nowrap;
 }
 
 #project-url {
@@ -765,6 +982,19 @@ body {
   to {
     transform: translateX(0);
   }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+#details-panel.slide-out {
+  animation: slideOut 0.2s ease forwards;
 }
 
 #details-panel.hidden {

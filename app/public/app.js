@@ -12,6 +12,8 @@ const previewNotice = document.getElementById('preview-notice');
 const previewNoticeText = document.getElementById('preview-notice-text');
 const sidebar = document.getElementById('sidebar');
 const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebarCompact = document.getElementById('sidebar-compact');
+const sidebarCompactProjects = document.getElementById('sidebar-compact-projects');
 
 // Details panel
 const detailsPanel = document.getElementById('details-panel');
@@ -84,7 +86,7 @@ function renderProjectList() {
       'project-item' + (activeProject && activeProject.name === p.name ? ' active' : '');
     const dotClass = p.running ? 'running' : '';
     const typeLabel = `<span class="run-type">${p.runType || p.type || '—'}</span>`;
-    item.innerHTML = `<span class="dot ${dotClass}"></span><span>${p.name}${typeLabel}</span><div class="project-item-actions"><button class="details-btn" data-name="${p.name}" title="Project details">&#8505;</button><button class="remove" data-name="${p.name}">×</button></div>`;
+    item.innerHTML = `<span class="dot ${dotClass}"></span><span class="project-name">${p.name}</span>${typeLabel}<div class="project-item-actions"><button class="details-btn" data-name="${p.name}" title="Project details">&#8505;</button></div>`;
     item.addEventListener('click', (e) => {
       if (e.target.closest('.project-item-actions')) return;
       if (p.running && activeProject && activeProject.name === p.name) {
@@ -103,24 +105,54 @@ function renderProjectList() {
         showDetails(p.name);
       }
     });
-    item.querySelector('.remove').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!confirm(`Remove "${p.name}"?`)) return;
-      await api(`/api/projects/${p.name}`, { method: 'DELETE' });
-      if (activeProject && activeProject.name === p.name) {
-        activeProject = null;
-        showPlaceholder();
-      }
-      loadProjects();
-    });
     projectList.appendChild(item);
   });
+  // ── Compact sidebar dots ──
+  sidebarCompactProjects.innerHTML = '';
+  projects.forEach((p) => {
+    const el = document.createElement('div');
+    el.className = 'compact-project' + (p.running ? ' running' : '');
+    el.title = `${p.name}  (${p.runType || p.type || '—'})`;
+    const shortId = p.name.charAt(0).toUpperCase();
+    const dotClass = p.running ? 'running' : '';
+    el.innerHTML = `<span class="dot ${dotClass}"></span><span class="compact-id">${shortId}</span><button class="compact-details" data-name="${p.name}">i</button>`;
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.compact-details')) return;
+      e.stopPropagation();
+      if (p.running && activeProject && activeProject.name === p.name) {
+        stopProject(p.name);
+      } else {
+        selectProject(p.name);
+      }
+    });
+    el.querySelector('.compact-details').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const panelHidden = detailsPanel.classList.contains('hidden');
+      const sameProject = detailsTitle.dataset.project === p.name;
+      if (!panelHidden && sameProject) {
+        closeDetails();
+      } else {
+        showDetails(p.name);
+      }
+    });
+    sidebarCompactProjects.appendChild(el);
+  });
+
   stopAllBtn.disabled = !anyRunning;
+  compactStopAll.disabled = stopAllBtn.disabled;
+  compactTestAll.disabled = testAllBtn.disabled;
 }
 
 // ── Details Panel ──
 
 async function showDetails(name) {
+  // Cancel any pending close
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+  detailsPanel.classList.remove('slide-out');
+
   const data = await api(`/api/projects/${name}/details`);
   detailsTitle.textContent = data.name;
   detailsTitle.dataset.project = name;
@@ -173,8 +205,16 @@ function renderDepList(container, deps) {
   }
 }
 
+let closeTimer = null;
+
 function closeDetails() {
-  detailsPanel.classList.add('hidden');
+  if (detailsPanel.classList.contains('hidden') || closeTimer) return;
+  detailsPanel.classList.add('slide-out');
+  closeTimer = setTimeout(() => {
+    detailsPanel.classList.remove('slide-out');
+    detailsPanel.classList.add('hidden');
+    closeTimer = null;
+  }, 200);
 }
 
 detailsClose.addEventListener('click', closeDetails);
@@ -488,6 +528,7 @@ async function runTests(name) {
 
 async function testAll() {
   testAllBtn.disabled = true;
+  compactTestAll.disabled = true;
   testAllBtn.textContent = 'Running...';
   testAllSummary.classList.remove('hidden');
   document.querySelector('#test-all-header h3').textContent = 'Test All';
@@ -498,6 +539,7 @@ async function testAll() {
   renderTestResults(result.results || [], 'Test All');
 
   testAllBtn.disabled = false;
+  compactTestAll.disabled = false;
   testAllBtn.textContent = 'Test All';
 }
 
@@ -694,6 +736,29 @@ document.addEventListener('keydown', (e) => {
 
 loadProjects();
 loadActive();
+
+// ── Compact controls ──
+
+const compactAutoStopInput = document.getElementById('compact-auto-stop-input');
+const compactStopAll = document.getElementById('compact-stop-all');
+const compactTestAll = document.getElementById('compact-test-all');
+
+// Sync compact auto-stop with main auto-stop
+compactAutoStopInput.addEventListener('change', () => {
+  autoStopCheckbox.checked = compactAutoStopInput.checked;
+  autoStopCheckbox.dispatchEvent(new Event('change'));
+});
+autoStopCheckbox.addEventListener('change', () => {
+  compactAutoStopInput.checked = autoStopCheckbox.checked;
+});
+
+// Wire compact buttons to main handlers
+compactStopAll.addEventListener('click', () => stopAllBtn.click());
+compactTestAll.addEventListener('click', () => testAllBtn.click());
+
+// Compact buttons start disabled until first render
+compactStopAll.disabled = true;
+compactTestAll.disabled = true;
 
 // Sidebar collapse toggle with localStorage persistence
 if (sidebar && sidebarToggle) {
