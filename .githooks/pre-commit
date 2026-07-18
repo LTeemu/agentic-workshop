@@ -1,5 +1,6 @@
 #!/bin/sh
-# Pre-commit hook: format staged files with prettier, then run all project tests.
+# Pre-commit hook: format staged files with prettier, then run tests
+# only for the projects that have staged changes.
 # Aborts commit if formatting or any test suite fails.
 #
 # Setup: git config core.hooksPath .githooks
@@ -16,32 +17,131 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR \
 if [ -n "$STAGED_FILES" ]; then
   echo "[pre-commit] Formatting staged files with prettier..."
   cd "$ROOT"
-  npx --yes prettier --write $STAGED_FILES
-  git add $STAGED_FILES
+  # Split only on newlines and disable globbing to handle spaces/special chars
+  OLD_IFS="$IFS"
+  IFS='
+  '
+  set -f
+  if ! npx --yes prettier --write $STAGED_FILES; then
+    IFS="$OLD_IFS"
+    set +f
+    echo "[pre-commit] Prettier formatting failed."
+    exit 1
+  fi
+  if ! git add $STAGED_FILES; then
+    IFS="$OLD_IFS"
+    set +f
+    echo "[pre-commit] git add after formatting failed."
+    exit 1
+  fi
+  IFS="$OLD_IFS"
+  set +f
 fi
 
-# ── Step 2: Run tests for all projects that have them ──
+# ── Step 2: Determine which projects changed ──
+
+AFFECTED_PROJECTS=""
+ROOT_CHANGED=0
+
+# Save IFS, use newline-only splitting, disable globbing for safe path processing
+OLD_IFS="$IFS"
+IFS='
+'
+set -f
+
+for file in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$file" in
+    projects/*)
+      PROJECT=$(echo "$file" | cut -d/ -f2)
+      # Validate project name (alphanumeric, hyphens, underscores only)
+      case "$PROJECT" in
+        *[!a-zA-Z0-9_-]*) continue ;;
+      esac
+      # Add to set (avoid duplicates)
+      case " $AFFECTED_PROJECTS " in
+        *" $PROJECT "*) ;;
+        *) AFFECTED_PROJECTS="$AFFECTED_PROJECTS $PROJECT" ;;
+      esac
+      ;;
+    *)
+      ROOT_CHANGED=1
+      ;;
+  esac
+done
+
+# Restore IFS and globbing for normal operation
+IFS="$OLD_IFS"
+set +f
+
+# ── Step 3: Run tests for affected projects ──
 
 PROJECTS_DIR="$ROOT/projects"
 FAILED=0
 
-for pkg in "$PROJECTS_DIR"/*/package.json; do
-  [ -f "$pkg" ] || continue
-  PROJECT="$(basename "$(dirname "$pkg")")"
+run_project_tests() {
+  PROJECT="$1"
+  PKG="$PROJECTS_DIR/$PROJECT/package.json"
+  [ -f "$PKG" ] || return 0
 
-  # Get the raw test script (skip pretest lifecycle hooks)
-  TEST_SCRIPT=$(node -e "
-    const p = require('$pkg');
-    console.log(p.scripts && p.scripts.test ? p.scripts.test : '');
-  ")
-  [ -z "$TEST_SCRIPT" ] && continue
+  # Read test script via env var to avoid shell-to-JS injection
+  TEST_SCRIPT=$(PKG="$PKG" node -e '
+    const p = require(process.env.PKG);
+    console.log(p.scripts && p.scripts.test ? p.scripts.test : "");
+  ') || true
+  [ -z "$TEST_SCRIPT" ] && return 0
 
-  echo "[pre-commit] Running tests for $PROJECT... ($TEST_SCRIPT)"
-  if ! (cd "$PROJECTS_DIR/$PROJECT" && PATH="node_modules/.bin:$PATH" && eval "$TEST_SCRIPT"); then
-    echo "[pre-commit] FAILED: $PROJECT tests"
+  # Include both local and root node_modules/.bin (supports monorepo layouts)
+  BIN_PATH="$PROJECTS_DIR/$PROJECT/node_modules/.bin:$ROOT/node_modules/.bin"
+  case "$TEST_SCRIPT" in
+    *vitest*)
+      echo "[pre-commit] Running related tests for $PROJECT... (vitest --changed --staged)"
+      if ! (cd "$PROJECTS_DIR/$PROJECT" && PATH="$BIN_PATH:$PATH" && vitest run --changed --staged); then
+        # Fallback: --staged flag requires Vitest >=1.3; run full suite
+        echo "[pre-commit] Falling back to full test suite for $PROJECT..."
+        if ! (cd "$PROJECTS_DIR/$PROJECT" && PATH="$BIN_PATH:$PATH" && eval "$TEST_SCRIPT"); then
+          echo "[pre-commit] FAILED: $PROJECT tests"
+          return 1
+        fi
+      fi
+      ;;
+    *)
+      echo "[pre-commit] Running tests for $PROJECT... ($TEST_SCRIPT)"
+      if ! (cd "$PROJECTS_DIR/$PROJECT" && PATH="$BIN_PATH:$PATH" && eval "$TEST_SCRIPT"); then
+        echo "[pre-commit] FAILED: $PROJECT tests"
+        return 1
+      fi
+      ;;
+  esac
+  return 0
+}
+
+for PROJECT in $AFFECTED_PROJECTS; do
+  if ! run_project_tests "$PROJECT"; then
     FAILED=1
   fi
 done
+
+# ── Step 4: Root-level tests (dashboard/workshop) ──
+
+if [ "$ROOT_CHANGED" -eq 1 ]; then
+  if [ -f "$ROOT/package.json" ]; then
+    ROOT_TEST=$(PKG="$ROOT/package.json" node -e '
+      const p = require(process.env.PKG);
+      console.log(p.scripts && p.scripts.test ? p.scripts.test : "");
+    ') || true
+  else
+    ROOT_TEST=""
+  fi
+  if [ -n "$ROOT_TEST" ]; then
+    echo "[pre-commit] Root files changed — running tests..."
+    if ! (cd "$ROOT" && eval "$ROOT_TEST"); then
+      echo "[pre-commit] FAILED: root tests"
+      FAILED=1
+    fi
+  else
+    echo "[pre-commit] Root files changed (no root test script configured)"
+  fi
+fi
 
 if [ "$FAILED" -eq 1 ]; then
   echo "[pre-commit] Aborting commit: some tests failed."
