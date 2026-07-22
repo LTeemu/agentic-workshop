@@ -1,6 +1,6 @@
 ---
 name: animation
-description: 'Expert in web animation — scroll-driven experiences, parallax, reveals, micro-interactions, and cinematic transitions. Covers vanilla CSS/JS and library approaches (GSAP, Framer Motion, Anime.js).'
+description: 'Scroll-driven experiences, parallax, reveals, micro-interactions, cinematic transitions. GSAP, Framer Motion, Anime.js, CSS/JS animation.'
 risk: unknown
 source: adapted from scroll-experience (Apache 2.0) + community patterns
 date_added: 2026-06-14
@@ -1008,9 +1008,7 @@ gsap.ticker.lagSmoothing(0);
 function TiltCard({ children }) {
   const cardRef = useRef(null);
   useEffect(() => {
-    gsap.to(cardRef.current, {
-      /* ... */
-    });
+    gsap.to(cardRef.current, {/* ... */});
     return () => gsap.killTweensOf(cardRef.current);
   }, []);
   return <div ref={cardRef}>{children}</div>;

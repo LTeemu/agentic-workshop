@@ -1,6 +1,6 @@
 ---
 name: performance
-description: 'Web performance optimization — Lighthouse audits, Core Web Vitals, image optimization, bundle analysis, code splitting, caching, CDN, runtime performance.'
+description: 'Lighthouse audits, Core Web Vitals, image optimization, bundle analysis, code splitting, caching, CDN, runtime performance.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

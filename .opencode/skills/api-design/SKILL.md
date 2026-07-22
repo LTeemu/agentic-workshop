@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: 'API design — RESTful API patterns, resource modeling, pagination, filtering, sorting, versioning, status codes, request/response conventions, HATEOAS basics.'
+description: 'RESTful API patterns, resource modeling, pagination, filtering, versioning, status codes, request/response conventions, HATEOAS.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

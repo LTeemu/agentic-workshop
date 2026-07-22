@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: 'Frontend designer-engineer creating distinctive, production-grade interfaces. Avoids generic AI UI, enforces strong aesthetic direction, delivers working code.'
+description: 'Distinctive, production-grade interfaces. Typography, color, layout, CSS. Avoids generic AI UI, strong aesthetic direction.'
 risk: unknown
 source: adapted from frontend-design (community) + DFII methodology
 date_added: 2026-06-14

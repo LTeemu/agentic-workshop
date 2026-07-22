@@ -1,6 +1,6 @@
 ---
 name: security
-description: 'Web security — Content Security Policy (CSP), XSS prevention, CSRF tokens, input sanitization, HTTPS/HSTS, dependency auditing, SRI, iframe sandbox.'
+description: 'CSP, XSS prevention, CSRF tokens, input sanitization, HTTPS/HSTS, dependency auditing, SRI, iframe sandbox.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

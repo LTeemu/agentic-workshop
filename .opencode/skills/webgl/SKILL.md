@@ -1,6 +1,6 @@
 ---
 name: webgl
-description: '3D web experiences with Three.js, WebGL, React Three Fiber. Scene setup, geometry, materials, lighting, loaders, post-processing, shaders, and WebGL performance.'
+description: 'Three.js, WebGL, React Three Fiber. Scene setup, geometry, materials, lighting, loaders, post-processing, shaders.'
 risk: unknown
 source: community patterns
 date_added: 2026-06-14

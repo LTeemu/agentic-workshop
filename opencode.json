@@ -25,6 +25,7 @@
       "agent": "researcher"
     }
   },
+  "plugin": ["./.opencode/plugins/plan-enforcer.js"],
   "skills": {
     "paths": [".opencode/skills"]
   },

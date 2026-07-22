@@ -1,6 +1,6 @@
 ---
 name: backend
-description: 'Backend development — Node.js/Express API servers, middleware, routing, error handling, project structure, request lifecycle, file organization for server-side code.'
+description: 'Node.js/Express API servers, middleware, routing, error handling, project structure, request lifecycle.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

@@ -1,6 +1,6 @@
 ---
 name: data-fetching
-description: 'Data fetching patterns — loading/error/success state machine, request deduplication, AbortController, retry with backoff, pagination, infinite scroll, optimistic updates, SWR, request batching.'
+description: 'Loading/error/success states, request deduplication, AbortController, retry with backoff, pagination, infinite scroll, SWR.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

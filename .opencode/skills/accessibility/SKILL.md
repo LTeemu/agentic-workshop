@@ -1,6 +1,6 @@
 ---
 name: accessibility
-description: 'Web accessibility (a11y) — WCAG 2.2 compliance auditing, ARIA, focus management, keyboard navigation, screen reader testing, color contrast, inclusive design patterns.'
+description: 'WCAG 2.2, ARIA, focus management, keyboard nav, screen reader testing, color contrast, inclusive design patterns.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

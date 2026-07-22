@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const { ensureDependencies, getProjects, PROJECTS_DIR } = require('./project-utils');
+const { ensureDependencies, tryResolveBin, PROJECTS_DIR } = require('./project-utils');
 
 /**
  * Determine the test runner for a project.
@@ -82,22 +82,6 @@ function runNpmTest(projectPath, name, logFn) {
     });
     child.on('error', reject);
   });
-}
-
-/**
- * Try to find the binary for a simple npm script in node_modules/.bin/.
- * @param {string} projectPath
- * @param {string} script - the npm script content (e.g. "vitest run")
- * @returns {string|null} full path to .cmd file, or null
- */
-function tryResolveBin(projectPath, script) {
-  const parts = script.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return null;
-  if (/[&|;<>]/.test(script)) return null;
-  const binName = parts[0];
-  const cmdPath = path.join(projectPath, 'node_modules', '.bin', `${binName}.cmd`);
-  if (fs.existsSync(cmdPath)) return cmdPath;
-  return null;
 }
 
 /**

@@ -1,6 +1,6 @@
 ---
 name: deduplicate
-description: Use when the user asks about duplicate code detection, DRY violations, or wants to clean up repeated code patterns in the codebase.
+description: Duplicate code detection, DRY violations, repeated pattern cleanup, extraction and consolidation.
 ---
 
 # Duplicate Code Detection

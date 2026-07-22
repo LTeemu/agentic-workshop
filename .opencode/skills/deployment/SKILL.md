@@ -1,6 +1,6 @@
 ---
 name: deployment
-description: 'Deployment and operations — Docker, CI/CD pipelines, environment configuration, production hardening, health checks, process management, logging for production.'
+description: 'Docker, CI/CD pipelines, environment configuration, health checks, process management, production logging.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

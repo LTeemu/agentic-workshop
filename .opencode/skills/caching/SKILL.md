@@ -1,6 +1,6 @@
 ---
 name: caching
-description: 'Caching strategies — HTTP cache headers, ETag/If-None-Match, in-memory TTL caches, Redis caching patterns, CDN, service worker, stale-while-revalidate, memoization, cache invalidation.'
+description: 'HTTP cache headers, ETag/If-None-Match, in-memory TTL, Redis, CDN, service worker, stale-while-revalidate, cache invalidation.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

@@ -1,6 +1,6 @@
 ---
 name: realtime
-description: 'Real-time communication — WebSocket server and client, Server-Sent Events, event-driven architecture, broadcasting, reconnection logic, pub/sub patterns.'
+description: 'WebSocket, Server-Sent Events, event-driven architecture, broadcasting, reconnection logic, pub/sub patterns.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

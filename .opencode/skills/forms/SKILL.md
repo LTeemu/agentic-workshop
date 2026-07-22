@@ -1,6 +1,6 @@
 ---
 name: forms
-description: 'Form development — HTML5 validation, Constraint Validation API, accessible form controls, error/success UX, FormData, file upload, multi-step forms, form security.'
+description: 'HTML5 validation, Constraint Validation API, accessible controls, error/success UX, FormData, multi-step forms.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

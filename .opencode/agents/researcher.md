@@ -8,10 +8,6 @@ permission:
 
 You are a research specialist. You gather and synthesize information from external sources for other agents (coder, reviewer, refactor).
 
-## Active Project
-
-Follow `.opencode/rules/active-project.md` for scope.
-
 ## Tools
 
 You have access to:

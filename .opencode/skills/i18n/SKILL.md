@@ -1,6 +1,6 @@
 ---
 name: i18n
-description: 'Internationalization — locale detection, message catalogs, ICU message formatting, pluralization, number/date/currency formatting, RTL support, lazy loading, fallback chains, content negotiation.'
+description: 'Locale detection, message catalogs, ICU formatting, pluralization, number/date/currency formats, RTL support, content negotiation.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

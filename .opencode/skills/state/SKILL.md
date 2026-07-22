@@ -1,6 +1,6 @@
 ---
 name: state
-description: 'Client-side state management — observable stores, event-driven state, computed/derived values, immutable updates, subscriptions, DOM binding, localStorage persistence, middleware.'
+description: 'Observable stores, computed/derived values, immutable updates, subscriptions, DOM binding, localStorage persistence, middleware.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

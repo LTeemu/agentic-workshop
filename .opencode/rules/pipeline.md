@@ -1,6 +1,15 @@
 # Pipeline
 
-Run this order after completing code changes. Skip entirely if no code was changed.
+Run this order before marking code changes as completed. Skip entirely if no code was changed.
+
+> **Enforcement:** The plan-enforcer plugin blocks `Coder:` → completed
+> for non-trivial items unless the reviewer subagent was called first.
+> Mark trivial changes with `(trivial)` in the todowrite entry to skip.
+
+> **How this relates to Task Planning (AGENTS.md):**  
+> The coder's task planning runs **before** code changes (identifying which subagents and skills to use).  
+> The pipeline steps fire **after** code changes (verification pass on the new code).  
+> They are complementary phases — the pipeline is not redundant with the initial task plan.
 
 ## 1. Assess scope
 
@@ -12,11 +21,11 @@ Before running anything, assess the change:
 
 ## 2. Review (if applicable)
 
-If the change is non-trivial, invoke `@reviewer` passing the files you changed.
+If the change is non-trivial, spawn the **reviewer** subagent (`task(subagent_type="reviewer")`) passing the files you changed.
 
 ## 3. Refactor (if needed)
 
-If reviewer flagged any issues, run `@refactor`.
+If reviewer flagged any issues, spawn the **refactor** subagent (`task(subagent_type="refactor")`).
 
 ## 4. Test (if applicable)
 

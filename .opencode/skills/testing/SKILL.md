@@ -1,6 +1,6 @@
 ---
 name: testing
-description: 'Testing patterns — unit testing, Arrange/Act/Assert, DOM testing, mocking at boundaries, test organization mirroring source tree, vanilla JS testing approaches.'
+description: 'Unit testing, Arrange/Act/Assert, DOM testing, mocking at boundaries, test organization, vanilla JS testing.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

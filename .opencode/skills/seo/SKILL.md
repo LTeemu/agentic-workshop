@@ -1,6 +1,6 @@
 ---
 name: seo
-description: 'Search engine optimization — meta tags, Open Graph, Twitter Cards, JSON-LD structured data, sitemaps, robots.txt, canonical URLs, heading hierarchy, performance SEO.'
+description: 'Meta tags, Open Graph, JSON-LD structured data, sitemaps, robots.txt, canonical URLs, heading hierarchy.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

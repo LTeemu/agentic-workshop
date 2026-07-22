@@ -1,6 +1,6 @@
 ---
 name: error-handling
-description: 'Error handling patterns — error class hierarchy, domain vs operational errors, error boundaries, retry with backoff, graceful degradation, user-facing messages, error reporting.'
+description: 'Error class hierarchy, domain vs operational errors, boundaries, retry with backoff, graceful degradation, user-facing messages.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

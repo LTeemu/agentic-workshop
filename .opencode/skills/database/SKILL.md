@@ -1,6 +1,6 @@
 ---
 name: database
-description: 'Database design — SQL schema design, queries, migrations, SQLite/PostgreSQL patterns, indexing, normalization, data integrity, connection management.'
+description: 'SQL schema design, queries, migrations, SQLite/PostgreSQL patterns, indexing, normalization, data integrity.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14

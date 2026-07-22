@@ -1,6 +1,6 @@
 ---
 name: authentication
-description: 'Authentication and authorization — session management, JWT, password hashing, OAuth patterns, role-based access control, security best practices.'
+description: 'Session management, JWT, password hashing, OAuth, role-based access control, security best practices.'
 risk: safe
 source: community patterns
 date_added: 2026-06-14
