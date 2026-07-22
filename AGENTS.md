@@ -1,15 +1,15 @@
 # Task Planning
 
 - **Always plan first.** State a plan to the user before using _any_ tool. Then call `todowrite` with role-prefixed entries (`Researcher:`, `Reviewer:`, `Refactor:`, `Coder:`)
-- Delegate `Researcher:`/`Reviewer:`/`Refactor:` to subagents via `task(subagent_type="...")`. Only `Coder:` items are for you.
+- Delegate `Researcher:`/`Reviewer:`/`Refactor:` to subagents via `task(subagent_type="...")` before marking them in_progress. Only `Coder:` items are for you.
 
 ### Order of operations
 
 Before any tool call, follow this sequence:
 
 1. **Reconnaissance (optional)** — If you need to explore the codebase or research first, delegate a read-only subagent via `task()` to unlock read tools before committing to a plan:
-   - `task(subagent_type="researcher")` → unlocks read, glob, grep, websearch, webfetch
-   - `task(subagent_type="reviewer")` → unlocks read, glob, grep
+   - `task(subagent_type="researcher")` → unlocks read, glob, grep, websearch, webfetch, skill
+   - `task(subagent_type="reviewer")` → unlocks read, glob, grep, skill
 2. **Identify** which subagents and skills the task needs.
 3. **State the plan** to the user — which subagents and skills you'll use, and in what order.
 4. **Create a task list** — call `todowrite` with role-prefixed items to unlock all tools.
@@ -64,15 +64,15 @@ todowrite
 **Rules:**
 
 - `Coder:` without `(trivial)` → pipeline **required** (reviewer subagent must run before marking completed).
-- `Coder: ... (trivial)` → pipeline **skipped**. Use only for truly trivial changes (single-line fix, comment typo, rename that doesn't change behavior, CSS tweak).
-- Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) must be delegated via `task()` before they can start.
+- `Coder: ... (trivial)` → pipeline **skipped**. Use only for truly trivial changes (single-line fix, comment typo, rename that doesn't change behavior, CSS tweak) or when no files were changed.
+- Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) must be delegated via `task()` before they can be marked **in_progress**.
 
 ## Plan Reset — Fresh Plan Per Turn
 
-Once **all** todos are `completed` or `cancelled`, the plan automatically resets.
-The next tool call (other than `todowrite`) will be **blocked** until you state
-a new plan and call `todowrite` again. This ensures every prompt starts with a
-fresh plan — no stale todo lists from previous turns.
+Once **all** todos are `completed` or `cancelled`, the plan resets at the start
+of the next user message. You must state a new plan and call `todowrite` before
+using tools again. This ensures every prompt starts with a fresh plan — no stale
+todo lists from previous turns.
 
 # Project Guidelines
 

@@ -27,11 +27,16 @@ You are a professional software engineer.
 ## Pipeline
 
 Run the pipeline defined in `.opencode/rules/pipeline.md` after completing code changes.
-This is enforced by the plan-enforcer plugin — non-trivial `Coder:` items cannot be
-marked complete without running the review step.
+The plan-enforcer plugin enforces the review step — non-trivial `Coder:` items cannot be
+marked complete without running the reviewer first. The remaining steps (refactor, test, fix)
+are conventional; follow them when applicable.
 
 Skip it if you made no code changes (e.g. answering a question) or if the change
 is marked `(trivial)` in the todowrite entry.
+
+## Project Scoping
+
+Respect project scoping per `.opencode/rules/active-project.md`.
 
 ## Consistency
 

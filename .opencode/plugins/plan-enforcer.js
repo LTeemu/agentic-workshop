@@ -20,8 +20,8 @@
  *      chat.message (conditional) and event (session.interrupt).
  *
  * Read-only pre-plan reconnaissance:
- *   task(subagent_type="researcher") → unlocks read, glob, grep, websearch, webfetch
- *   task(subagent_type="reviewer")   → unlocks read, glob, grep
+ *   task(subagent_type="researcher") → unlocks read, glob, grep, websearch, webfetch, skill
+ *   task(subagent_type="reviewer")   → unlocks read, glob, grep, skill
  *
  * Research shows prompt-only compliance is 0% for process instructions
  * (arXiv:2605.01771). Mechanical enforcement via tool hooks is the only
@@ -59,6 +59,9 @@ const PREFIX_TO_SUBAGENT = {
   'Refactor:': 'refactor',
 };
 
+/** Valid subagent_type values for task() delegation. */
+const VALID_SUBAGENT_TYPES = ['researcher', 'reviewer', 'refactor'];
+
 /**
  * Tools that only read, never write. Safe to unlock before a plan is
  * confirmed, provided a read-only subagent has been delegated.
@@ -76,7 +79,7 @@ function extractPrefix(content) {
   return VALID_PREFIXES.find((p) => content.trim().startsWith(p)) ?? null;
 }
 
-async function PlanEnforcer() {
+function PlanEnforcer() {
   /** Whether the agent has used todowrite to create a task plan. */
   let planConfirmed = false;
 
@@ -127,12 +130,12 @@ async function PlanEnforcer() {
       if (item.status !== 'completed') continue;
       const content = item.content ?? '';
       const isCoder = content.trim().startsWith('Coder:');
-      const isTrivial = content.toLowerCase().includes('(trivial)');
+      const isTrivial = /\(trivial\)\s*$/.test(content.trim());
       if (isCoder && !isTrivial && !delegatedTypes.has('reviewer')) {
         throw new Error(
           `PIPELINE_REQUIRED: Cannot mark "${item.content}" as completed.\n` +
             `  Non-trivial Coder tasks require the pipeline (review → refactor → test).\n` +
-            `  Call task(subagent_type="reviewer") first, or mark as trivial with "(trivial)" in the title.`,
+            `  Call task(subagent_type="reviewer") first, or mark as trivial with "(trivial)" in the todowrite entry.`,
         );
       }
     }
@@ -171,38 +174,66 @@ async function PlanEnforcer() {
       if (event.type === 'tui.command.execute' && props.command === 'session.interrupt') {
         planConfirmed = false;
         delegatedTypes.clear();
+        lastTodos = [];
       }
-      // NOTE: Assumes todo.updated carries the full todos array, not a delta.
-      // The SDK's EventTodoUpdated type confirms `todos: Array<Todo>`.
+      // Handle both full payloads and delta updates robustly:
+      // - If the incoming array is >= lastTodos length, treat as full replacement.
+      // - If smaller, merge deltas into existing state so items aren't lost.
       if (event.type === 'todo.updated' && Array.isArray(props.todos)) {
-        lastTodos = props.todos;
-        const allResolved = props.todos.every(
+        if (props.todos.length >= lastTodos.length) {
+          lastTodos = props.todos;
+        } else {
+          // Likely a delta — merge updates into existing state
+          for (const delta of props.todos) {
+            const idx = lastTodos.findIndex((t) => t.content === delta.content);
+            if (idx !== -1) {
+              lastTodos[idx] = { ...lastTodos[idx], ...delta };
+            }
+          }
+        }
+
+        const allResolved = lastTodos.every(
           (t) => t.status === 'completed' || t.status === 'cancelled',
         );
-        if (allResolved && props.todos.length > 0) {
+        if (allResolved && lastTodos.length > 0) {
           delegatedTypes.clear();
         }
       }
     },
 
     'tool.execute.before': async (input, output) => {
-      // --- task(): record delegation, always allow ---
+      // --- task(): validate subagent_type and record delegation ---
       if (input.tool === 'task') {
         const subagentType = output.args?.subagent_type;
-        if (subagentType) delegatedTypes.add(subagentType);
+        if (subagentType) {
+          if (!VALID_SUBAGENT_TYPES.includes(subagentType)) {
+            throw new Error(
+              `INVALID_SUBAGENT_TYPE: "${subagentType}" is not a valid subagent type.\n` +
+                `  Valid types: ${VALID_SUBAGENT_TYPES.join(', ')}`,
+            );
+          }
+          delegatedTypes.add(subagentType);
+        }
         return;
       }
 
       // --- todowrite: run all validation gates ---
       if (input.tool === 'todowrite') {
         const todos = output.args?.todos ?? [];
-        if (todos.length === 0) return; // empty call — no-op
+        if (todos.length === 0) {
+          lastTodos = [];
+          return;
+        }
         lastTodos = todos;
         validatePrefixes(todos);
 
         if (!planConfirmed) {
           planConfirmed = true;
-          delegatedTypes.clear(); // fresh start — no stale delegations
+          // Delegations from pre-plan reconnaissance (task() before todowrite)
+          // are preserved here. Stale delegations are cleared by chat.message
+          // or interrupt at plan reset.
+          checkDelegation(todos);
+          checkPipeline(todos);
           return;
         }
 
