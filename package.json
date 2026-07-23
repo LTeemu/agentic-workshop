@@ -1,0 +1,9 @@
+{
+  "name": "agentic-workshop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:agents": "cd tests && npm test",
+    "test:projects": "node tests/projects/test-all.js"
+  }
+}

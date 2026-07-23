@@ -36,7 +36,7 @@ Then open `http://localhost:3000`.
 | `app/public/`          | Dashboard frontend (HTML/CSS/JS)                                       |
 | `projects/`            | Each subdirectory is a project                                         |
 | `_backups/`            | Auto-generated backups on project deletion                             |
-| `scripts/test-all.js`  | CLI tool to run tests across all projects                              |
+| `tests/`               | Agent & project test suites (`npm run test:*`)                         |
 | `.active-project`      | Tracks which project is currently active                               |
 | `.githooks/`           | Git hooks (auto-format + smart test on commit — only changed projects) |
 | `AGENTS.md`            | Instructions for the AI assistant                                      |

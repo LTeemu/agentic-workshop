@@ -1,8 +1,8 @@
-const { getProjects } = require('../app/project-utils');
-const { runTest, detectTest } = require('../app/test-runner');
+const { getProjects } = require('../../app/project-utils');
+const { runTest, detectTest } = require('../../app/test-runner');
 const path = require('path');
 
-const PROJECTS_DIR = path.resolve(__dirname, '..', 'projects');
+const PROJECTS_DIR = path.resolve(__dirname, '..', '..', 'projects');
 
 async function main() {
   const projects = getProjects();
