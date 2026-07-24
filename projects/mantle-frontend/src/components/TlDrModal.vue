@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { lockBody, unlockBody } from '../composables/useBodyLock'
 
 const isOpen = ref(false)
 
@@ -30,17 +31,9 @@ function trapFocus(e) {
   }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('keydown', trapFocus)
-})
-
 watch(isOpen, (open) => {
   if (open) {
+    lockBody()
     // Auto-focus first nav link
     requestAnimationFrame(() => {
       if (!modalRef.value) return
@@ -49,6 +42,7 @@ watch(isOpen, (open) => {
     })
     window.addEventListener('keydown', trapFocus)
   } else {
+    unlockBody()
     window.removeEventListener('keydown', trapFocus)
   }
 })
@@ -64,7 +58,10 @@ function onKeydown(e) {
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  unlockBody()
+})
 
 const sections = [
   { id: 'hero', label: 'Home' },

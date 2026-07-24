@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted } from 'vue'
 import * as THREE from 'three'
+import { useThreeScene } from '../composables/useThreeScene'
 
 const canvas = ref(null)
-let scene, camera, renderer, material, mesh
 
 // ─── Shader ──────────────────────────────────────────
 const vertexShader = `
@@ -29,7 +29,7 @@ const fragmentShader = `
 
   void main() {
     vec2 uv = vUv;
-    vec3 color = vec3(0.003, 0.01, 0.025);
+    vec3 color = vec3(0.004, 0.012, 0.028);
     float gridSz = 0.04; // 25 cells across — bigger grid
 
     // Rotated UV for 45° diamond grid
@@ -44,9 +44,9 @@ const fragmentShader = `
 
       float hue = fract(fi * 0.3456 + 0.7890);
       float period = 3.5 + fract(fi * 0.2345 + 0.5678) * 2.5;
-      float maxSize = 0.04 + fract(fi * 0.6789 + 0.1234) * 0.07;
+      float maxSize = 0.025 + fract(fi * 0.6789 + 0.1234) * 0.04;
 
-      vec3 starColor = mix(vec3(0.15, 0.7, 1.0), vec3(0.6, 0.3, 1.0), hue);
+      vec3 starColor = mix(vec3(0.25, 0.7, 0.9), vec3(0.9, 0.55, 0.2), hue);
 
       // New random position each cycle
       float cycle = floor(uTime / period);
@@ -55,7 +55,7 @@ const fragmentShader = `
 
       float t = fract(uTime / period);
       float grow = t * t;
-      float size = 0.004 + grow * maxSize;
+      float size = 0.003 + grow * maxSize;
 
       // Wobble
       float ws = 0.001 + t * 0.025;
@@ -96,10 +96,10 @@ const fragmentShader = `
         float dd = sd(uv, dp);
         debris += exp(-dd * dd * 500.0);
       }
-      debris *= explode * 0.2;
+      debris *= explode * 0.28;
 
-      // ── 2.5D Crater dent ──
-      float craterActive = explode * (1.0 - e * 0.5);
+      // ── 2.5D Crater dent — immediate impact flash, gone before first shockwave ring ──
+      float craterActive = smoothstep(0.0, 0.04, t) * (1.0 - smoothstep(0.08, 0.15, t));
       float craterSize = e * 0.25 + 0.02;
       float cd = d / craterSize;
 
@@ -109,7 +109,7 @@ const fragmentShader = `
       float rimD = sd(uv, pos + lightOffset * craterSize) / craterSize;
       float craterLight = exp(-(rimD - 1.0) * (rimD - 1.0) * 150.0) * 0.12;
 
-      vec3 crater = (vec3(0.1, 0.12, 0.16) * craterLight - vec3(craterDark)) * craterActive;
+      vec3 crater = (vec3(0.2, 0.22, 0.26) * craterLight - vec3(craterDark)) * craterActive;
 
       // ── Grid cell paint + shockwave — lit cells around the hit ──
       float prevCycle = floor(uTime / period) - 1.0;
@@ -135,8 +135,8 @@ const fragmentShader = `
       float shockRing = exp(-(gridDist - ringRadius) * (gridDist - ringRadius) / (ringWidth * ringWidth));
       shockRing *= paintAge * 1.5;
 
-      // Center hot cell
-      float centerGlow = paintAge * 2.0 * (1.0 - step(0.5, gridDist));
+      // Center hot cell — brief flash, gone before first shockwave ring
+      float centerGlow = paintAge * 2.0 * (1.0 - step(0.5, gridDist)) * (1.0 - smoothstep(0.0, 0.12, t));
 
       // Fill area inside the ring with a dimmer glow
       float innerGlow = paintAge * 0.4 * (1.0 - step(ringRadius, gridDist)) * exp(-gridDist * 0.5);
@@ -148,16 +148,18 @@ const fragmentShader = `
                starColor * (centerGlow + shockRing + innerGlow);
     }
 
-    // ── Ambient ──
-    color += vec3(0.0, 0.3, 0.6) * exp(-sd(uv, vec2(0.5, 0.5)) * sd(uv, vec2(0.5, 0.5)) * 3.0) * 0.015;
+    // ── Ambient — warm bioluminescent pool glow ──
+    color += vec3(0.04, 0.15, 0.2) * exp(-sd(uv, vec2(0.5, 0.5)) * sd(uv, vec2(0.5, 0.5)) * 2.5) * 0.025;
 
-    // ── Pixel glass grid ──
+    // ── Pixel glass grid — anti-aliased, diamond edges ──
     vec2 gf = fract(gridUv / gridSz);
-    float gridLine = 1.0 - smoothstep(0.0, 0.35, min(gf.x, gf.y));
-    color += vec3(0.015, 0.03, 0.05) * gridLine;
+    vec2 fw = fwidth(gridUv / gridSz);
+    vec2 distToEdge = min(gf, 1.0 - gf);
+    float gridLine = 1.0 - smoothstep(0.0, max(fw.x, fw.y) * 2.0, min(distToEdge.x, distToEdge.y));
+    color += vec3(0.03, 0.05, 0.07) * gridLine;
 
-    // ── Vignette ──
-    float vig = 1.0 - length(uv - 0.5) * 0.65;
+    // ── Vignette — gentler darkening ──
+    float vig = 1.0 - length(uv - 0.5) * 0.5;
     color *= vig;
 
     gl_FragColor = vec4(color, 1.0);
@@ -169,100 +171,34 @@ const uniforms = {
   uAspect: { value: 1 },
 }
 
-// ─── Scene setup ────────────────────────────────────
-let observer = null
-let visibilityObserver = null
+// ─── Shared Three.js boilerplate — scene, camera, renderer,
+//      ResizeObserver, IntersectionObserver pause, rAF loop, cleanup ──
+const { start } = useThreeScene(canvas, {
+  onSetup: ({ scene }) => {
+    const material = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms,
+    })
 
-function syncSize() {
-  if (!renderer || !canvas.value) return
-  const parent = canvas.value.parentElement
-  if (!parent) return
-  const rect = parent.getBoundingClientRect()
-  const w = rect.width
-  const h = rect.height
-  renderer.setSize(w, h, false)
-  if (material && h > 0) {
-    uniforms.uAspect.value = w / h
-  }
-}
-
-let animId = null
-let animPaused = false
-
-function animate() {
-  if (animPaused) {
-    animId = null
-    return
-  }
-  if (material) {
+    // Full-screen quad
+    const geo = new THREE.BufferGeometry()
+    const verts = new Float32Array([-1, -1, 0,  1, -1, 0,  -1, 1, 0,  1, 1, 0])
+    const uvs = new Float32Array([0, 0,  1, 0,  0, 1,  1, 1])
+    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+    geo.setIndex([0, 1, 2, 2, 1, 3])
+    scene.add(new THREE.Mesh(geo, material))
+  },
+  onAnimate: () => {
     uniforms.uTime.value += 0.01
-  }
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera)
-  }
-  animId = requestAnimationFrame(animate)
-}
-
-onMounted(() => {
-  if (!canvas.value) return
-
-  scene = new THREE.Scene()
-  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
-
-  renderer = new THREE.WebGLRenderer({
-    canvas: canvas.value,
-    alpha: false,
-    antialias: true,
-  })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-  material = new THREE.ShaderMaterial({
-    vertexShader,
-    fragmentShader,
-    uniforms,
-  })
-
-  // Full-screen quad
-  const geo = new THREE.BufferGeometry()
-  const verts = new Float32Array([-1, -1, 0,  1, -1, 0,  -1, 1, 0,  1, 1, 0])
-  const uvs = new Float32Array([0, 0,  1, 0,  0, 1,  1, 1])
-  geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
-  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-  geo.setIndex([0, 1, 2, 2, 1, 3])
-  mesh = new THREE.Mesh(geo, material)
-  scene.add(mesh)
-
-  requestAnimationFrame(() => syncSize())
-
-  const parent = canvas.value.parentElement
-  if (parent) {
-    observer = new ResizeObserver(() => syncSize())
-    observer.observe(parent)
-
-    // Pause when scrolled out of view — saves GPU/CPU
-    visibilityObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          animPaused = !entry.isIntersecting
-          if (!animPaused && !animId) {
-            animId = requestAnimationFrame(animate)
-          }
-        }
-      },
-      { threshold: 0 }
-    )
-    visibilityObserver.observe(parent)
-  }
-
-  animate()
+  },
+  onResize: (w, h) => {
+    uniforms.uAspect.value = w / h
+  },
 })
 
-onBeforeUnmount(() => {
-  if (animId) cancelAnimationFrame(animId)
-  if (visibilityObserver) visibilityObserver.disconnect()
-  if (observer) observer.disconnect()
-  if (renderer) renderer.dispose()
-})
+onMounted(() => start())
 </script>
 
 <template>

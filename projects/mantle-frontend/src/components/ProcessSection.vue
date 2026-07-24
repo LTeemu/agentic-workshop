@@ -72,12 +72,29 @@ const steps = [
   min-width: 0;
   padding: var(--space-6) var(--space-5);
   position: relative;
-
-  transition: background var(--duration-normal) var(--ease-out-expo);
+  transition: background var(--duration-normal) var(--ease-out-expo), transform var(--duration-normal) var(--ease-out-expo);
 }
 
 .step-card:hover {
   background: rgba(255, 255, 255, 0.015);
+  transform: translateY(-2px);
+}
+
+/* Left accent on hover — thin cyan line */
+.step-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 0;
+  background: var(--color-water-surface);
+  box-shadow: 0 0 6px var(--color-water-dim);
+  transition: height var(--duration-slow) var(--ease-out-expo);
+}
+
+.step-card:hover::before {
+  height: 100%;
 }
 
 .step-title {

@@ -1,5 +1,51 @@
 <script setup>
+import { ref, computed } from 'vue'
 import AppearTransition from './AppearTransition.vue'
+
+const form = ref({ name: '', email: '', message: '' })
+const touched = ref({ name: false, email: false, message: false })
+const submitted = ref(false)
+const submitStatus = ref(null) // 'success' | 'error' | null
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const errors = computed(() => {
+  const e = {}
+  if (!form.value.name.trim()) e.name = 'Name is required'
+  if (!form.value.email.trim()) {
+    e.email = 'Email is required'
+  } else if (!emailRegex.test(form.value.email)) {
+    e.email = 'Please enter a valid email'
+  }
+  if (!form.value.message.trim()) e.message = 'Message is required'
+  return e
+})
+
+const isValid = computed(() => Object.keys(errors.value).length === 0)
+
+function onBlur(field) {
+  touched.value[field] = true
+}
+
+function fieldState(field) {
+  if (!touched.value[field]) return ''
+  return errors.value[field] ? 'error' : 'valid'
+}
+
+function handleSubmit() {
+  touched.value = { name: true, email: true, message: true }
+  if (!isValid.value) return
+
+  submitted.value = true
+  submitStatus.value = 'success'
+  form.value = { name: '', email: '', message: '' }
+  // Reset touched after brief delay so user sees success state
+  setTimeout(() => {
+    submitted.value = false
+    submitStatus.value = null
+    touched.value = { name: false, email: false, message: false }
+  }, 4000)
+}
 </script>
 
 <template>
@@ -21,7 +67,7 @@ import AppearTransition from './AppearTransition.vue'
           <div class="contact-details">
             <div class="contact-detail">
               <span class="detail-label">Email</span>
-              <a href="mailto:hello@mantle.studio" class="detail-value">helldont@mantle.studio</a>
+              <a href="mailto:hello@mantle.studio" class="detail-value">hello@mantle.studio</a>
             </div>
             <div class="contact-detail">
               <span class="detail-label">Location</span>
@@ -34,22 +80,61 @@ import AppearTransition from './AppearTransition.vue'
           </div>
         </div>
 
-        <form class="contact-form" @submit.prevent>
+        <form class="contact-form" @submit.prevent="handleSubmit" novalidate>
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" :class="fieldState('name')">
               <label for="name" class="form-label">Name</label>
-              <input id="name" type="text" class="form-input" placeholder="Your name" />
+              <input
+                id="name"
+                v-model="form.name"
+                type="text"
+                class="form-input"
+                :class="fieldState('name')"
+                placeholder="Your name"
+                aria-describedby="name-error"
+                :aria-invalid="touched.name && !!errors.name"
+                @blur="onBlur('name')"
+              />
+              <p v-if="touched.name && errors.name" id="name-error" class="form-error" role="alert">{{ errors.name }}</p>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="fieldState('email')">
               <label for="email" class="form-label">Email</label>
-              <input id="email" type="email" class="form-input" placeholder="you@example.com" />
+              <input
+                id="email"
+                v-model="form.email"
+                type="email"
+                class="form-input"
+                :class="fieldState('email')"
+                placeholder="you@example.com"
+                aria-describedby="email-error"
+                :aria-invalid="touched.email && !!errors.email"
+                @blur="onBlur('email')"
+              />
+              <p v-if="touched.email && errors.email" id="email-error" class="form-error" role="alert">{{ errors.email }}</p>
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group" :class="fieldState('message')">
             <label for="message" class="form-label">Message</label>
-            <textarea id="message" class="form-input form-textarea" placeholder="Tell us about your project..." rows="4"></textarea>
+            <textarea
+              id="message"
+              v-model="form.message"
+              class="form-input form-textarea"
+              :class="fieldState('message')"
+              placeholder="Tell us about your project..."
+              rows="4"
+              aria-describedby="message-error"
+              :aria-invalid="touched.message && !!errors.message"
+              @blur="onBlur('message')"
+            ></textarea>
+            <p v-if="touched.message && errors.message" id="message-error" class="form-error" role="alert">{{ errors.message }}</p>
           </div>
-          <button type="submit" class="btn-primary form-submit water-ripple">Send message →</button>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary form-submit" :disabled="submitted && submitStatus === 'success'">
+              <span v-if="submitStatus === 'success'" class="btn-success-text">✓ Message sent</span>
+              <span v-else>Send message →</span>
+            </button>
+            <p v-if="submitStatus === 'error'" class="form-status-error" role="alert">Something went wrong. Please try again.</p>
+          </div>
         </form>
       </div>
     </AppearTransition>
@@ -153,6 +238,65 @@ import AppearTransition from './AppearTransition.vue'
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-group.error .form-label {
+  color: #e85858;
+}
+
+.form-input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  transition: border-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-water-surface);
+  box-shadow: 0 0 12px var(--color-water-dim);
+}
+
+.form-input.error {
+  border-color: #e85858;
+  box-shadow: 0 0 8px rgba(232, 88, 88, 0.2);
+}
+
+.form-input.error:focus {
+  border-color: #e85858;
+  box-shadow: 0 0 12px rgba(232, 88, 88, 0.3);
+}
+
+.form-input.valid {
+  border-color: var(--color-water-surface);
+}
+
+.form-error {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #e85858;
+  margin-top: 2px;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form-status-error {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #e85858;
+}
+
+.btn-success-text {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 

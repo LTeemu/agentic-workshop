@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
+import { lockBody, unlockBody } from '../composables/useBodyLock'
 
 const waterCanvas = ref(null)
 const rippleCanvas = ref(null)
@@ -226,17 +227,47 @@ const effectiveStep = HALF_STEP * spanScale // scaled half-step used for all pla
 const scaledSpan = (rawSpan - CARD_W) * spanScale + CARD_W
 const startOffset = Math.max(0, (_vw - scaledSpan) / 2)
 
+// ─── Themed SVG placeholder generator — matches cave aesthetic ──
+function getInitials(title) {
+  return title
+    .split(/[\s—–-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+}
+
+function svgPlaceholder(title, bg) {
+  const initials = getInitials(title)
+  const c1 = bg[0].slice(1)
+  const c2 = bg[1].slice(1)
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#${c1}"/>
+          <stop offset="100%" stop-color="#${c2}"/>
+        </linearGradient>
+      </defs>
+      <rect width="600" height="450" fill="url(#g)"/>
+      <text x="300" y="225" font-family="Georgia,serif" font-size="120" font-style="italic" fill="rgba(232,184,48,0.12)" text-anchor="middle" dominant-baseline="central">${initials}</text>
+      <line x1="200" y1="225" x2="400" y2="225" stroke="rgba(232,184,48,0.08)" stroke-width="1"/>
+    </svg>`
+  )}`
+}
+
 const works = [
-  { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/0c2e40/e8b830?text=Lumina', client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
-  { title: 'Verdant — E-Commerce', medium: 'Web Dev', size: '2025', image: 'https://placehold.co/600x450/1e4034/e8b830?text=Verdant', client: 'Verdant Plants', desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.' },
-  { title: 'Pulse — Digital Platform', medium: 'Platform', size: '2025', image: 'https://placehold.co/600x450/1e2430/e8b830?text=Pulse', client: 'Pulse Health', desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.' },
-  { title: 'Nomad — Travel App', medium: 'App', size: '2025', image: 'https://placehold.co/600x450/301e30/e8b830?text=Nomad', client: 'Nomad Co.', desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.' },
-  { title: 'Form — Design System', medium: 'Design', size: '2024', image: 'https://placehold.co/600x450/1e2e22/e8b830?text=Form', client: 'Form Studio', desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.' },
-  { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: 'https://placehold.co/600x450/302412/e8b830?text=Cipher', client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
-  { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: 'https://placehold.co/600x450/301e22/e8b830?text=Aether', client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
-  { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: 'https://placehold.co/600x450/301e22/e8b830?text=Drift', client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
-  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: 'https://placehold.co/600x450/30100a/e8b830?text=Ember', client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
-  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: 'https://placehold.co/600x450/0a2028/e8b830?text=Tide', client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
+  { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: null, client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
+  { title: 'Verdant — E-Commerce', medium: 'Web Dev', size: '2025', image: null, client: 'Verdant Plants', desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.' },
+  { title: 'Pulse — Digital Platform', medium: 'Platform', size: '2025', image: null, client: 'Pulse Health', desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.' },
+  { title: 'Nomad — Travel App', medium: 'App', size: '2025', image: null, client: 'Nomad Co.', desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.' },
+  { title: 'Form — Design System', medium: 'Design', size: '2024', image: null, client: 'Form Studio', desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.' },
+  { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: null, client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
+  { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: null, client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
+  { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: null, client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
+  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: null, client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
+  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: null, client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
 ]
 
 const colors = [
@@ -349,6 +380,11 @@ function syncWaterSize() {
 function closeModal() {
   selectedWork.value = null
 }
+
+watch(selectedWork, (work) => {
+  if (work !== null) lockBody()
+  else unlockBody()
+})
 
 // ─── 2D Ripple overlay — expanding stroke circles (like CodePen) ───
 const RIPPLE_SPEED = 0.8
@@ -539,7 +575,7 @@ onBeforeUnmount(() => {
             }"
           >
             <img
-              :src="works[card.workIndex].image"
+              :src="works[card.workIndex].image || svgPlaceholder(works[card.workIndex].title, colors[card.workIndex])"
               :alt="works[card.workIndex].title"
               class="marquee-item-img"
               loading="lazy"
@@ -559,7 +595,7 @@ onBeforeUnmount(() => {
         <article class="modal-card">
           <button class="modal-close" @click="closeModal" aria-label="Close">&times;</button>
           <div class="modal-visual" :style="{ background: `linear-gradient(135deg, ${colors[selectedWork][0]}, ${colors[selectedWork][1]})` }">
-            <img :src="works[selectedWork].image" :alt="works[selectedWork].title" class="modal-img" />
+            <img :src="works[selectedWork].image || svgPlaceholder(works[selectedWork].title, colors[selectedWork])" :alt="works[selectedWork].title" class="modal-img" />
             <div class="modal-img-overlay"></div>
           </div>
           <div class="modal-body">

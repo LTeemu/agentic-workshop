@@ -15,18 +15,4 @@ const { el, isVisible } = useIntersectionObserver()
   </component>
 </template>
 
-<style scoped>
-.appear {
-  opacity: 0;
-  transform: translateY(2rem);
-  transition:
-    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--idx, 0) * 80ms);
-}
-
-.appear.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>
+<style scoped></style>

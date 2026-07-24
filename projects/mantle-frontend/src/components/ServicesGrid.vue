@@ -93,35 +93,6 @@ const services = [
   gap: var(--space-3);
 }
 
-.service-card:nth-child(3n) {
-  border-right: none;
-}
-
-@media (max-width: 860px) {
-  .service-card:nth-child(3n) {
-    border-right: 1px solid var(--color-border);
-  }
-  .service-card:nth-child(2n) {
-    border-right: none;
-  }
-}
-
-@media (max-width: 540px) {
-  .service-card {
-    border-right: none;
-  }
-}
-
-.service-card:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.service-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .service-title {
   font-family: var(--font-display);
   font-size: var(--text-xl);
