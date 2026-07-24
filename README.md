@@ -74,8 +74,7 @@ This workspace is configured for [opencode](https://opencode.ai). The `opencode.
 ```
 ┌─ System prompt ─────────────── built-in behavioral instructions, tools, skills
 ├─ AGENTS.md ─────────────────── project rules (loaded via opencode.json)
-├─ .opencode/agents/coder.md ─── coder-specific style rules
-└─ .opencode/rules/active-project.md ── scope (checked when needed)
+└─ .opencode/agents/coder.md ─── coder-specific style rules
 ```
 
 **AGENTS.md** applies to all agents (coder, researcher, reviewer, refactor). It defines:

@@ -1,34 +1,35 @@
-# Task Planning
+## Communication Style
 
-- **Always plan first.** State a plan to the user before using _any_ tool. Then call `todowrite` with role-prefixed entries (`Researcher:`, `Reviewer:`, `Refactor:`, `Coder:`)
-- Delegate `Researcher:`/`Reviewer:`/`Refactor:` to subagents via `task(subagent_type="...")` before marking them in_progress. Only `Coder:` items are for you.
+- Be concise. Avoid repetition or filler language.
 
-### Order of operations
+## On Each Prompt (HARD GATE)
 
-Before any tool call, follow this sequence:
+### First Action
 
-1. **Reconnaissance (optional)** — If you need to explore the codebase or research first, delegate a read-only subagent via `task()` to unlock read tools before committing to a plan:
-   - `task(subagent_type="researcher")` → unlocks read, glob, grep, websearch, webfetch, skill
-   - `task(subagent_type="reviewer")` → unlocks read, glob, grep, skill
-2. **Identify** which subagents and skills the task needs.
-3. **State the plan** to the user — which subagents and skills you'll use, and in what order.
-4. **Create a task list** — call `todowrite` with role-prefixed items to unlock all tools.
+When you receive a new user message:
 
-## Plan Format — Role Prefixes Required
+1. **Read the rules** — AGENTS.md, pipeline.md. You calibrate from them.
+2. **Plan** — State your plan to the user: which subagents and skills you'll use, and in what order. Wait for confirmation.
+3. **Call `todowrite`** — with role-prefixed entries (see table below). This unlocks your tools.
+4. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly.
 
-Every step in the plan must use a role prefix so the plugin can enforce
-delegation and pipeline rules. Coder entries must also indicate whether the
-pipeline runs or is skipped.
+> These four steps are a hard gate. Do not use read, write, edit, glob, grep, bash, or any other tool until you have completed steps 1-3.
 
-| Prefix                 | Delegation                         | Pipeline?                                                 |
+> **Important:** The "Todos" section in your plan output to the user must use the same role-prefixed entries as the `todowrite` call. They must match — do not output a separate todos list without prefixes.
+
+### Role Prefix Reference
+
+Every todowrite entry must start with one of these prefixes. The plugin enforces delegation and pipeline rules based on them.
+
+| Prefix                 | You must delegate via...           | Pipeline?                                                 |
 | ---------------------- | ---------------------------------- | --------------------------------------------------------- |
 | `Researcher:`          | `task(subagent_type="researcher")` | No                                                        |
 | `Reviewer:`            | `task(subagent_type="reviewer")`   | No                                                        |
 | `Refactor:`            | `task(subagent_type="refactor")`   | No                                                        |
-| `Coder:` (default)     | Do not delegate — handle yourself  | **Runs** (review → refactor → test)                       |
-| `Coder: ... (trivial)` | Do not delegate — handle yourself  | **Skipped** (single-line fix, comment, rename, CSS tweak) |
+| `Coder:`               | Handle yourself — no delegation    | **Runs** (review → refactor → test)                       |
+| `Coder: ... (trivial)` | Handle yourself — no delegation    | **Skipped** (single-line fix, comment, rename, CSS tweak) |
 
-### Example — Non-trivial feature (pipeline runs)
+#### Example — Non-trivial feature (pipeline runs)
 
 ```
 ## Plan
@@ -38,10 +39,14 @@ pipeline runs or is skipped.
   1. Researcher: research CSV parsing in Node.js stdlib
   2. Coder: implement parseCSV function
   3. Coder: write unit tests for parseCSV
+- **Todos**:
+  - Researcher: research CSV parsing in Node.js stdlib
+  - Coder:      implement parseCSV function
+  - Coder:      write unit tests for parseCSV
 - **Pipeline**: will run (review → refactor → test)
 ```
 
-### Example — Trivial fix (pipeline skipped)
+#### Example — Trivial fix (pipeline skipped)
 
 ```
 ## Plan
@@ -49,6 +54,8 @@ pipeline runs or is skipped.
 - **Skills**: none
 - **Steps**:
   1. Coder: fix typo in comment (trivial)
+- **Todos**:
+  - Coder: fix typo in comment (trivial)
 - **Pipeline**: skipped (trivial)
 ```
 
@@ -61,36 +68,34 @@ todowrite
   Coder:      write unit tests for parseCSV
 ```
 
-**Rules:**
+### Plan Reset — Fresh Plan Per Turn
 
-- `Coder:` without `(trivial)` → pipeline **required** (reviewer subagent must run before marking completed).
-- `Coder: ... (trivial)` → pipeline **skipped**. Use only for truly trivial changes (single-line fix, comment typo, rename that doesn't change behavior, CSS tweak) or when no files were changed.
-- Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) must be delegated via `task()` before they can be marked **in_progress**.
+Once **all** todos are `completed` or `cancelled`, the plan resets. At the start of the next user message, you **must** state a new plan and call `todowrite` again before using tools. No stale plans from previous turns.
 
-## Plan Reset — Fresh Plan Per Turn
+### Error Handling
 
-Once **all** todos are `completed` or `cancelled`, the plan resets at the start
-of the next user message. You must state a new plan and call `todowrite` before
-using tools again. This ensures every prompt starts with a fresh plan — no stale
-todo lists from previous turns.
+When something fails:
 
-# Project Guidelines
+1. **Subagent failure** — retry once. If it fails again, do the work yourself and flag the subagent as unreliable in your output.
+2. **Tool call error** — assess: transient (retry) or logic bug (fix and retry).
+3. **Never** silently ignore a failure. Log what happened and how you adjusted.
 
-## Dependencies
+## Project Guidelines
+
+### Dependencies
 
 - Avoid adding dependencies. Prefer the standard library or well-maintained free/open-source options.
 
-## Comments
+### Comments
 
 - Prefer self-documenting code. Comments: WHY, not WHAT. Keep them concise.
 - No commented-out code.
 
-## Architecture
+### Architecture
 
 - Keep it simple. Favor composition over inheritance.
 - Separate concerns: I/O, business logic, presentation.
 
-## Workshop
+### Workshop
 
-- Projects live under `projects/`, tracked by `.active-project`. See `.opencode/rules/active-project.md` for scope logic.
-- Dashboard: `http://localhost:3000` — start with `node app/server.js`.
+- Projects live under `projects/`. Dashboard: `http://localhost:3000` — start with `node app/server.js`.

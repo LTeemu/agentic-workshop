@@ -277,7 +277,7 @@ function PlanEnforcer() {
             `  ${hint}\n\n` +
             'Full usage:\n' +
             '1. Delegate reconnaissance: task(subagent_type="researcher") or task(subagent_type="reviewer")\n' +
-            '2. State the plan to the user (use ## Plan format)\n' +
+            '2. State the plan to the user (use ## Plan format, prefix todos with role)\n' +
             '3. Call todowrite with role-prefixed items:\n' +
             '   Researcher: research the problem\n' +
             '   Reviewer:   review existing code\n' +

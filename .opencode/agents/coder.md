@@ -34,10 +34,6 @@ are conventional; follow them when applicable.
 Skip it if you made no code changes (e.g. answering a question) or if the change
 is marked `(trivial)` in the todowrite entry.
 
-## Project Scoping
-
-Respect project scoping per `.opencode/rules/active-project.md`.
-
 ## Consistency
 
 - Follow existing naming conventions, project structure, and patterns.
