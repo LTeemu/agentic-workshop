@@ -23,7 +23,7 @@ describe('PlanEnforcer — Prefix Extraction (via delegation gating)', () => {
 
   it('accepts todowrite entries with valid Coder prefix', async () => {
     const { input, output } = todowriteCall([
-      { content: 'Coder: do something', status: 'pending' },
+      { content: 'Coder: [scope:.] do something', status: 'pending' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -32,7 +32,7 @@ describe('PlanEnforcer — Prefix Extraction (via delegation gating)', () => {
     for (const prefix of ['Researcher', 'Reviewer', 'Refactor', 'Coder']) {
       const e = PlanEnforcer();
       const { input, output } = todowriteCall([
-        { content: `${prefix}: test task`, status: 'pending' },
+        { content: `${prefix}: [scope:.] test task`, status: 'pending' },
       ]);
       await assert.doesNotReject(
         () => e['tool.execute.before'](input, output),
@@ -51,39 +51,39 @@ describe('PlanEnforcer — Delegation Gate (DELEGATE_FIRST)', () => {
 
   it('blocks Researcher in_progress without prior task(researcher)', async () => {
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Researcher: research topic', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Researcher: [scope:.] research topic', status: 'in_progress' },
     ]);
     await assert.rejects(() => enforcer['tool.execute.before'](input, output), /DELEGATE_FIRST/);
   });
 
   it('blocks Reviewer in_progress without prior task(reviewer)', async () => {
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Reviewer: review code', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Reviewer: [scope:.] review code', status: 'in_progress' },
     ]);
     await assert.rejects(() => enforcer['tool.execute.before'](input, output), /DELEGATE_FIRST/);
   });
 
   it('blocks Refactor in_progress without prior task(refactor)', async () => {
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Refactor: clean up', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Refactor: [scope:.] clean up', status: 'in_progress' },
     ]);
     await assert.rejects(() => enforcer['tool.execute.before'](input, output), /DELEGATE_FIRST/);
   });
@@ -93,13 +93,13 @@ describe('PlanEnforcer — Delegation Gate (DELEGATE_FIRST)', () => {
     await enforcer['tool.execute.before'](taskIn, taskOut);
 
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Researcher: research topic', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Researcher: [scope:.] research topic', status: 'in_progress' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -109,13 +109,13 @@ describe('PlanEnforcer — Delegation Gate (DELEGATE_FIRST)', () => {
     await enforcer['tool.execute.before'](taskIn, taskOut);
 
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Reviewer: review code', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Reviewer: [scope:.] review code', status: 'in_progress' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -125,26 +125,26 @@ describe('PlanEnforcer — Delegation Gate (DELEGATE_FIRST)', () => {
     await enforcer['tool.execute.before'](taskIn, taskOut);
 
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Refactor: clean up', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Refactor: [scope:.] clean up', status: 'in_progress' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
 
   it('does not block Coder items from being marked in_progress', async () => {
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: first task (trivial)', status: 'pending' },
+      { content: 'Coder: [scope:.] first task (trivial)', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: first task (trivial)', status: 'completed' },
-      { content: 'Coder: second task', status: 'in_progress' },
+      { content: 'Coder: [scope:.] first task (trivial)', status: 'completed' },
+      { content: 'Coder: [scope:.] second task', status: 'in_progress' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -154,7 +154,7 @@ describe('PlanEnforcer — Pipeline Gate (PIPELINE_REQUIRED)', () => {
   it('blocks non-trivial Coder completed without reviewer', async () => {
     const enforcer = PlanEnforcer();
     const { input, output } = todowriteCall([
-      { content: 'Coder: implement feature', status: 'completed' },
+      { content: 'Coder: [scope:.] implement feature', status: 'completed' },
     ]);
     await assert.rejects(() => enforcer['tool.execute.before'](input, output), /PIPELINE_REQUIRED/);
   });
@@ -162,7 +162,7 @@ describe('PlanEnforcer — Pipeline Gate (PIPELINE_REQUIRED)', () => {
   it('allows Coder completed with (trivial) suffix', async () => {
     const enforcer = PlanEnforcer();
     const { input, output } = todowriteCall([
-      { content: 'Coder: fix typo (trivial)', status: 'completed' },
+      { content: 'Coder: [scope:.] fix typo (trivial)', status: 'completed' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -173,7 +173,7 @@ describe('PlanEnforcer — Pipeline Gate (PIPELINE_REQUIRED)', () => {
     await enforcer['tool.execute.before'](taskIn, taskOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: implement feature', status: 'completed' },
+      { content: 'Coder: [scope:.] implement feature', status: 'completed' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -184,14 +184,14 @@ describe('PlanEnforcer — Pipeline Gate (PIPELINE_REQUIRED)', () => {
     await enforcer['tool.execute.before'](taskIn, taskOut);
 
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Researcher: research', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Researcher: [scope:.] research', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Researcher: research', status: 'completed' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Researcher: [scope:.] research', status: 'completed' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));
   });
@@ -224,7 +224,7 @@ describe('PlanEnforcer — Plan Reset on Chat Message', () => {
     const enforcer = PlanEnforcer();
 
     const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: done (trivial)', status: 'completed' },
+      { content: 'Coder: [scope:.] done (trivial)', status: 'completed' },
     ]);
     await enforcer['tool.execute.before'](tdIn, tdOut);
 
@@ -237,7 +237,7 @@ describe('PlanEnforcer — Plan Reset on Chat Message', () => {
       () =>
         enforcer['tool.execute.before'](
           { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: '/test' } },
+          { args: { filePath: __filename } },
         ),
       /PLAN_FIRST/,
     );
@@ -247,7 +247,7 @@ describe('PlanEnforcer — Plan Reset on Chat Message', () => {
     const enforcer = PlanEnforcer();
 
     const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: still working', status: 'in_progress' },
+      { content: 'Coder: [scope:.] still working', status: 'in_progress' },
     ]);
     await enforcer['tool.execute.before'](tdIn, tdOut);
 
@@ -259,7 +259,7 @@ describe('PlanEnforcer — Plan Reset on Chat Message', () => {
     await assert.doesNotReject(() =>
       enforcer['tool.execute.before'](
         { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: '/test' } },
+        { args: { filePath: 'data/scope-test.txt' } },
       ),
     );
   });

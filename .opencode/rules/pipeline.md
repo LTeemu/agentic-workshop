@@ -15,7 +15,7 @@ Run this order before marking code changes as completed. Skip entirely if no cod
 
 ## 1. Assess scope
 
-Before running anything, assess the change:
+Before running anything, assess the change. Note that step 3 of the HARD GATE (scope enforcement) already restricted your file reads to the declared `[scope:...]` during implementation — the scope you declared in your todowrite entries.
 
 - **Trivial change** (e.g., single-line toggle, comment fix, rename, CSS tweak) or **no files changed** -> skip the pipeline entirely. Note: the plugin blocks non-trivial Coder completion without review — append `(trivial)` to the todowrite entry to bypass.
 - **No test suite exists** for the changed files (no `*.test.*` or `*.spec.*` files, no test script in package.json) -> skip step 4 (testing), but still run review if the change is non-trivial.

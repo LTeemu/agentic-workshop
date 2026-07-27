@@ -3,6 +3,7 @@ description: Refactors code to eliminate duplication and improve structure. Call
 mode: subagent
 permission:
   edit: allow
+  bash: deny
 ---
 
 Specialist in removing duplication without changing behavior.

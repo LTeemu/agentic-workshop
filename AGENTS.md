@@ -10,12 +10,10 @@ When you receive a new user message:
 
 1. **Read the rules** — AGENTS.md, pipeline.md. You calibrate from them.
 2. **Plan** — State your plan to the user: which subagents and skills you'll use, and in what order. Wait for confirmation.
-3. **Call `todowrite`** — with role-prefixed entries (see table below). This unlocks your tools.
-4. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly.
-
-> These four steps are a hard gate. Do not use read, write, edit, glob, grep, bash, or any other tool until you have completed steps 1-3.
-
-> **Important:** The "Todos" section in your plan output to the user must use the same role-prefixed entries as the `todowrite` call. They must match — do not output a separate todos list without prefixes.
+3. **Declare scope** — Before calling todowrite, determine which files/directories are relevant to the task. You'll encode this as `[scope:path1, path2]` in step 4. Only read files within this scope. If the user didn't name it, don't read it. Keep scope narrow — the plugin enforces this mechanically.
+   **Bash caveat:** Plugin checks workdir, not command. Don't use bash to read files — use `read`/`glob`/`grep` instead.
+4. **Call `todowrite`** — with role-prefixed entries (see table below). At least one entry must include `[scope:...]`. This unlocks your tools.
+5. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly.
 
 ### Role Prefix Reference
 
@@ -41,8 +39,8 @@ Every todowrite entry must start with one of these prefixes. The plugin enforces
   3. Coder: write unit tests for parseCSV
 - **Todos**:
   - Researcher: research CSV parsing in Node.js stdlib
-  - Coder:      implement parseCSV function
-  - Coder:      write unit tests for parseCSV
+  - Coder:      [scope:src/parser.js] implement parseCSV function
+  - Coder:      [scope:src/] write unit tests for parseCSV
 - **Pipeline**: will run (review → refactor → test)
 ```
 
@@ -55,17 +53,17 @@ Every todowrite entry must start with one of these prefixes. The plugin enforces
 - **Steps**:
   1. Coder: fix typo in comment (trivial)
 - **Todos**:
-  - Coder: fix typo in comment (trivial)
+  - Coder: [scope:src/] fix typo in comment (trivial)
 - **Pipeline**: skipped (trivial)
 ```
 
-Then call `todowrite` with matching role-prefixed entries, e.g.:
+Then call `todowrite` with matching role-prefixed entries, **including scope**, e.g.:
 
 ```
 todowrite
   Researcher: research CSV parsing in Node.js stdlib
-  Coder:      implement parseCSV function
-  Coder:      write unit tests for parseCSV
+  Coder:      [scope:src/parser.js] implement parseCSV function
+  Coder:      [scope:src/] write unit tests for parseCSV
 ```
 
 ### Plan Reset — Fresh Plan Per Turn
@@ -99,3 +97,4 @@ When something fails:
 ### Workshop
 
 - Projects live under `projects/`. Dashboard: `http://localhost:3000` — start with `node app/server.js`.
+- The workshop passes `PORT` env var to your process. The iframe looks at `localhost:PORT` — whatever serves the main page must listen on that port. (Backend can use a different port.)

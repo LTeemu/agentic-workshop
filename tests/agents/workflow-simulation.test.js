@@ -83,10 +83,13 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     await enforcer['tool.execute.before'](refIn, refOut);
 
     const planItems = [
-      { content: 'Researcher: research CSV parsing options in Node.js', status: 'pending' },
-      { content: 'Coder: implement parseCSV function', status: 'pending' },
-      { content: 'Reviewer: review parseCSV for edge cases', status: 'pending' },
-      { content: 'Refactor: clean up duplication in parser', status: 'pending' },
+      {
+        content: 'Researcher: [scope:.] research CSV parsing options in Node.js',
+        status: 'pending',
+      },
+      { content: 'Coder: [scope:.] implement parseCSV function', status: 'pending' },
+      { content: 'Reviewer: [scope:.] review parseCSV for edge cases', status: 'pending' },
+      { content: 'Refactor: [scope:.] clean up duplication in parser', status: 'pending' },
     ];
     const { input: planIn, output: planOut } = todowriteCall(planItems);
     await enforcer['tool.execute.before'](planIn, planOut);
@@ -97,10 +100,13 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     console.log(`  RESEARCH: ${researchResult.explanation}`);
 
     const { input: researchDoneIn, output: researchDoneOut } = todowriteCall([
-      { content: 'Researcher: research CSV parsing options in Node.js', status: 'completed' },
-      { content: 'Coder: implement parseCSV function', status: 'in_progress' },
-      { content: 'Reviewer: review parseCSV for edge cases', status: 'pending' },
-      { content: 'Refactor: clean up duplication in parser', status: 'pending' },
+      {
+        content: 'Researcher: [scope:.] research CSV parsing options in Node.js',
+        status: 'completed',
+      },
+      { content: 'Coder: [scope:.] implement parseCSV function', status: 'in_progress' },
+      { content: 'Reviewer: [scope:.] review parseCSV for edge cases', status: 'pending' },
+      { content: 'Refactor: [scope:.] clean up duplication in parser', status: 'pending' },
     ]);
     await assert.doesNotReject(() =>
       enforcer['tool.execute.before'](researchDoneIn, researchDoneOut),
@@ -115,10 +121,13 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     console.log(`  REVIEW: ${reviewResult.explanation}`);
 
     const { input: reviewDoneIn, output: reviewDoneOut } = todowriteCall([
-      { content: 'Researcher: research CSV parsing options in Node.js', status: 'completed' },
-      { content: 'Coder: implement parseCSV function', status: 'completed' },
-      { content: 'Reviewer: review parseCSV for edge cases', status: 'completed' },
-      { content: 'Refactor: clean up duplication in parser', status: 'in_progress' },
+      {
+        content: 'Researcher: [scope:.] research CSV parsing options in Node.js',
+        status: 'completed',
+      },
+      { content: 'Coder: [scope:.] implement parseCSV function', status: 'completed' },
+      { content: 'Reviewer: [scope:.] review parseCSV for edge cases', status: 'completed' },
+      { content: 'Refactor: [scope:.] clean up duplication in parser', status: 'in_progress' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](reviewDoneIn, reviewDoneOut));
 
@@ -126,10 +135,13 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     console.log(`  REFACTOR: ${refactorResult.explanation}`);
 
     const { input: allDoneIn, output: allDoneOut } = todowriteCall([
-      { content: 'Researcher: research CSV parsing options in Node.js', status: 'completed' },
-      { content: 'Coder: implement parseCSV function', status: 'completed' },
-      { content: 'Reviewer: review parseCSV for edge cases', status: 'completed' },
-      { content: 'Refactor: clean up duplication in parser', status: 'completed' },
+      {
+        content: 'Researcher: [scope:.] research CSV parsing options in Node.js',
+        status: 'completed',
+      },
+      { content: 'Coder: [scope:.] implement parseCSV function', status: 'completed' },
+      { content: 'Reviewer: [scope:.] review parseCSV for edge cases', status: 'completed' },
+      { content: 'Refactor: [scope:.] clean up duplication in parser', status: 'completed' },
     ]);
     await assert.doesNotReject(() => enforcer['tool.execute.before'](allDoneIn, allDoneOut));
 
@@ -144,7 +156,7 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     const enforcer = PlanEnforcer();
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: skip review', status: 'completed' },
+      { content: 'Coder: [scope:.] skip review', status: 'completed' },
     ]);
 
     await assert.rejects(() => enforcer['tool.execute.before'](input, output), /PIPELINE_REQUIRED/);
@@ -155,13 +167,13 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     const enforcer = PlanEnforcer();
 
     const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
     ]);
     await enforcer['tool.execute.before'](setupIn, setupOut);
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: setup', status: 'pending' },
-      { content: 'Researcher: do research', status: 'in_progress' },
+      { content: 'Coder: [scope:.] setup', status: 'pending' },
+      { content: 'Researcher: [scope:.] do research', status: 'in_progress' },
     ]);
 
     await assert.rejects(
@@ -182,7 +194,7 @@ describe('Agentic Workflow — Full Pipeline Simulation', () => {
     const enforcer = PlanEnforcer();
 
     const { input, output } = todowriteCall([
-      { content: 'Coder: fix typo in comment (trivial)', status: 'completed' },
+      { content: 'Coder: [scope:.] fix typo in comment (trivial)', status: 'completed' },
     ]);
 
     await assert.doesNotReject(() => enforcer['tool.execute.before'](input, output));

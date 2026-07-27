@@ -37,7 +37,7 @@ is marked `(trivial)` in the todowrite entry.
 ## Consistency
 
 - Follow existing naming conventions, project structure, and patterns.
-- Mimic neighboring files. Surprises hurt readability.
+- **AGENTS.md step 3 governs scope.** When in doubt, check AGENTS.md — not this file.
 
 ## Testing
 
