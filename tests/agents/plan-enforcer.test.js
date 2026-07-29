@@ -207,8 +207,17 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
     );
   });
 
-  it('accepts valid subagent types: researcher, reviewer, refactor', async () => {
-    for (const type of ['researcher', 'reviewer', 'refactor']) {
+  it('rejects "general" (disabled via general.md)', async () => {
+    const enforcer = PlanEnforcer();
+    const { input, output } = taskCall('general');
+    await assert.rejects(
+      () => enforcer['tool.execute.before'](input, output),
+      /INVALID_SUBAGENT_TYPE/,
+    );
+  });
+
+  it('accepts valid subagent types: explore, researcher, reviewer, refactor', async () => {
+    for (const type of ['explore', 'researcher', 'reviewer', 'refactor']) {
       const e = PlanEnforcer();
       const { input, output } = taskCall(type);
       await assert.doesNotReject(

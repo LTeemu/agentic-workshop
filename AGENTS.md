@@ -13,7 +13,7 @@ When you receive a new user message:
 3. **Declare scope** — Before calling todowrite, determine which files/directories are relevant to the task. You'll encode this as `[scope:path1, path2]` in step 4. Only read files within this scope. If the user didn't name it, don't read it. Keep scope narrow — the plugin enforces this mechanically.
    **Bash caveat:** Plugin checks workdir, not command. Don't use bash to read files — use `read`/`glob`/`grep` instead.
 4. **Call `todowrite`** — with role-prefixed entries (see table below). At least one entry must include `[scope:...]`. This unlocks your tools.
-5. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly.
+5. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly. `explore` is also available for fast codebase exploration (call via `task()` without a todo prefix).
 
 ### Role Prefix Reference
 

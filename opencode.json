@@ -3,7 +3,7 @@
   "model": "deepseek/deepseek-v4-flash-free",
   "small_model": "deepseek/deepseek-v4-flash-free",
   "default_agent": "coder",
-  "instructions": ["AGENTS.md"],
+  "instructions": ["AGENTS.md", ".opencode/rules/pipeline.md"],
   "command": {
     "review": {
       "description": "Review code for issues with @reviewer",
@@ -21,7 +21,7 @@
       "agent": "researcher"
     }
   },
-  "plugin": ["./.opencode/plugins/plan-enforcer.js"],
+  "plugin": [".opencode/plugins/plan-enforcer.js"],
   "skills": {
     "paths": [".opencode/skills"]
   },

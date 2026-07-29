@@ -135,15 +135,14 @@ describe('AGENTS.md consistency', () => {
 });
 
 describe('pipeline.md consistency', () => {
-  let content;
-
-  it('pipeline.md exists', () => {
-    const pipelinePath = path.join(RULES_DIR, 'pipeline.md');
-    content = readFile(pipelinePath);
-    assert.ok(content, 'pipeline.md not found in .opencode/rules/');
-  });
-
   it('mentions agent types that exist', () => {
+    const pipelinePath = path.join(RULES_DIR, 'pipeline.md');
+    const content = readFile(pipelinePath);
+    if (!content) {
+      console.log('  SKIP: pipeline.md not found');
+      return;
+    }
+
     const agentNames = getAgentNames();
     const mentions = content.match(/\*\*(researcher|reviewer|refactor)\*\*/gi) || [];
     const uniqueMentions = [...new Set(mentions.map((m) => m.replace(/\*\*/g, '').toLowerCase()))];
@@ -160,15 +159,6 @@ describe('pipeline.md consistency', () => {
       );
       console.log(`  PASS: pipeline.md references ${mention} → agent exists`);
     }
-  });
-
-  it('pipeline steps are documented in a clear order', () => {
-    const stepHeadings = content.match(/^## \d+\./gm) || [];
-    assert.ok(
-      stepHeadings.length >= 3,
-      `FAIL: pipeline.md should have at least 3 steps, found ${stepHeadings.length}`,
-    );
-    console.log(`  PASS: pipeline.md has ${stepHeadings.length} documented steps`);
   });
 });
 

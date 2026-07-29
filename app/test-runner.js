@@ -5,17 +5,21 @@ const { spawn } = require('child_process');
 const { ensureDependencies, tryResolveBin, PROJECTS_DIR } = require('./project-utils');
 
 /**
- * Determine the test runner for a project.
+ * Determine whether a project has a detectable test runner.
+ * Convention: every project defines its test command in a `package.json`
+ * `scripts.test` field — regardless of language or framework.
+ *
  * @param {string} projectPath
- * @returns {{ type: string, label: string } | null}
+ * @returns {{ type: string, label: string, script: string } | null}
  */
 function detectTest(projectPath) {
   const pkgPath = path.join(projectPath, 'package.json');
   if (fs.existsSync(pkgPath)) {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      if (pkg.scripts && pkg.scripts.test) {
-        return { type: 'npm', label: 'npm test' };
+      const script = pkg.scripts && pkg.scripts.test;
+      if (script) {
+        return { type: 'npm', label: 'npm test', script };
       }
     } catch {}
   }
@@ -29,24 +33,12 @@ function detectTest(projectPath) {
  *
  * @param {string} projectPath
  * @param {string} name - project name for log tagging
+ * @param {string} testScript - the test command from package.json scripts.test
  * @param {(name: string, stream: string, text: string) => void} logFn
  * @returns {Promise<void>}
  */
-function runNpmTest(projectPath, name, logFn) {
+function runNpmTest(projectPath, name, testScript, logFn) {
   return new Promise((resolve, reject) => {
-    let pkg;
-    try {
-      pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
-    } catch (err) {
-      reject(new Error(`Failed to read package.json: ${err.message}`));
-      return;
-    }
-    const testScript = pkg.scripts && pkg.scripts.test;
-    if (!testScript) {
-      reject(new Error('No test script found in package.json'));
-      return;
-    }
-
     logFn(name, 'system', `Running: ${testScript}`);
 
     const binPath = tryResolveBin(projectPath, testScript);
@@ -94,12 +86,10 @@ async function runTest(name, logFn) {
   const projectPath = path.join(PROJECTS_DIR, name);
   if (!fs.existsSync(projectPath)) return { error: 'not found' };
 
-  // Check for a test script first — avoids running npm install on projects
-  // that have no test script (e.g. Gradle/Android projects).
   const runner = detectTest(projectPath);
   if (!runner) {
     logFn(name, 'system', 'No test script found in package.json');
-    return { error: 'No test script found' };
+    return { error: 'No test script found in package.json' };
   }
 
   logFn(name, 'system', 'Running tests...');
@@ -112,7 +102,7 @@ async function runTest(name, logFn) {
 
   try {
     if (runner.type === 'npm') {
-      await runNpmTest(projectPath, name, logFn);
+      await runNpmTest(projectPath, name, runner.script, logFn);
     }
     logFn(name, 'system', 'Tests passed');
     return { passed: true, runner: runner.label };
@@ -126,4 +116,4 @@ async function runTest(name, logFn) {
   }
 }
 
-module.exports = { detectTest, runNpmTest, runTest };
+module.exports = { detectTest, runTest };

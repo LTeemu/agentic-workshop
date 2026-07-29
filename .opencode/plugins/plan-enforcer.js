@@ -41,7 +41,10 @@
  *   Researcher:  | researcher      | Web research, documentation, exploration
  *   Reviewer:    | reviewer        | Code review, quality, edge-case analysis
  *   Refactor:    | refactor        | Duplicate elimination, structural cleanup
- *   Coder:       | general         | Direct implementation, editing, writing
+ *   Coder:       | — (direct)      | Direct implementation, editing, writing
+ *
+ * Additional utility subagent (call via task() without a prefix):
+ *   explore      | codebase        | Fast codebase exploration, file/pattern discovery
  *
  * Examples:
  *   Researcher: [scope:docs/] research CSV parsing in Node.js stdlib
@@ -92,7 +95,7 @@ const PREFIX_TO_SUBAGENT = {
 };
 
 /** Valid subagent_type values for task() delegation. */
-const VALID_SUBAGENT_TYPES = ['researcher', 'reviewer', 'refactor'];
+const VALID_SUBAGENT_TYPES = ['explore', 'researcher', 'reviewer', 'refactor'];
 
 /**
  * Tools that only read, never write. Safe to unlock before a plan is

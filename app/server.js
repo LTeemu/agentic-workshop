@@ -14,7 +14,7 @@ const {
   hasBuildOutput,
   PROJECTS_DIR,
 } = require('./project-utils');
-const { detectTest, runNpmTest, runTest } = require('./test-runner');
+const { detectTest, runTest } = require('./test-runner');
 
 const PORT = 3000;
 const PROJECTS_BASE = 4000;
@@ -188,18 +188,8 @@ function detectRun(projectPath) {
  * @returns {string|null}
  */
 function describeProject(projectPath) {
-  const pkgPath = path.join(projectPath, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      if (pkg.scripts && (pkg.scripts.start || pkg.scripts.dev)) {
-        return 'npm';
-      }
-      return 'npm (no start script)';
-    } catch {}
-  }
-  if (fs.existsSync(path.join(projectPath, 'server.js'))) return 'Node.js';
-  if (fs.existsSync(path.join(projectPath, 'index.html'))) return 'Static HTML';
+  // Non-npm project types — check first so a test-only package.json
+  // doesn't override the type badge on Gradle/Python/Cargo/etc. projects.
   if (fs.existsSync(path.join(projectPath, 'build.gradle.kts'))) return 'Gradle (Kotlin)';
   if (fs.existsSync(path.join(projectPath, 'build.gradle'))) return 'Gradle';
   if (
@@ -212,12 +202,34 @@ function describeProject(projectPath) {
   if (fs.existsSync(path.join(projectPath, 'main.py'))) return 'Python';
   if (fs.existsSync(path.join(projectPath, 'requirements.txt'))) return 'Python';
   if (fs.existsSync(path.join(projectPath, 'Dockerfile'))) return 'Docker';
+  if (fs.existsSync(path.join(projectPath, '.csproj'))) return '.NET';
+
+  // npm/Node/HTML projects — delegate to detectRun to avoid duplicated checks
+  const run = detectRun(projectPath);
+  if (run) {
+    if (run.type === 'npm') return 'npm';
+    if (run.type === 'node') return 'Node.js';
+    if (run.type === 'static') return 'Static HTML';
+  }
+
+  // Has a package.json but no runnable script (e.g. test-only) — still an npm project
+  const pkgPath = path.join(projectPath, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.scripts && pkg.scripts.test) {
+        return 'npm';
+      }
+    } catch {}
+  }
+
+  // Docker Compose checked last so a project with build.gradle + docker-compose
+  // shows as Gradle, not Docker Compose.
   if (
     fs.existsSync(path.join(projectPath, 'docker-compose.yml')) ||
     fs.existsSync(path.join(projectPath, 'docker-compose.yaml'))
   )
     return 'Docker Compose';
-  if (fs.existsSync(path.join(projectPath, '.csproj'))) return '.NET';
   return null;
 }
 
