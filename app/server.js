@@ -177,6 +177,9 @@ function detectRun(projectPath) {
   if (fs.existsSync(path.join(projectPath, 'index.html'))) {
     return { type: 'static' };
   }
+  if (fs.readdirSync(projectPath).some((f) => f.endsWith('.csproj'))) {
+    return { type: 'dotnet', cmd: 'dotnet', args: ['run'] };
+  }
   return null;
 }
 
@@ -190,26 +193,26 @@ function detectRun(projectPath) {
 function describeProject(projectPath) {
   // Non-npm project types — check first so a test-only package.json
   // doesn't override the type badge on Gradle/Python/Cargo/etc. projects.
-  if (fs.existsSync(path.join(projectPath, 'build.gradle.kts'))) return 'Gradle (Kotlin)';
-  if (fs.existsSync(path.join(projectPath, 'build.gradle'))) return 'Gradle';
+  if (fs.existsSync(path.join(projectPath, 'build.gradle.kts'))) return 'gradle (kotlin)';
+  if (fs.existsSync(path.join(projectPath, 'build.gradle'))) return 'gradle';
   if (
     fs.existsSync(path.join(projectPath, 'gradlew')) ||
     fs.existsSync(path.join(projectPath, 'gradlew.bat'))
   )
-    return 'Gradle';
-  if (fs.existsSync(path.join(projectPath, 'pom.xml'))) return 'Maven';
-  if (fs.existsSync(path.join(projectPath, 'Cargo.toml'))) return 'Rust (Cargo)';
-  if (fs.existsSync(path.join(projectPath, 'main.py'))) return 'Python';
-  if (fs.existsSync(path.join(projectPath, 'requirements.txt'))) return 'Python';
-  if (fs.existsSync(path.join(projectPath, 'Dockerfile'))) return 'Docker';
-  if (fs.existsSync(path.join(projectPath, '.csproj'))) return '.NET';
+    return 'gradle';
+  if (fs.existsSync(path.join(projectPath, 'pom.xml'))) return 'maven';
+  if (fs.existsSync(path.join(projectPath, 'Cargo.toml'))) return 'rust (cargo)';
+  if (fs.existsSync(path.join(projectPath, 'main.py'))) return 'python';
+  if (fs.existsSync(path.join(projectPath, 'requirements.txt'))) return 'python';
+  if (fs.existsSync(path.join(projectPath, 'Dockerfile'))) return 'docker';
+  if (fs.readdirSync(projectPath).some((f) => f.endsWith('.csproj'))) return '.net';
 
   // npm/Node/HTML projects — delegate to detectRun to avoid duplicated checks
   const run = detectRun(projectPath);
   if (run) {
     if (run.type === 'npm') return 'npm';
-    if (run.type === 'node') return 'Node.js';
-    if (run.type === 'static') return 'Static HTML';
+    if (run.type === 'node') return 'node.js';
+    if (run.type === 'static') return 'static html';
   }
 
   // Has a package.json but no runnable script (e.g. test-only) — still an npm project
@@ -229,7 +232,7 @@ function describeProject(projectPath) {
     fs.existsSync(path.join(projectPath, 'docker-compose.yml')) ||
     fs.existsSync(path.join(projectPath, 'docker-compose.yaml'))
   )
-    return 'Docker Compose';
+    return 'docker compose';
   return null;
 }
 
@@ -802,7 +805,7 @@ async function handleAPI(req, res) {
             running,
             url: isActive ? active.url : null,
             runType: isActive ? active.runType : run ? run.type : null,
-            type: run ? run.type : describeProject(projectPath),
+            type: describeProject(projectPath),
           };
         }),
       );

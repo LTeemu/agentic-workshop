@@ -97,4 +97,4 @@ When something fails:
 ### Workshop
 
 - Projects live under `projects/`. Dashboard: `http://localhost:3000` — start with `node app/server.js`.
-- The workshop passes `PORT` env var to your process. The iframe looks at `localhost:PORT` — whatever serves the main page must listen on that port. (Backend can use a different port.)
+- Dashboard iframe uses a port based on project name (DJB2 hash → `4001–4999`). Use it for the main page.
