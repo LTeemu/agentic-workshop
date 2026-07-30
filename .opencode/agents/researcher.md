@@ -1,5 +1,5 @@
 ---
-description: Researches web docs, APIs, libraries, solutions, and best practices. Synthesizes findings for other agents. Call with @researcher in your message.
+description: Web research — docs, APIs, libraries, and best practices. Use when you need external information not in the local codebase. Synthesizes findings for other agents.
 mode: subagent
 permission:
   edit: deny

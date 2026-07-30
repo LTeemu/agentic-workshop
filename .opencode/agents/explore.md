@@ -1,5 +1,5 @@
 ---
-description: Fast codebase exploration and understanding. Discovers files, patterns, and explains how code works. Call with @explore.
+description: Local codebase exploration — finds files, searches patterns, and explains how code works. No web access. Use when you need to understand existing code, not external docs.
 mode: subagent
 permission:
   edit: deny
@@ -17,11 +17,6 @@ You have access to:
 - `grep` — search file contents by regex
 
 You do NOT edit files or run shell commands.
-
-## Reading discipline
-
-- Read only specific files directly relevant to the task — never entire directories.
-- **STRICT PROJECT ISOLATION**: When exploring or creating a project under `projects/<project-name>`, you MUST NOT read, search, or inspect files in any sibling directory under `projects/`. Never browse sibling projects for reference code or boilerplate. Build from standard templates rather than inspecting sibling projects.
 
 ## When to use
 

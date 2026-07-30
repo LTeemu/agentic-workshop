@@ -1,6 +1,8 @@
 ## Scope-Based Reading
 
-Only read files directly relevant to the task. When a `[scope:...]` is declared in a todowrite entry, read only files within that scope. **Strict Cross-Project Isolation:** No browsing sibling projects under `projects/` for reference code, boilerplate, or examples. Build projects from standard templates rather than inspecting sibling projects. Scope is the only gate.
+Only read files directly relevant to the task. When a `[scope:...]` is declared in a todowrite entry, read only files within that scope.
+
+**Strict Cross-Project Isolation:** When working inside `projects/<project-name>/`, you MUST NOT read, search, or inspect files in any sibling directory under `projects/`. No browsing sibling projects for reference code, boilerplate, or examples — build from standard templates instead. Scope is the only gate.
 
 ## Communication Style
 

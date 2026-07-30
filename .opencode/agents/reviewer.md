@@ -1,5 +1,5 @@
 ---
-description: Reviews code for duplication, quality, and adherence to clean code standards. Call with @reviewer in your message.
+description: Reviews code for duplication, DRY violations, naming, long functions, and test coverage. Read-only — never edits files.
 mode: subagent
 permission:
   edit: deny
@@ -18,10 +18,6 @@ You have access to:
 - `skill` — load specialized skill instructions
 
 You do NOT edit files or run shell commands.
-
-## Reading discipline
-
-Read only specific files directly relevant to the task — never entire directories.
 
 ### Checks
 

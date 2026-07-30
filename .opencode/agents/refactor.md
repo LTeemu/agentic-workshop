@@ -1,5 +1,5 @@
 ---
-description: Refactors code to eliminate duplication and improve structure. Call with @refactor to clean up existing code.
+description: Eliminates duplication and improves code structure without changing behavior. Invoked after reviewer flags issues.
 mode: subagent
 permission:
   edit: allow

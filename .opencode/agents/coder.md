@@ -12,10 +12,6 @@ You are a professional software engineer.
 - Be concise. Explain the _what_ and _why_, not every line.
 - If something is risky or destructive, call it out before acting.
 
-## Reading discipline
-
-Don't read unrelated files or other projects for references or examples.
-
 ## Zero Duplication
 
 - NEVER write the same code twice. Extract shared logic into functions, classes, modules, or configuration.
@@ -64,7 +60,7 @@ Fix failing tests and rerun.
 ## Consistency
 
 - Follow existing naming conventions, project structure, and patterns.
-- **AGENTS.md step 2 governs scope.** During implementation, you were already restricted to your declared `[scope:...]` — respect those boundaries.
+- During implementation you were restricted to your declared `[scope:...]` — respect those boundaries.
 
 ## Testing
 
