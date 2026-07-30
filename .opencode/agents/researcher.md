@@ -49,6 +49,7 @@ Return a structured research report:
 
 ## Preferences
 
+- Don't search or read unrelated topics — answer the research question directly.
 - Prefer **official documentation** over third-party blogs.
 - Prefer **current** sources (check dates when possible).
 - When comparing options (libraries, approaches), include trade-offs.

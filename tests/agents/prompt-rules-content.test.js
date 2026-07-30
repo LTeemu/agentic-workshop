@@ -5,7 +5,7 @@ const path = require('node:path');
 const { getWorkspace, getAgentNames, readFile } = require('./helpers');
 
 const AGENTS_MD = path.join(getWorkspace(), 'AGENTS.md');
-const PIPELINE_MD = path.join(getWorkspace(), '.opencode', 'rules', 'pipeline.md');
+const CODER_MD = path.join(getWorkspace(), '.opencode', 'agents', 'coder.md');
 const AGENTS_DIR = path.join(getWorkspace(), '.opencode', 'agents');
 
 function load(filePath) {
@@ -18,8 +18,7 @@ function load(filePath) {
 
 describe('Cross-file reference integrity', () => {
   const agentsMd = load(AGENTS_MD);
-  const pipelineMd = load(PIPELINE_MD);
-  const coder = load(path.join(AGENTS_DIR, 'coder.md'));
+  const coderMd = load(CODER_MD);
   const agentNames = getAgentNames();
 
   it('all @agent references in AGENTS.md resolve to .md files', () => {
@@ -32,25 +31,19 @@ describe('Cross-file reference integrity', () => {
     }
   });
 
-  it('all **agent** references in pipeline.md resolve to .md files', () => {
-    const refs = [...pipelineMd.matchAll(/\*\*(researcher|reviewer|refactor)\*\*/gi)].map((m) =>
+  it('all **agent** references in coder.md resolve to .md files', () => {
+    const refs = [...coderMd.matchAll(/\*\*(researcher|reviewer|refactor)\*\*/gi)].map((m) =>
       m[1].toLowerCase(),
     );
     const unique = [...new Set(refs)];
     for (const name of unique) {
-      assert.ok(
-        agentNames.includes(name),
-        `pipeline.md references "${name}" but no ${name}.md found`,
-      );
+      assert.ok(agentNames.includes(name), `coder.md references "${name}" but no ${name}.md found`);
     }
   });
 
   it('files referenced by coder.md exist', () => {
-    if (coder.includes('AGENTS.md')) {
+    if (coderMd.includes('AGENTS.md')) {
       assert.ok(readFile(AGENTS_MD), 'coder.md references AGENTS.md but file is missing');
-    }
-    if (coder.includes('pipeline.md')) {
-      assert.ok(readFile(PIPELINE_MD), 'coder.md references pipeline.md but file is missing');
     }
   });
 });
@@ -72,17 +65,18 @@ describe('Role Prefix table', () => {
 
 // ── Pipeline step order ───────────────────────────────
 
-describe('Pipeline step order', () => {
-  const pipelineMd = load(PIPELINE_MD);
+describe('Pipeline step order in coder.md', () => {
+  const coderMd = load(CODER_MD);
 
-  it('has 5 pipeline steps in numerical order (1-5)', () => {
-    const matches = [...pipelineMd.matchAll(/^## (\d+)\.?\s+(.+)$/gm)];
-    assert.ok(matches.length >= 5, `Expected 5+ steps, found ${matches.length}`);
-    for (let i = 0; i < matches.length; i++) {
+  it('has 4 pipeline steps in numerical order (0-3)', () => {
+    const matches = [...coderMd.matchAll(/^### Step (\d+):/gm)];
+    assert.ok(matches.length >= 4, `Expected 4+ steps, found ${matches.length}`);
+    const expected = [0, 1, 2, 3];
+    for (let i = 0; i < expected.length; i++) {
       assert.strictEqual(
         parseInt(matches[i][1], 10),
-        i + 1,
-        `Step ${i + 1} expected, got ${matches[i][1]}: "${matches[i][2].trim()}"`,
+        expected[i],
+        `Step ${expected[i]} expected at position ${i}, got ${matches[i][1]}`,
       );
     }
   });

@@ -10,7 +10,7 @@ Specialist in removing duplication without changing behavior.
 
 ## Process
 
-1. **Review** the issues flagged by the reviewer (passed as context from the pipeline). If no reviewer report is provided, re-run the reviewer via `task(subagent_type="reviewer")`.
+1. **Review** the issues flagged by the reviewer. If no reviewer report is provided, re-run the reviewer via `task(subagent_type="reviewer")`.
 2. **Plan** extractions, shared patterns, minimal change set.
 3. **Execute** — extract, rename, split. Preserve behavior exactly.
 4. **Update** all callers to use shared code. Remove old blocks.

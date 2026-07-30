@@ -19,6 +19,10 @@ You have access to:
 
 You do NOT edit files or run shell commands.
 
+## Reading discipline
+
+Read only specific files directly relevant to the task — never entire directories.
+
 ### Checks
 
 1. **Duplicates**: Exact or near-exact blocks in 2+ locations.

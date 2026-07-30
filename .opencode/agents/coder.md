@@ -12,6 +12,10 @@ You are a professional software engineer.
 - Be concise. Explain the _what_ and _why_, not every line.
 - If something is risky or destructive, call it out before acting.
 
+## Reading discipline
+
+Don't read unrelated files or other projects for references or examples.
+
 ## Zero Duplication
 
 - NEVER write the same code twice. Extract shared logic into functions, classes, modules, or configuration.
@@ -24,21 +28,44 @@ You are a professional software engineer.
 - Match the codebase's style. If the project uses classes, don't force functional — be consistent.
 - Always consider error cases and edge cases, not just the happy path.
 
-## Pipeline
+## Pipeline — Verification After Code Changes
 
-Run the pipeline defined in `.opencode/rules/pipeline.md` after completing code changes.
-The plan-enforcer plugin enforces the review step — non-trivial `Coder:` items cannot be
-marked complete without running the reviewer first. The remaining steps (refactor, test, fix)
-are conventional; follow them when applicable.
+**Important:** This pipeline runs **after** code changes, not before. Your task planning phase (where you identify which subagents and skills to use) happens earlier and is complementary — this is a verification pass on the new code.
 
-Skip it if you made no code changes (e.g. answering a question) or if the change
-is marked `(trivial)` in the todowrite entry.
+**The review step is mandatory** for non-trivial changes. Refactor, test, and fix are conventional — follow them when applicable.
+
+### Step 0: Assess the Change
+
+Before running the pipeline, assess what you've changed:
+
+| Scenario                                                                                                         | Action                                                              |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **No code changed** (answering questions, discussing architecture, reading files)                                | Skip entirely                                                       |
+| **Trivial change** (single-line fix, comment, whitespace, rename, CSS/HTML tweak, config change)                 | Append `(trivial)` to the todowrite entry content and skip entirely |
+| **Non-trivial change, no test suite exists** (no `*.test.*` or `*.spec.*` files, no test script in package.json) | Run Step 1 (review) only, skip steps 2-4                            |
+| **Non-trivial change with tests**                                                                                | Run full pipeline (Steps 1-4)                                       |
+
+### Step 1: Review (MANDATORY for non-trivial changes)
+
+Call `task(subagent_type="reviewer")` passing the changed files. The reviewer checks for duplicates, DRY violations, long functions, naming issues, missing tests, etc.
+
+### Step 2: Refactor (if reviewer flagged issues)
+
+Call `task(subagent_type="refactor")` to fix any issues found.
+
+### Step 3: Test (if tests exist)
+
+Auto-detect the test command from project config files and run it. Skip if no test suite exists.
+
+### Step 4: Fix (if tests fail)
+
+Fix failing tests and rerun.
 
 ## Consistency
 
 - Follow existing naming conventions, project structure, and patterns.
-- **AGENTS.md step 3 governs scope.** When in doubt, check AGENTS.md — not this file.
+- **AGENTS.md step 2 governs scope.** During implementation, you were already restricted to your declared `[scope:...]` — respect those boundaries.
 
 ## Testing
 
-- Write tests alongside code. Descriptive test names.
+- Write meaningful tests: descriptive names, cover happy paths, edge cases, and errors.

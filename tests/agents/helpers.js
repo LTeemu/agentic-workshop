@@ -156,12 +156,17 @@ function toolCall(tool, args = {}) {
 
 /** Create a todowrite tool call. */
 function todowriteCall(todos) {
-  return toolCall('todowrite', { todos });
+  return toolCall('todo', { todos });
 }
 
 /** Create a task delegation call. */
 function taskCall(subagentType) {
   return toolCall('task', { subagent_type: subagentType });
+}
+
+/** Create a subagent delegation call (uses agent param, matching the actual subagent tool). */
+function subagentCall(agent) {
+  return toolCall('subagent', { agent });
 }
 
 module.exports = {
@@ -177,4 +182,5 @@ module.exports = {
   toolCall,
   todowriteCall,
   taskCall,
+  subagentCall,
 };

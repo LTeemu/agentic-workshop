@@ -1,74 +1,56 @@
+## Scope-Based Reading
+
+Only read files directly relevant to the task. When a `[scope:...]` is declared in a todowrite entry, read only files within that scope. **Strict Cross-Project Isolation:** No browsing sibling projects under `projects/` for reference code, boilerplate, or examples. Build projects from standard templates rather than inspecting sibling projects. Scope is the only gate.
+
 ## Communication Style
 
-- Be concise. Avoid repetition or filler language.
+- Be concise. No repetition or filler language.
 
-## On Each Prompt (HARD GATE)
-
-### First Action
+## On Each Prompt
 
 When you receive a new user message:
 
-1. **Read the rules** — AGENTS.md, pipeline.md. You calibrate from them.
-2. **Plan** — State your plan to the user: which subagents and skills you'll use, and in what order. Wait for confirmation.
-3. **Declare scope** — Before calling todowrite, determine which files/directories are relevant to the task. You'll encode this as `[scope:path1, path2]` in step 4. Only read files within this scope. If the user didn't name it, don't read it. Keep scope narrow — the plugin enforces this mechanically.
-   **Bash caveat:** Plugin checks workdir, not command. Don't use bash to read files — use `read`/`glob`/`grep` instead.
-4. **Call `todowrite`** — with role-prefixed entries (see table below). At least one entry must include `[scope:...]`. This unlocks your tools.
-5. **Delegate** — Researcher/Reviewer/Refactor entries go via `task(subagent_type="...")`. Only Coder entries are for you to handle directly. `explore` is also available for fast codebase exploration (call via `task()` without a todo prefix).
+- **Investigatory / Evaluative Queries** (answering questions, explaining architecture, evaluating changes): You can respond directly without a formal `todowrite` plan, provided no file edits or direct code mutations are required. Note: direct `read`/`glob`/`grep` calls require either a `todowrite` plan or `task(subagent_type="explore")` delegation.
+- **Task / Code Execution Queries** (implementing features, refactoring, fixing bugs):
+  1. **Explore / Research** — Use `task(subagent_type="explore")` / `task(subagent_type="researcher")` / `task(subagent_type="reviewer")` for read-only exploration.
+  2. **Plan** — Determine relevant subagents, skills, and scope. State your plan to the user via a role-prefixed plan header.
+  3. **Execute** — `Researcher:`/`Reviewer:`/`Refactor:` entries → delegate via `task(subagent_type="...")`. `Coder:` entries → handle directly.
+
+**Bash caveat:** Don't use bash to read files — use `read`/`glob`/`grep` instead.
 
 ### Role Prefix Reference
 
-Every todowrite entry must start with one of these prefixes. The plugin enforces delegation and pipeline rules based on them.
+Every task entry must start with one of these prefixes:
 
-| Prefix                 | You must delegate via...           | Pipeline?                                                 |
-| ---------------------- | ---------------------------------- | --------------------------------------------------------- |
-| `Researcher:`          | `task(subagent_type="researcher")` | No                                                        |
-| `Reviewer:`            | `task(subagent_type="reviewer")`   | No                                                        |
-| `Refactor:`            | `task(subagent_type="refactor")`   | No                                                        |
-| `Coder:`               | Handle yourself — no delegation    | **Runs** (review → refactor → test)                       |
-| `Coder: ... (trivial)` | Handle yourself — no delegation    | **Skipped** (single-line fix, comment, rename, CSS tweak) |
+| Prefix                 | You must delegate via...           | Pipeline reviewer gate?                                  |
+| ---------------------- | ---------------------------------- | -------------------------------------------------------- |
+| `Researcher:`          | `task(subagent_type="researcher")` | No                                                       |
+| `Reviewer:`            | `task(subagent_type="reviewer")`   | No                                                       |
+| `Refactor:`            | `task(subagent_type="refactor")`   | No                                                       |
+| `Coder:`               | Handle yourself — no delegation    | **Required** (reviewer must be called before completion) |
+| `Coder: ... (trivial)` | Handle yourself — no delegation    | Skipped                                                  |
 
-#### Example — Non-trivial feature (pipeline runs)
+> **Every entry MUST start with the role prefix. Every Coder/Reviewer/Refactor entry MUST include `[scope:...]`.** Researcher may omit scope (exploratory search). At least one entry must have a non-empty scope.
+
+#### Example — Non-trivial feature
 
 ```
 ## Plan
 - **Subagents**: @researcher (research CSV parsing options)
 - **Skills**: @backend, @testing
-- **Steps**:
-  1. Researcher: research CSV parsing in Node.js stdlib
-  2. Coder: implement parseCSV function
-  3. Coder: write unit tests for parseCSV
 - **Todos**:
   - Researcher: research CSV parsing in Node.js stdlib
   - Coder:      [scope:src/parser.js] implement parseCSV function
   - Coder:      [scope:src/] write unit tests for parseCSV
-- **Pipeline**: will run (review → refactor → test)
 ```
 
-#### Example — Trivial fix (pipeline skipped)
+#### Example — Trivial fix
 
 ```
 ## Plan
-- **Subagents**: none
-- **Skills**: none
-- **Steps**:
-  1. Coder: fix typo in comment (trivial)
 - **Todos**:
   - Coder: [scope:src/] fix typo in comment (trivial)
-- **Pipeline**: skipped (trivial)
 ```
-
-Then call `todowrite` with matching role-prefixed entries, **including scope**, e.g.:
-
-```
-todowrite
-  Researcher: research CSV parsing in Node.js stdlib
-  Coder:      [scope:src/parser.js] implement parseCSV function
-  Coder:      [scope:src/] write unit tests for parseCSV
-```
-
-### Plan Reset — Fresh Plan Per Turn
-
-Once **all** todos are `completed` or `cancelled`, the plan resets. At the start of the next user message, you **must** state a new plan and call `todowrite` again before using tools. No stale plans from previous turns.
 
 ### Error Handling
 
