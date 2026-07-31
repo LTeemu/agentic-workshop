@@ -1,6 +1,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const PLUGIN_CORE = require(
+  path.join(__dirname, '..', '..', '.opencode', 'plugins', 'plan-enforcer-core.cjs'),
+);
+const { FRONTMATTER_RE } = PLUGIN_CORE;
+
 // ── Paths ────────────────────────────────────────────
 
 const WORKSPACE = path.resolve(__dirname, '..', '..');
@@ -45,43 +50,76 @@ function getSkillNames() {
 // ── Frontmatter Parsing ──────────────────────────────
 
 /**
+ * Split "key: value" (or bare "key") into a typed key/value pair.
+ * Quoted strings and boolean/number literals are unquoted/typed.
+ */
+function splitKeyValue(raw) {
+  const colonIdx = raw.indexOf(':');
+  if (colonIdx === -1) return { key: raw.trim(), value: '' };
+  const key = raw.slice(0, colonIdx).trim();
+  let value = raw.slice(colonIdx + 1).trim();
+  if (
+    (value.startsWith("'") && value.endsWith("'")) ||
+    (value.startsWith('"') && value.endsWith('"'))
+  ) {
+    value = value.slice(1, -1);
+  } else if (value === 'true') {
+    value = true;
+  } else if (value === 'false') {
+    value = false;
+  } else if (/^\d+$/.test(value)) {
+    value = Number(value);
+  }
+  return { key, value };
+}
+
+/**
  * Parse YAML frontmatter from a markdown file.
- * Handles flat keys (key: value) and nested keys (key:\n  sub: val).
+ * Supports the subset used by .opencode/agents/*.md: flat keys (key: value)
+ * and a `permissions:` list of {action, resource, effect} objects.
  * Returns null if no valid frontmatter found.
+ * The delimiter regex is shared with plan-enforcer-core.cjs (FRONTMATTER_RE).
  */
 function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n/);
+  const match = content.match(FRONTMATTER_RE);
   if (!match) return null;
-  const yaml = match[1];
+
   const result = {};
-  let currentParent = null;
+  let listKey = null;
+  let currentItem = null;
 
-  for (const line of yaml.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed === '' || trimmed === '---') continue;
+  for (const rawLine of match[1].split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
 
-    const colonIdx = trimmed.indexOf(':');
-    if (colonIdx === -1) continue;
-
-    const key = trimmed.slice(0, colonIdx).trim();
-    let val = trimmed.slice(colonIdx + 1).trim();
-
-    if (val === 'true') val = true;
-    else if (val === 'false') val = false;
-    else if (/^\d+$/.test(val)) val = Number(val);
-
-    if (line[0] === ' ' && currentParent) {
-      if (typeof result[currentParent] !== 'object' || result[currentParent] === null) {
-        result[currentParent] = {};
+    // List item, e.g. "- action: edit"
+    if (trimmed.startsWith('- ')) {
+      const { key, value } = splitKeyValue(trimmed.slice(2));
+      if (listKey) {
+        currentItem = { [key]: value };
+        if (!Array.isArray(result[listKey])) result[listKey] = [];
+        result[listKey].push(currentItem);
       }
-      result[currentParent][key] = val;
+      continue;
+    }
+
+    // Indented key belonging to the current list item, e.g. "    effect: deny"
+    if (listKey && currentItem && rawLine.startsWith(' ') && !trimmed.startsWith('-')) {
+      const { key, value } = splitKeyValue(trimmed);
+      currentItem[key] = value;
+      continue;
+    }
+
+    // Top-level key
+    const { key, value } = splitKeyValue(trimmed);
+    if (value === '') {
+      result[key] = {};
+      listKey = key;
+      currentItem = null;
     } else {
-      currentParent = key;
-      if (val === '') {
-        result[currentParent] = {};
-      } else {
-        result[currentParent] = val;
-      }
+      result[key] = value;
+      listKey = null;
+      currentItem = null;
     }
   }
   return result;
@@ -96,8 +134,11 @@ function validateAgentConfig(fm) {
     issues.push(`invalid mode "${fm.mode}" — must be "primary" or "subagent"`);
   }
   if (fm.mode === 'subagent') {
-    if (!fm.permission || typeof fm.permission !== 'object') {
+    const perms = fm.permissions;
+    if (!Array.isArray(perms) || perms.length === 0) {
       issues.push('subagent missing permission settings block');
+    } else if (!perms.every((p) => p && typeof p === 'object' && p.action && p.effect)) {
+      issues.push('subagent permission entries must have "action" and "effect"');
     }
   }
   return issues;
@@ -156,7 +197,7 @@ function toolCall(tool, args = {}) {
 
 /** Create a todowrite tool call. */
 function todowriteCall(todos) {
-  return toolCall('todo', { todos });
+  return toolCall('todowrite', { todos });
 }
 
 /** Create a task delegation call. */
@@ -175,6 +216,7 @@ module.exports = {
   getSkillsDir,
   getAgentNames,
   getSkillNames,
+  splitKeyValue,
   parseFrontmatter,
   validateAgentConfig,
   validateSkill,

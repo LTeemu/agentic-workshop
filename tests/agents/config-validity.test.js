@@ -21,6 +21,12 @@ const OPENCODE_CONFIG_CANDIDATES = [
 ];
 const OPENCODE_CONFIG = OPENCODE_CONFIG_CANDIDATES.find((f) => fs.existsSync(f));
 
+/** Resolve a local file reference to an absolute path, or null for a package name. */
+function resolveLocalPath(ref) {
+  const isLocal = ref.startsWith('.') || ref.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(ref);
+  return isLocal ? path.resolve(getWorkspace(), ref) : null;
+}
+
 // ── opencode.json structural integrity ──────────────
 
 describe('opencode.json consistency', () => {
@@ -33,31 +39,27 @@ describe('opencode.json consistency', () => {
     assert.ok(config, 'opencode.json is not valid JSON');
   });
 
-  it('all command agents have corresponding agent files', () => {
+  it('all @agent references in command templates resolve to agent files', () => {
     assert.ok(config, 'config not loaded');
     const agentNames = getAgentNames();
-    const cmdAgents = [];
-
-    if (config.command) {
-      for (const [cmdName, cmd] of Object.entries(config.command)) {
-        if (cmd.agent) {
-          cmdAgents.push({ cmd: cmdName, agent: cmd.agent });
-        }
+    const refs = [];
+    for (const [cmdName, cmd] of Object.entries(config.commands ?? {})) {
+      for (const match of (cmd.template ?? '').matchAll(/@([a-zA-Z0-9_-]+)/g)) {
+        refs.push({ cmd: cmdName, agent: match[1] });
       }
     }
 
-    if (cmdAgents.length === 0) {
-      console.log('  SKIP: no command agents configured');
+    if (refs.length === 0) {
+      console.log('  SKIP: no @agent references in command templates');
       return;
     }
 
-    for (const { cmd, agent } of cmdAgents) {
-      const expectedFile = `${agent}.md`;
+    for (const { cmd, agent } of refs) {
       assert.ok(
         agentNames.includes(agent),
-        `FAIL: command "${cmd}" references agent "${agent}" but ${expectedFile} not found`,
+        `FAIL: command "${cmd}" references agent "@${agent}" but ${agent}.md not found`,
       );
-      console.log(`  PASS: command "${cmd}" → agent "${agent}" exists`);
+      console.log(`  PASS: command "${cmd}" → @${agent} exists`);
     }
   });
 
@@ -77,46 +79,52 @@ describe('opencode.json consistency', () => {
 
   it('skill paths reference existing directories', () => {
     assert.ok(config, 'config not loaded');
-    if (!config.skills || !config.skills.paths) {
-      console.log('  SKIP: no skills.paths configured');
+    const skillPaths = Array.isArray(config.skills) ? config.skills : [];
+    if (skillPaths.length === 0) {
+      console.log('  SKIP: no skills configured');
       return;
     }
+
     const skillNames = getSkillNames();
-    for (const skillPath of config.skills.paths) {
+    for (const skillPath of skillPaths) {
       const resolved = path.resolve(getWorkspace(), skillPath);
       assert.ok(
         fs.existsSync(resolved),
         `FAIL: skill path "${skillPath}" resolves to "${resolved}" which does not exist`,
       );
-      if (fs.statSync(resolved).isDirectory()) {
-        const dirs = fs
-          .readdirSync(resolved)
-          .filter((f) => fs.statSync(path.join(resolved, f)).isDirectory());
-        for (const dir of dirs) {
-          assert.ok(
-            skillNames.includes(dir),
-            `FAIL: skill directory "${dir}" in ${skillPath} has no matching entry`,
-          );
-        }
-        console.log(`  PASS: skill path "${skillPath}" exists with ${dirs.length} skills`);
+      const dirs = fs
+        .readdirSync(resolved)
+        .filter((f) => fs.statSync(path.join(resolved, f)).isDirectory());
+      for (const dir of dirs) {
+        assert.ok(
+          skillNames.includes(dir),
+          `FAIL: skill directory "${dir}" in ${skillPath} has no matching entry`,
+        );
       }
+      console.log(`  PASS: skill path "${skillPath}" exists with ${dirs.length} skills`);
     }
   });
 
   it('plugin paths reference existing files', () => {
     assert.ok(config, 'config not loaded');
-    const pluginPaths = config.plugin || config.plugins || [];
-    if (pluginPaths.length === 0) {
+    const plugins = Array.isArray(config.plugins) ? config.plugins : [];
+    if (plugins.length === 0) {
       console.log('  SKIP: no plugins configured');
       return;
     }
-    for (const pluginPath of pluginPaths) {
-      const resolved = path.resolve(getWorkspace(), pluginPath);
-      assert.ok(
-        fs.existsSync(resolved),
-        `FAIL: plugin "${pluginPath}" resolves to "${resolved}" which does not exist`,
-      );
-      console.log(`  PASS: plugin "${pluginPath}" exists`);
+
+    for (const plugin of plugins) {
+      const ref = typeof plugin === 'string' ? plugin : (plugin.package ?? plugin.path);
+      const local = resolveLocalPath(ref);
+      if (local) {
+        assert.ok(
+          fs.existsSync(local),
+          `FAIL: plugin "${ref}" resolves to "${local}" which does not exist`,
+        );
+        console.log(`  PASS: plugin "${ref}" exists`);
+      } else {
+        console.log(`  PASS: plugin "${ref}" is a package reference (not checked locally)`);
+      }
     }
   });
 });

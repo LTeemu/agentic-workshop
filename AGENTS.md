@@ -12,7 +12,7 @@ Only read files directly relevant to the task. When a `[scope:...]` is declared 
 
 When you receive a new user message:
 
-- **Investigatory / Evaluative Queries** (answering questions, explaining architecture, evaluating changes): You can respond directly without a formal `todowrite` plan, provided no file edits or direct code mutations are required. Note: direct `read`/`glob`/`grep` calls require either a `todowrite` plan or `task(subagent_type="explore")` delegation.
+- **Investigatory / Evaluative Queries** (answering questions, explaining architecture, evaluating changes): You can respond directly without a formal `todowrite` plan, provided no file edits or direct code mutations are required. Note: `read`/`glob`/`grep` are unrestricted before a plan exists; for broad exploration, prefer `task(subagent_type="explore")` delegation.
 - **Task / Code Execution Queries** (implementing features, refactoring, fixing bugs):
   1. **Explore / Research** — Use `task(subagent_type="explore")` / `task(subagent_type="researcher")` / `task(subagent_type="reviewer")` for read-only exploration.
   2. **Plan** — Determine relevant subagents, skills, and scope. State your plan to the user via a role-prefixed plan header.

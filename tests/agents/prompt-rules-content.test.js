@@ -2,7 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 
-const { getWorkspace, getAgentNames, readFile } = require('./helpers');
+const { getWorkspace, getAgentNames, readFile, parseFrontmatter } = require('./helpers');
 
 const AGENTS_MD = path.join(getWorkspace(), 'AGENTS.md');
 const CODER_MD = path.join(getWorkspace(), '.opencode', 'agents', 'coder.md');
@@ -114,22 +114,33 @@ describe('Agent tool and permission consistency', () => {
   });
 
   it('subagent permissions match their role', () => {
-    const reviewer = readFile(path.join(AGENTS_DIR, 'reviewer.md'));
-    const researcher = readFile(path.join(AGENTS_DIR, 'researcher.md'));
-    const refactor = readFile(path.join(AGENTS_DIR, 'refactor.md'));
-    const explore = readFile(path.join(AGENTS_DIR, 'explore.md'));
-    const general = readFile(path.join(AGENTS_DIR, 'general.md'));
+    /** Returns the effect (allow/deny) for an action, or undefined. */
+    const effectOf = (agent, action) => {
+      const content = readFile(path.join(AGENTS_DIR, `${agent}.md`));
+      const fm = parseFrontmatter(content ?? '');
+      const perms = Array.isArray(fm?.permissions) ? fm.permissions : [];
+      let effect;
+      for (const p of perms) {
+        if (p.action === action) effect = p.effect;
+      }
+      return effect;
+    };
 
-    if (reviewer) assert.ok(/edit:\s*deny/i.test(reviewer), 'reviewer should deny edit');
-    if (reviewer) assert.ok(/bash:\s*deny/i.test(reviewer), 'reviewer should deny bash');
-    if (researcher) assert.ok(/edit:\s*deny/i.test(researcher), 'researcher should deny edit');
-    if (researcher) assert.ok(/bash:\s*deny/i.test(researcher), 'researcher should deny bash');
-    if (refactor) assert.ok(/edit:\s*allow/i.test(refactor), 'refactor should allow edit');
-    if (refactor) assert.ok(/bash:\s*deny/i.test(refactor), 'refactor should deny bash');
-    if (explore) assert.ok(/edit:\s*deny/i.test(explore), 'explore should deny edit');
-    if (explore) assert.ok(/bash:\s*deny/i.test(explore), 'explore should deny bash');
-    if (general) assert.ok(/disabled:\s*true/i.test(general), 'general should be disabled');
-    if (general) assert.ok(/edit:\s*deny/i.test(general), 'general should deny edit');
-    if (general) assert.ok(/bash:\s*deny/i.test(general), 'general should deny bash');
+    const cases = [
+      ['reviewer', { edit: 'deny', shell: 'deny' }],
+      ['researcher', { edit: 'deny', shell: 'deny' }],
+      ['explore', { edit: 'deny', shell: 'deny' }],
+      ['refactor', { edit: 'allow', shell: 'deny' }],
+      ['general', { edit: 'deny', shell: 'deny' }],
+    ];
+
+    for (const [agent, expected] of cases) {
+      for (const [action, effect] of Object.entries(expected)) {
+        assert.strictEqual(effectOf(agent, action), effect, `${agent} should ${effect} ${action}`);
+      }
+    }
+
+    const general = parseFrontmatter(readFile(path.join(AGENTS_DIR, 'general.md')) ?? '');
+    assert.strictEqual(general?.disabled, true, 'general should be disabled');
   });
 });

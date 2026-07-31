@@ -53,7 +53,7 @@ opencode2 api get /api/health
 | `_backups/`                 | Auto-generated backups on project deletion                                                                                                                                     |
 | `tests/`                    | Agent & project test suites (`npm run test:*`)                                                                                                                                 |
 | `.active-project`           | Tracks which project is currently active                                                                                                                                       |
-| `.githooks/`                | Git hooks (auto-format + smart test on commit — only changed projects)                                                                                                         |
+| `.githooks/`                | Git hooks (format staged prettier types + tests scoped to changed files: per-project suites, agent suite when non-project agent/opencode paths change)                         |
 | `opencode.json`             | Loads `AGENTS.md` as the instruction file, registers agent files                                                                                                               |
 | `AGENTS.md`                 | Task planning workflow, role-prefix delegation rules, project guidelines                                                                                                       |
 | `.opencode/agents/`         | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools |
@@ -96,17 +96,21 @@ Before committing to a plan, the coder can dispatch a read-only subagent for cod
 - `task(subagent_type="reviewer")` — unlocks read, glob, grep, skill
 - `task(subagent_type="explore")` — not a role-prefixed entry; called directly via `task()` for fast file discovery
 
-This is the only way to read files before a plan exists.
+This is the intended way to explore before a plan exists — direct reads are unrestricted, but delegating keeps the main agent focused.
 
 ### 2. Task planning
 
 Defined in `AGENTS.md`. The coder states a plan to the user, then calls `todowrite` with role-prefixed entries including `[scope:path,...]`. This unlocks all tools. The **plan-enforcer** plugin mechanically enforces:
 
-| Gate           | Rule                                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Scope required | At least one entry must declare `[scope:...]` — restricts read/glob/grep/bash to those paths                                   |
-| Delegate first | Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) can't start until `task()` is called with the matching subagent type |
-| Plan reset     | When all todos resolve, state clears for a fresh start                                                                         |
+| Gate                    | Rule                                                                                                                                         |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Role prefix required    | Every todowrite entry must start with `Researcher:` / `Reviewer:` / `Refactor:` / `Coder:`                                                   |
+| Scope required          | At least one entry must declare `[scope:...]`; Coder/Reviewer/Refactor entries always need one                                               |
+| Delegate first          | Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) can't start (or complete) until `task()` is called with the matching subagent type |
+| Pipeline required       | Non-trivial `Coder:` items can't complete until `task(subagent_type="reviewer")` was called                                                  |
+| Scope violation         | `read`/`glob`/`grep`/`bash`/`shell` restricted to declared scope paths                                                                       |
+| Cross-project isolation | No access to sibling projects under `projects/` unless that project is explicitly in scope                                                   |
+| Invalid subagent type   | `task()`/`subagent()` only accepts agent types registered in `.opencode/agents/` (mode `subagent`, not disabled)                             |
 
 ### 3. Execution
 

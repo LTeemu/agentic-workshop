@@ -15,6 +15,7 @@ const {
   PROJECTS_DIR,
 } = require('./project-utils');
 const { detectTest, runTest } = require('./test-runner');
+const { paint, colorizeUrls } = require('./colors');
 
 const PORT = 3000;
 const PROJECTS_BASE = 4000;
@@ -575,12 +576,12 @@ async function startProject(name, { autoStop = true } = {}) {
 
     child.stdout.on('data', (d) => {
       const text = d.toString();
-      process.stdout.write(`[${name}] ${text}`);
+      process.stdout.write(`${paint(`[${name}]`, 'green')} ${colorizeUrls(text)}`);
       pushLog(name, 'stdout', text);
     });
     child.stderr.on('data', (d) => {
       const text = d.toString();
-      process.stderr.write(`[${name}] ${text}`);
+      process.stderr.write(`${paint(`[${name}]`, 'green')} ${colorizeUrls(text)}`);
       pushLog(name, 'stderr', text);
     });
 
@@ -1034,7 +1035,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Workshop running at http://localhost:${PORT}`);
+  console.log(`Workshop running at ${paint(`http://localhost:${PORT}`, 'cyan', 'bold')}`);
   watchProjectsDir();
 
   // Auto-start a project. Priority: .active-project contents, then first
