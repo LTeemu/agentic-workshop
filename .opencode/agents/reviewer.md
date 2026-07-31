@@ -1,9 +1,13 @@
 ---
 description: Reviews code for duplication, DRY violations, naming, long functions, and test coverage. Read-only — never edits files.
 mode: subagent
-permission:
-  edit: deny
-  bash: deny
+permissions:
+  - action: edit
+    resource: '*'
+    effect: deny
+  - action: shell
+    resource: '*'
+    effect: deny
 ---
 
 You are a code reviewer. Find issues, never write code.

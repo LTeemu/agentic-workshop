@@ -2,9 +2,8 @@
  * Plan Enforcer Plugin — OpenCode V2 API (ESM, Promise-based)
  *
  * Mechanically enforces:
- *   - PLAN_FIRST: Blocks mutation tools until todowrite/todo is called
  *   - ROLE_PREFIX_REQUIRED: Todowrite entries must use valid role prefixes
- *   - SCOPE_REQUIRED: Todowrite entries must include [scope:...]
+ *   - SCOPE_REQUIRED: Todowrite entries must include [scope:...]. Coder/Reviewer/Refactor require scope; Researcher may omit scope, but at least one entry must have a non-empty scope.
  *   - DELEGATE_FIRST: Non-Coder tasks cannot start without prior delegation
  *   - PIPELINE_REQUIRED: Non-trivial Coder tasks need reviewer delegation before completion
  *   - SCOPE_VIOLATION: Tool calls (read, glob, grep, bash) restricted to declared scope

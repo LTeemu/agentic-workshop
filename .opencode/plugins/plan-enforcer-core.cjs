@@ -5,7 +5,6 @@
  * the tool hooks and event stream.
  *
  * Mechanically enforces:
- *   - PLAN_FIRST: Blocks mutation tools until todowrite/todo is called
  *   - ROLE_PREFIX_REQUIRED: Todowrite entries must use valid role prefixes
  *   - SCOPE_REQUIRED: Todowrite entries must include [scope:...]. Coder/Reviewer/Refactor require scope; Researcher may omit scope, but at least one entry must have a non-empty scope.
  *   - DELEGATE_FIRST: Non-Coder tasks cannot start without prior delegation
@@ -30,19 +29,6 @@ const PREFIX_TO_SUBAGENT = {
 
 /** Valid subagent_type values for task() / subagent() delegation. */
 const VALID_SUBAGENT_TYPES = ['explore', 'researcher', 'reviewer', 'refactor'];
-
-/** Tools allowed before plan is confirmed without throwing PLAN_FIRST. */
-const UNGATED_TOOLS = new Set([
-  'todo',
-  'todowrite',
-  'task',
-  'subagent',
-  'question',
-  'execute',
-  'websearch',
-  'webfetch',
-  'skill',
-]);
 
 /** The workspace root directory (CWD at module load time). */
 const WORKSPACE_ROOT = process.cwd();
@@ -178,7 +164,6 @@ function stripScope(content) {
 }
 
 function PlanEnforcer() {
-  let planConfirmed = false;
   const delegatedTypes = new Set();
   let lastTodos = [];
   let allowedScope = [];
@@ -217,9 +202,14 @@ function PlanEnforcer() {
     }
   }
 
-  return {
-    isPlanConfirmed: () => planConfirmed,
+  /** Drop all plan state: delegations, todos, and the enforced scope. */
+  function resetEnforcement() {
+    delegatedTypes.clear();
+    lastTodos = [];
+    allowedScope = [];
+  }
 
+  return {
     getDelegatedTypes: () => new Set(delegatedTypes),
 
     onToolExecuteBefore: (input, output) => {
@@ -258,8 +248,6 @@ function PlanEnforcer() {
         checkDelegation(todos);
         checkPipeline(todos);
 
-        planConfirmed = true;
-
         const allResolved = todos.every(
           (item) => item.status === 'completed' || item.status === 'cancelled',
         );
@@ -270,18 +258,7 @@ function PlanEnforcer() {
         return;
       }
 
-      // 3. Plan-first check before todowrite is called
-      if (!planConfirmed) {
-        if (UNGATED_TOOLS.has(tool)) {
-          return;
-        }
-
-        throw new Error(
-          `PLAN_FIRST: Call todowrite first to unlock tool "${tool}".`,
-        );
-      }
-
-      // 4. Scope enforcement after plan is confirmed
+      // 3. Scope enforcement after plan is confirmed
       if (allowedScope.length > 0) {
         switch (tool) {
           case 'read': {
@@ -321,19 +298,13 @@ function PlanEnforcer() {
           (item) => item.status !== 'completed' && item.status !== 'cancelled',
         );
         if (!hasActive) {
-          planConfirmed = false;
-          delegatedTypes.clear();
-          lastTodos = [];
-          allowedScope = [];
+          resetEnforcement();
         }
       } else if (
         type === 'session.interrupt' ||
         (type === 'tui.command.execute' && props.command === 'session.interrupt')
       ) {
-        planConfirmed = false;
-        delegatedTypes.clear();
-        lastTodos = [];
-        allowedScope = [];
+        resetEnforcement();
       } else if (type === 'todo.updated' && Array.isArray(props.todos)) {
         if (props.todos.length >= lastTodos.length) {
           lastTodos = props.todos;

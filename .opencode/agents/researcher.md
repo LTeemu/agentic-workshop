@@ -1,9 +1,13 @@
 ---
 description: Web research — docs, APIs, libraries, and best practices. Use when you need external information not in the local codebase. Synthesizes findings for other agents.
 mode: subagent
-permission:
-  edit: deny
-  bash: deny
+permissions:
+  - action: edit
+    resource: '*'
+    effect: deny
+  - action: shell
+    resource: '*'
+    effect: deny
 ---
 
 You are a research specialist. You gather and synthesize information from external sources for other agents (coder, reviewer, refactor).

@@ -32,6 +32,15 @@ node app/server.js
 
 Then open `http://localhost:3000`.
 
+The agent workspace (`.opencode/`, agents, plugins, skills) targets **OpenCode V2** — use the `opencode2` CLI, not V1's `opencode`:
+
+```
+opencode2 --version
+opencode2 api get /api/health
+```
+
+**Switch to the coder agent.** The `default_agent` setting in `opencode.json` doesn't seem to work in V2, so select the **coder** agent manually after launching: type `/agents` and pick **coder**.
+
 ## Project structure
 
 | Path                        | Purpose                                                                                                                                                                        |
@@ -50,7 +59,7 @@ Then open `http://localhost:3000`.
 | `.opencode/agents/`         | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools |
 | `.opencode/agents/coder.md` | Primary coding agent — includes the post-code verification pipeline (review → refactor → test → fix)                                                                           |
 | `.opencode/skills/`         | One file per skill — reusable domain instructions loaded on demand (e.g. backend, testing, database)                                                                           |
-| `.opencode/plugins/`        | `plan-enforcer.js` — enforces plan-first, scope, delegation, and pipeline gates mechanically                                                                                   |
+| `.opencode/plugins/`        | `plan-enforcer.js` — validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls                                          |
 
 ## API
 
@@ -124,14 +133,22 @@ Defined in `.opencode/agents/coder.md`. Runs after code changes:
 
 `opencode.json` sets **coder** as the default agent, loads `AGENTS.md` as the instruction file, and enables the **plan-enforcer** plugin. The instruction hierarchy on each task is: system prompt → `AGENTS.md` → per-agent file (e.g. `coder.md`).
 
+Verify the plugin is loaded for this workspace:
+
+```
+opencode2 api get "/api/plugin?location[directory]=<absolute-path-to-workspace>"
+```
+
+The `location[directory]` query is required — without it the command lists plugins for the global project context, not this workspace.
+
 Key files:
 
-| File                                 | Purpose                                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `AGENTS.md`                          | Task planning workflow, role-prefix rules, project guidelines                                    |
-| `.opencode/agents/coder.md`          | Primary coding agent — handles `Coder:` tasks directly; includes post-code verification pipeline |
-| `.opencode/agents/explore.md`        | `@explore` — read-only codebase exploration (not a role prefix)                                  |
-| `.opencode/agents/researcher.md`     | `@researcher` — web research, doc lookup (read-only)                                             |
-| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only)                                                    |
-| `.opencode/agents/refactor.md`       | `@refactor` — deduplication and cleanup (can edit)                                               |
-| `.opencode/plugins/plan-enforcer.js` | Mechanically enforces plan-first, scope, delegation, and pipeline gates                          |
+| File                                 | Purpose                                                                                                          |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                          | Task planning workflow, role-prefix rules, project guidelines                                                    |
+| `.opencode/agents/coder.md`          | Primary coding agent — handles `Coder:` tasks directly; includes post-code verification pipeline                 |
+| `.opencode/agents/explore.md`        | `@explore` — read-only codebase exploration (not a role prefix)                                                  |
+| `.opencode/agents/researcher.md`     | `@researcher` — web research, doc lookup (read-only)                                                             |
+| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only)                                                                    |
+| `.opencode/agents/refactor.md`       | `@refactor` — deduplication and cleanup (can edit)                                                               |
+| `.opencode/plugins/plan-enforcer.js` | Validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls |

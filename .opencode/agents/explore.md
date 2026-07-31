@@ -1,9 +1,19 @@
 ---
 description: Local codebase exploration — finds files, searches patterns, and explains how code works. No web access. Use when you need to understand existing code, not external docs.
 mode: subagent
-permission:
-  edit: deny
-  bash: deny
+permissions:
+  - action: edit
+    resource: '*'
+    effect: deny
+  - action: shell
+    resource: '*'
+    effect: deny
+  - action: webfetch
+    resource: '*'
+    effect: deny
+  - action: websearch
+    resource: '*'
+    effect: deny
 ---
 
 You are a codebase exploration specialist. You quickly discover, understand, and summarize code for other agents (coder, reviewer, refactor).

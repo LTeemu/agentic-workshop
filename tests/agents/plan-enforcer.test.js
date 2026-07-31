@@ -348,32 +348,21 @@ describe('PlanEnforcer — non-blocking before todowrite', () => {
     enforcer = PlanEnforcer();
   });
 
-  it('blocks codebase read tools (read, glob, grep) before todowrite', () => {
+  it('allows read-only tools (read, glob, grep) before todowrite', () => {
     for (const tool of ['read', 'glob', 'grep']) {
-      assert.throws(
+      assert.doesNotThrow(
         () =>
           enforcer.onToolExecuteBefore(
             { tool, sessionID: 'test', callID: '1' },
             { args: tool === 'read' ? { filePath: 'test.txt' } : { path: '.' } },
           ),
-        /PLAN_FIRST/,
-        `tool "${tool}" should throw PLAN_FIRST before todowrite`,
+        `tool "${tool}" should not throw before todowrite`,
       );
     }
   });
 
-  it('blocks mutation tools (write, edit, shell) before todowrite', () => {
+  it('allows mutation tools (write, edit, shell) before todowrite', () => {
     for (const tool of ['write', 'edit', 'shell']) {
-      assert.throws(
-        () => enforcer.onToolExecuteBefore({ tool, sessionID: 'test', callID: '1' }, { args: {} }),
-        /PLAN_FIRST/,
-        `tool "${tool}" should throw PLAN_FIRST before todowrite`,
-      );
-    }
-  });
-
-  it('allows communication and orchestration tools (question, execute) before todowrite', () => {
-    for (const tool of ['question', 'execute']) {
       assert.doesNotThrow(
         () => enforcer.onToolExecuteBefore({ tool, sessionID: 'test', callID: '1' }, { args: {} }),
         `tool "${tool}" should not throw before todowrite`,
@@ -381,40 +370,46 @@ describe('PlanEnforcer — non-blocking before todowrite', () => {
     }
   });
 
-  it('allows subagent() with any agent before todowrite', () => {
-    const { input, output } = subagentCall('explore');
-    assert.doesNotThrow(() => enforcer.onToolExecuteBefore(input, output));
-  });
-
-  it('plan is not confirmed before todowrite', () => {
-    assert.strictEqual(enforcer.isPlanConfirmed(), false);
+  it('still rejects a malformed plan once todowrite is called', () => {
+    const { input, output } = todowriteCall([{ content: 'no prefix here', status: 'pending' }]);
+    assert.throws(() => enforcer.onToolExecuteBefore(input, output), /ROLE_PREFIX_REQUIRED/);
   });
 });
 
-describe('PlanEnforcer — Plan Reset on Chat Message', () => {
-  it('resets plan when all todos are resolved and a new chat message arrives', async () => {
+describe('PlanEnforcer — Plan Reset', () => {
+  it('clears scope after all todos are resolved via todo.updated', async () => {
     const enforcer = PlanEnforcer();
 
     const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:.] done (trivial)', status: 'completed' },
+      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
     ]);
     await enforcer.onToolExecuteBefore(tdIn, tdOut);
 
-    await enforcer.onEvent({ type: 'chat.message' });
-
-    // After reset, plan is not confirmed — read tool throws PLAN_FIRST error
-    assert.strictEqual(enforcer.isPlanConfirmed(), false);
+    // Scope is enforced while the plan has active items
     assert.throws(
       () =>
         enforcer.onToolExecuteBefore(
           { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: __filename } },
+          { args: { filePath: 'package.json' } },
         ),
-      /PLAN_FIRST/,
+      /SCOPE_VIOLATION/,
+    );
+
+    await enforcer.onEvent({
+      type: 'todo.updated',
+      properties: { todos: [{ content: 'Coder: [scope:src/] work', status: 'completed' }] },
+    });
+
+    // After resolution, scope is cleared and tools run freely
+    assert.doesNotThrow(() =>
+      enforcer.onToolExecuteBefore(
+        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
+        { args: { filePath: 'package.json' } },
+      ),
     );
   });
 
-  it('preserves plan when there are still active items on chat message', async () => {
+  it('preserves scope when there are still active items on chat message', async () => {
     const enforcer = PlanEnforcer();
 
     const { input: tdIn, output: tdOut } = todowriteCall([

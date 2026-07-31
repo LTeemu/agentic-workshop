@@ -1,63 +1,52 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "deepseek/deepseek-v4-flash-free",
-  "small_model": "deepseek/deepseek-v4-flash-free",
   "default_agent": "coder",
-  "instructions": ["AGENTS.md"],
-  "command": {
+  "commands": {
     "review": {
       "description": "Review code for issues with @reviewer",
-      "template": "Run @reviewer on all changed files. Report all issues.",
-      "agent": "reviewer"
+      "template": "Run @reviewer on all changed files. Report all issues."
     },
     "clean": {
       "description": "Refactor code to eliminate duplication",
-      "template": "Run @refactor on the codebase to find and eliminate duplicate code patterns.",
-      "agent": "refactor"
+      "template": "Run @refactor on the codebase to find and eliminate duplicate code patterns."
     },
     "research": {
       "description": "Research a topic using @researcher",
-      "template": "Run @researcher on the following topic: <question>",
-      "agent": "researcher"
+      "template": "Run @researcher on the following topic: $ARGUMENTS"
     }
   },
-  "plugin": ["./.opencode/plugins/plan-enforcer.js"],
-  "skills": {
-    "paths": [".opencode/skills"]
-  },
-  "permission": {
-    "edit": "allow",
-    "bash": {
-      "*": "allow",
-      "Remove-Item *": "ask",
-      "rm *": "ask",
-      "git log": "allow",
-      "git show *": "allow",
-      "git diff *": "allow",
-      "git status": "allow",
-      "git add *": "ask",
-      "git commit": "ask",
-      "git commit *": "ask",
-      "git * --amend": "ask",
-      "git push *": "ask",
-      "git pull *": "ask",
-      "git merge *": "ask",
-      "git rebase *": "ask",
-      "git reset *": "ask",
-      "git branch *": "ask",
-      "git checkout *": "ask",
-      "git stash *": "ask",
-      "git tag *": "ask",
-      "git revert *": "ask",
-      "git rm *": "ask"
-    }
-  },
+  "plugins": [{ "package": "./.opencode/plugins/plan-enforcer.js" }],
+  "skills": [".opencode/skills"],
+  "permissions": [
+    { "action": "edit", "resource": "*", "effect": "allow" },
+    { "action": "shell", "resource": "*", "effect": "allow" },
+    { "action": "shell", "resource": "Remove-Item *", "effect": "ask" },
+    { "action": "shell", "resource": "rm *", "effect": "ask" },
+    { "action": "shell", "resource": "git add *", "effect": "ask" },
+    { "action": "shell", "resource": "git commit", "effect": "ask" },
+    { "action": "shell", "resource": "git commit *", "effect": "ask" },
+    { "action": "shell", "resource": "git * --amend", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "ask" },
+    { "action": "shell", "resource": "git pull *", "effect": "ask" },
+    { "action": "shell", "resource": "git merge *", "effect": "ask" },
+    { "action": "shell", "resource": "git rebase *", "effect": "ask" },
+    { "action": "shell", "resource": "git reset *", "effect": "ask" },
+    { "action": "shell", "resource": "git branch *", "effect": "ask" },
+    { "action": "shell", "resource": "git checkout *", "effect": "ask" },
+    { "action": "shell", "resource": "git stash *", "effect": "ask" },
+    { "action": "shell", "resource": "git tag *", "effect": "ask" },
+    { "action": "shell", "resource": "git revert *", "effect": "ask" },
+    { "action": "shell", "resource": "git rm *", "effect": "ask" }
+  ],
   "tool_output": {
     "max_lines": 2000,
     "max_bytes": 50000
   },
   "compaction": {
     "auto": true,
-    "tail_turns": 5
+    "keep": {
+      "tokens": 8000
+    }
   }
 }

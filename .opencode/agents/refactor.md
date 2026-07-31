@@ -1,9 +1,13 @@
 ---
 description: Eliminates duplication and improves code structure without changing behavior. Invoked after reviewer flags issues.
 mode: subagent
-permission:
-  edit: allow
-  bash: deny
+permissions:
+  - action: edit
+    resource: '*'
+    effect: allow
+  - action: shell
+    resource: '*'
+    effect: deny
 ---
 
 Specialist in removing duplication without changing behavior.
