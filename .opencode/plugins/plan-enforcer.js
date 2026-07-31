@@ -11,7 +11,7 @@
  *   - INVALID_SUBAGENT_TYPE: Validates subagent_type / agent parameters
  *
  * Config reference:
- *   opencode.json  →  "plugin": ["./.opencode/plugins/plan-enforcer.js"]
+ *   opencode.json  →  "plugins": [{ "package": "./.opencode/plugins/plan-enforcer.js" }]
  */
 import { Plugin } from '@opencode-ai/plugin';
 import { createRequire } from 'module';

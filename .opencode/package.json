@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@opencode-ai/plugin": "0.0.0-next-16570"
+  }
+}
