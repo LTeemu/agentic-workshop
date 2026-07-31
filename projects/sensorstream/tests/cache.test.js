@@ -38,11 +38,6 @@ describe('TtlCache', () => {
     assert.equal(cache.has('expire-key'), false);
   });
 
-  it('returns undefined for expired entries on get', () => {
-    cache.set('exp-fast', 'x', 10);
-    // After expiry, get returns undefined
-  });
-
   it('invalidates keys by prefix', () => {
     cache.set('user:1', 'a');
     cache.set('user:2', 'b');

@@ -2,10 +2,6 @@ import { randomUUID } from 'crypto';
 import { getDb } from '../db.js';
 import config from '../config.js';
 
-const insertReading = null; // Prepared later
-const insertAnomaly = null;
-const pruneOld = null;
-
 /**
  * Stores a cleaned reading in SQLite.
  * Also inserts an anomaly record if the reading was flagged.

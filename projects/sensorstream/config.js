@@ -11,7 +11,10 @@ const config = {
   allowedRemoteAddrs: ['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost'],
 
   // Paths
-  dbPath: resolve(__dirname, 'data', 'sensorstream.db'),
+  // SENSORSTREAM_DB overrides the DB location (used by tests to isolate runs)
+  dbPath: process.env.SENSORSTREAM_DB
+    ? resolve(process.env.SENSORSTREAM_DB)
+    : resolve(__dirname, 'data', 'sensorstream.db'),
   staticDir: resolve(__dirname),
 
   // Sensor simulation
