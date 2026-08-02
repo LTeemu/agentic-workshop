@@ -166,7 +166,8 @@ body {
   min-width: 0;
 }
 
-.project-item .dot {
+.project-item .dot,
+.compact-project .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -174,9 +175,23 @@ body {
   flex-shrink: 0;
   transition: background 0.2s;
 }
-.project-item .dot.running {
+.compact-project .dot {
+  margin-bottom: 2px;
+}
+.project-item .dot.running,
+.compact-project .dot.running {
   background: #3fb950;
   box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+}
+.project-item .dot.starting,
+.compact-project .dot.starting {
+  background: #d29922;
+  box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
+}
+.project-item .dot.error,
+.compact-project .dot.error {
+  background: #f85149;
+  box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
 }
 
 /* ── Compact Sidebar (collapsed) ── */
@@ -221,21 +236,6 @@ body {
   background: #1c2128;
 }
 
-.compact-project .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #484f58;
-  flex-shrink: 0;
-  transition: background 0.2s;
-  margin-bottom: 2px;
-}
-
-.compact-project .dot.running {
-  background: #3fb950;
-  box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
-}
-
 .compact-id {
   font-size: 13px;
   font-weight: 600;
@@ -248,6 +248,14 @@ body {
 
 .compact-project.running .compact-id {
   color: #3fb950;
+}
+
+.compact-project.starting .compact-id {
+  color: #d29922;
+}
+
+.compact-project.error .compact-id {
+  color: #f85149;
 }
 
 .compact-details {
@@ -379,6 +387,14 @@ body {
   background: #30363d;
 }
 
+#compact-test-all {
+  color: #5bf523;
+}
+
+#compact-test-all:hover:not(:disabled) {
+  color: #5bf523;
+}
+
 #compact-test-all:disabled {
   animation: pulse 1.2s ease-in-out infinite;
 }
@@ -476,17 +492,60 @@ body {
   background: #fff;
 }
 
+#sidebar-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 #stop-all,
 #test-all {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: #21262d;
   color: #c9d1d9;
   border: 1px solid #30363d;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 12px;
+  line-height: 1;
   cursor: pointer;
-  margin-top: 6px;
+}
+
+/* Icon + label containers — icon is a drawn/shaped box (see .stop-icon),
+   labels share the button's line metrics so both center identically. */
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  font-size: 12px; /* same glyph size as the compact sidebar buttons */
+  line-height: 1;
+}
+
+.btn-label {
+  line-height: 1;
+}
+
+/* Drawn stop square — the ■ glyph has uneven font metrics that flex centering
+   can't correct; a CSS square centers pixel-perfectly. */
+.stop-icon {
+  width: 10px;
+  height: 10px;
+  background: #f85149;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+#test-all .btn-icon {
+  /* Bright acid green — user-chosen (#5bf523) */
+  color: #5bf523;
 }
 
 #stop-all:hover:not(:disabled),
@@ -784,6 +843,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Clip panel content while its height animates open/closed */
+  overflow: hidden;
+  /* Duration must match PANEL_ANIMATION_MS in app.js */
   transition: height 0.2s ease;
 }
 
@@ -838,10 +900,11 @@ body {
 }
 
 #log-panel-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 6px 48px 6px 12px; /* right padding keeps controls clear of #log-toggle */
   background: #161b22;
   border-bottom: 1px solid #21262d;
   flex-shrink: 0;
@@ -942,6 +1005,15 @@ body {
 #log-toggle:hover {
   background: #1c2128;
   color: #c9d1d9;
+}
+
+/* Pin the toggle to the top-right so it never wraps with the controls on
+   narrow screens (the rest of the header wraps underneath it). */
+#log-toggle {
+  position: absolute;
+  right: 12px;
+  top: 6px; /* matches #log-panel-header's top padding */
+  margin: 0;
 }
 
 #log-output {
@@ -1208,15 +1280,42 @@ body {
 }
 
 .copy-btn {
+  position: relative;
+  width: 24px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 1px solid #30363d;
   color: #8b949e;
   cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
+  padding: 0;
   border-radius: 3px;
   line-height: 1;
   flex-shrink: 0;
+}
+
+/* Copy icon: two overlapping squares (back top-left, front offset down-right) */
+.copy-btn::before,
+.copy-btn::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.copy-btn::before {
+  top: 4px;
+  left: 4px;
+  opacity: 0.65;
+}
+
+.copy-btn::after {
+  top: 7px;
+  left: 7px;
 }
 
 .copy-btn:hover {

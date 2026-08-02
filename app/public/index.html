@@ -24,8 +24,14 @@
             </span>
             Auto-stop on switch
           </label>
-          <button id="stop-all" class="sidebar-btn danger">Stop All</button>
-          <button id="test-all" class="sidebar-btn">Test All</button>
+          <div id="sidebar-actions">
+            <button id="stop-all" class="sidebar-btn danger">
+              <span class="btn-icon stop-icon"></span><span class="btn-label">Stop All</span>
+            </button>
+            <button id="test-all" class="sidebar-btn">
+              <span class="btn-icon">▶</span><span class="btn-label">Test All</span>
+            </button>
+          </div>
         </div>
         <div id="sidebar-compact" aria-label="Projects">
           <div id="sidebar-compact-projects"></div>
@@ -37,7 +43,7 @@
               </span>
             </label>
             <button id="compact-stop-all" class="compact-ctrl-btn danger" title="Stop All">
-              ■
+              <span class="stop-icon"></span>
             </button>
             <button id="compact-test-all" class="compact-ctrl-btn" title="Test All">▶</button>
           </div>
@@ -156,6 +162,7 @@
     </div>
     <script src="/vendor/xterm/xterm.js"></script>
     <script src="/vendor/xterm/xterm-addon-fit.js"></script>
+    <script src="/status-utils.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

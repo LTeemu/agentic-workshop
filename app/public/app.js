@@ -14,6 +14,7 @@ const sidebar = document.getElementById('sidebar');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const sidebarCompact = document.getElementById('sidebar-compact');
 const sidebarCompactProjects = document.getElementById('sidebar-compact-projects');
+const { normalizeProjectStatus, exitCodeToStatus, reconcileStatus } = window.StatusUtils;
 
 // Details panel
 const detailsPanel = document.getElementById('details-panel');
@@ -37,6 +38,10 @@ const LOG_VISIBLE_KEY = 'workshop-log-visible';
 const LOG_TAB_KEY = 'workshop-log-tab';
 const TERMINAL_ID_KEY = 'workshop-terminal-id'; // live session reused across refreshes
 const LOG_MIN_HEIGHT = 180;
+// Must match the panel animation durations in style.css (`transition: height 0.2s ease`,
+// `slideIn/slideOut 0.2s`). Used to apply the collapsed/hidden class after the CSS
+// animation finishes.
+const PANEL_ANIMATION_MS = 200;
 
 // Panel tabs
 const panelTabs = document.getElementById('panel-tabs');
@@ -45,8 +50,10 @@ const panelTabs = document.getElementById('panel-tabs');
 const terminalTab = document.getElementById('terminal-tab');
 const terminalContainer = document.getElementById('terminal-container');
 const terminalOpenCodeBtn = document.getElementById('terminal-opencode');
+const logPanelHeader = document.getElementById('log-panel-header');
 
 let projects = [];
+let projectStatuses = {}; // { projectName: 'stopped' | 'starting' | 'running' | 'error' }
 let activeProject = null; // { name, url, runType }
 let autoStop = true;
 let logBuffers = {}; // { projectName: [{ ts, stream, line }] }
@@ -65,10 +72,90 @@ async function api(url, options = {}) {
 }
 
 async function loadProjects() {
-  const data = await api('/api/projects');
+  let data;
+  try {
+    data = await api('/api/projects');
+  } catch {
+    return; // network failure — keep the last known list
+  }
   if (!Array.isArray(data)) return; // failed response — keep the last known list
   projects = data;
+  // Reconcile the dot-status map with the authoritative payload. Transient
+  // alert states ('error', stale 'starting') resolve to gray once the server
+  // confirms the project is stopped — so a crash or a failed start can't leave
+  // a red dot forever (e.g. after a dashboard restart or a project with no
+  // start method).
+  const names = new Set(data.map((p) => p.name));
+  for (const p of data) {
+    const payload = p.status || (p.running ? 'running' : 'stopped');
+    projectStatuses[p.name] = reconcileStatus(projectStatuses[p.name], payload);
+  }
+  // Drop entries for projects that no longer exist.
+  for (const key of Object.keys(projectStatuses)) {
+    if (!names.has(key)) delete projectStatuses[key];
+  }
   renderProjectList();
+}
+
+// Red dots are a transient alert: a short while after an error, re-check the
+// authoritative payload so the dot falls back to gray once the project is
+// confirmed stopped (unless it is still running, e.g. a liveness timeout).
+const ERROR_RESYNC_MS = 4000;
+let errorResyncTimer = null;
+
+function scheduleErrorResync() {
+  clearTimeout(errorResyncTimer);
+  if (pageUnloading) return; // don't fire a fetch against a tearing-down page
+  errorResyncTimer = setTimeout(loadProjects, ERROR_RESYNC_MS);
+}
+
+/** CSS class for a project's status dot ('' = gray/stopped). */
+function projectDotClass(name) {
+  const s = projectStatuses[name];
+  return s === 'running' || s === 'starting' || s === 'error' ? s : '';
+}
+
+/** Update a project's dot status and keep its `running` flag in sync. */
+function setDotStatus(name, status) {
+  const p = projects.find((x) => x.name === name);
+  if (!p) return; // late SSE for a deleted project — don't resurrect its entry
+  projectStatuses[name] = status;
+  p.running = status === 'running';
+  if (status === 'error') {
+    scheduleErrorResync(); // auto-clear once stopped
+  } else {
+    clearTimeout(errorResyncTimer); // a newer state supersedes a pending resync
+  }
+}
+
+/** Clear the preview pane for a stopped/failed active project. */
+function clearActivePreview(label, noticeText) {
+  activeProject.url = null;
+  openTabBtn.disabled = true;
+  setStatus('stopped', label);
+  projectUrlEl.textContent = '';
+  previewFrame.src = '';
+  if (noticeText) showNotice(noticeText);
+}
+
+/** Stop the active project if clicked; otherwise select (start) it. */
+function handleProjectClick(p) {
+  if (p.running && activeProject && activeProject.name === p.name) {
+    stopProject(p.name);
+  } else {
+    selectProject(p.name);
+  }
+}
+
+/** Open the details panel, or close it when re-clicking the same project. */
+function toggleProjectDetails(name) {
+  const panelHidden = detailsPanel.classList.contains('hidden');
+  const sameProject = detailsTitle.dataset.project === name;
+  if (!panelHidden && sameProject) {
+    closeDetails();
+  } else {
+    showDetails(name);
+  }
 }
 
 async function loadActive() {
@@ -97,26 +184,16 @@ function renderProjectList() {
     const item = document.createElement('div');
     item.className =
       'project-item' + (activeProject && activeProject.name === p.name ? ' active' : '');
-    const dotClass = p.running ? 'running' : '';
+    const dotClass = projectDotClass(p.name);
     const typeLabel = `<span class="run-type">${p.runType || p.type || '—'}</span>`;
     item.innerHTML = `<span class="dot ${dotClass}"></span><span class="project-name">${p.name}</span>${typeLabel}<div class="project-item-actions"><button class="details-btn" data-name="${p.name}" title="Project details">&#8505;</button></div>`;
     item.addEventListener('click', (e) => {
       if (e.target.closest('.project-item-actions')) return;
-      if (p.running && activeProject && activeProject.name === p.name) {
-        stopProject(p.name);
-      } else {
-        selectProject(p.name);
-      }
+      handleProjectClick(p);
     });
     item.querySelector('.details-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      const panelHidden = detailsPanel.classList.contains('hidden');
-      const sameProject = detailsTitle.dataset.project === p.name;
-      if (!panelHidden && sameProject) {
-        closeDetails();
-      } else {
-        showDetails(p.name);
-      }
+      toggleProjectDetails(p.name);
     });
     projectList.appendChild(item);
   });
@@ -124,29 +201,19 @@ function renderProjectList() {
   sidebarCompactProjects.innerHTML = '';
   projects.forEach((p) => {
     const el = document.createElement('div');
-    el.className = 'compact-project' + (p.running ? ' running' : '');
+    const dotClass = projectDotClass(p.name);
+    el.className = 'compact-project' + (dotClass ? ` ${dotClass}` : '');
     el.title = `${p.name}  (${p.runType || p.type || '—'})`;
     const shortId = p.name.charAt(0).toUpperCase();
-    const dotClass = p.running ? 'running' : '';
     el.innerHTML = `<span class="dot ${dotClass}"></span><span class="compact-id">${shortId}</span><button class="compact-details" data-name="${p.name}">i</button>`;
     el.addEventListener('click', (e) => {
       if (e.target.closest('.compact-details')) return;
       e.stopPropagation();
-      if (p.running && activeProject && activeProject.name === p.name) {
-        stopProject(p.name);
-      } else {
-        selectProject(p.name);
-      }
+      handleProjectClick(p);
     });
     el.querySelector('.compact-details').addEventListener('click', (e) => {
       e.stopPropagation();
-      const panelHidden = detailsPanel.classList.contains('hidden');
-      const sameProject = detailsTitle.dataset.project === p.name;
-      if (!panelHidden && sameProject) {
-        closeDetails();
-      } else {
-        showDetails(p.name);
-      }
+      toggleProjectDetails(p.name);
     });
     sidebarCompactProjects.appendChild(el);
   });
@@ -185,7 +252,7 @@ async function showDetails(name) {
     for (const [scriptName, scriptCmd] of scriptEntries) {
       const row = document.createElement('div');
       row.className = 'detail-script-row';
-      row.innerHTML = `<span class="detail-script-name">${scriptName}</span><code class="detail-script-cmd">${escapeHtml(scriptCmd)}</code><button class="copy-btn" data-cmd="${escapeHtml(scriptCmd)}" title="Copy command">📋</button>`;
+      row.innerHTML = `<span class="detail-script-name">${scriptName}</span><code class="detail-script-cmd">${escapeHtml(scriptCmd)}</code><button class="copy-btn" data-cmd="${escapeHtml(scriptCmd)}" title="Copy command"></button>`;
       row.querySelector('.copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(scriptCmd).catch(() => {});
       });
@@ -227,7 +294,7 @@ function closeDetails() {
     detailsPanel.classList.remove('slide-out');
     detailsPanel.classList.add('hidden');
     closeTimer = null;
-  }, 200);
+  }, PANEL_ANIMATION_MS);
 }
 
 detailsClose.addEventListener('click', closeDetails);
@@ -271,26 +338,75 @@ function appendLogLines(project, stream, lines) {
   }
 }
 
+function savedLogHeight() {
+  const savedH = parseInt(localStorage.getItem(LOG_HEIGHT_KEY), 10);
+  return Number.isFinite(savedH) ? Math.max(LOG_MIN_HEIGHT, savedH) : 200;
+}
+
 function restoreLogHeight() {
-  const savedH = localStorage.getItem(LOG_HEIGHT_KEY);
-  logPanel.style.height = savedH ? savedH + 'px' : '200px';
+  logPanel.style.height = savedLogHeight() + 'px';
+}
+
+let logCollapseTimer = null;
+
+function setLogPanelOpen(open) {
+  logVisible = open;
+  logToggle.textContent = open ? '▼' : '▲';
+}
+
+function cancelLogCollapse() {
+  if (logCollapseTimer) {
+    clearTimeout(logCollapseTimer);
+    logCollapseTimer = null;
+  }
+}
+
+// Height of the panel when collapsed: header + 1px top border (resize handle
+// is hidden by .collapsed). offsetHeight excludes the panel's top border.
+function collapsedLogHeight() {
+  return logPanelHeader.offsetHeight + 1;
+}
+
+// Pin the panel's current height as an explicit pixel value. While collapsed
+// the value is overridden by `height: auto !important`, but it becomes the
+// transition's from-value once `.collapsed` is removed (`auto` itself cannot
+// be interpolated by a CSS transition).
+function commitLogPanelHeight() {
+  logPanel.style.height = logPanel.getBoundingClientRect().height + 'px';
+}
+
+// Set the transition target. The caller must have pinned an explicit start
+// height first; forcing layout here commits that start state so the browser
+// sees a px→px change instead of px→auto.
+function animateLogPanelHeightTo(targetPx) {
+  void logPanel.offsetHeight;
+  logPanel.style.height = targetPx + 'px';
 }
 
 function showLogPanel() {
-  // Restore saved height before removing collapsed for smooth transition
-  restoreLogHeight();
+  // Cancel a pending close so a reopen mid-animation keeps the panel open.
+  cancelLogCollapse();
+  commitLogPanelHeight();
   logPanel.classList.remove('collapsed');
-  logVisible = true;
-  logToggle.textContent = '▼';
+  animateLogPanelHeightTo(savedLogHeight());
+  setLogPanelOpen(true);
   if (activeProject) {
     renderLogs();
   }
 }
 
 function hideLogPanel() {
-  logPanel.classList.add('collapsed');
-  logVisible = false;
-  logToggle.textContent = '▲';
+  if (logPanel.classList.contains('collapsed') || logCollapseTimer) {
+    setLogPanelOpen(false);
+    return;
+  }
+  commitLogPanelHeight();
+  animateLogPanelHeightTo(collapsedLogHeight());
+  setLogPanelOpen(false);
+  logCollapseTimer = setTimeout(() => {
+    logPanel.classList.add('collapsed');
+    logCollapseTimer = null;
+  }, PANEL_ANIMATION_MS);
 }
 
 logToggle.addEventListener('click', () => {
@@ -327,9 +443,16 @@ resizeHandle.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   resizeHandle.setPointerCapture(e.pointerId);
   isResizing = true;
+  logPanel.classList.add('no-transition');
+  if (logCollapseTimer) {
+    // Keep the panel open: restore the saved height so a no-move release (click)
+    // doesn't persist the mid-collapse height, and the drag starts at full height.
+    cancelLogCollapse();
+    setLogPanelOpen(true);
+    restoreLogHeight();
+  }
   resizeStartY = e.clientY;
   resizeStartHeight = logPanel.getBoundingClientRect().height;
-  logPanel.classList.add('no-transition');
   document.body.style.cursor = 'ns-resize';
   document.body.style.userSelect = 'none';
 });
@@ -342,7 +465,7 @@ document.addEventListener('pointermove', (e) => {
   logPanel.style.height = clamped + 'px';
 });
 
-document.addEventListener('pointerup', (e) => {
+function endLogPanelResize() {
   if (!isResizing) return;
   isResizing = false;
   logPanel.classList.remove('no-transition');
@@ -352,7 +475,12 @@ document.addEventListener('pointerup', (e) => {
   if (h) {
     localStorage.setItem(LOG_HEIGHT_KEY, parseInt(h, 10));
   }
-});
+}
+
+document.addEventListener('pointerup', endLogPanelResize);
+// A cancelled gesture (e.g. touch scroll takeover) must not leave `no-transition`
+// stuck on the panel, or future open/close animations would snap.
+document.addEventListener('pointercancel', endLogPanelResize);
 
 // ── Panel Tabs ──
 
@@ -729,70 +857,53 @@ async function selectProject(name, start = true) {
     return;
   }
 
+  const prevActiveName = activeProject ? activeProject.name : null;
   activeProject = { name, url: null, runType: null };
   renderProjectList();
   openTabBtn.disabled = true;
 
   projectTypeEl.textContent = '';
   setStatus('loading', 'starting...');
+  setDotStatus(name, 'starting'); // yellow dot — start attempt in flight
+  renderProjectList(); // paint yellow before the API round-trip completes
   placeholder.classList.add('hidden');
   preview.classList.remove('hidden');
   projectUrlEl.textContent = '';
   previewFrame.src = ''; // Clear old project content immediately
 
+  // The server's autoStop stops only the previously-active project; background
+  // projects keep running, so don't gray out the whole list.
+  const clearPrevActive = () => {
+    if (autoStop && prevActiveName && prevActiveName !== name) {
+      setDotStatus(prevActiveName, 'stopped');
+    }
+  };
+
   if (start) {
-    const result = await api(`/api/projects/${name}/select?autoStop=${autoStop}`, {
-      method: 'POST',
-    });
-    if (autoStop) {
-      projects.forEach((p) => (p.running = false));
+    let result;
+    try {
+      result = await api(`/api/projects/${name}/select?autoStop=${autoStop}`, {
+        method: 'POST',
+      });
+    } catch {
+      setDotStatus(name, 'stopped');
+      showNotice('Could not reach the dashboard server');
+      return;
     }
-
-    if (result.url) {
-      const p = projects.find((x) => x.name === name);
-      if (p) {
-        p.running = true;
-        p.runType = result.runType;
-      }
-      activeProject.url = result.url;
-      activeProject.runType = result.runType;
-      projectUrlEl.textContent = result.url;
-      projectTypeEl.textContent = result.runType || '';
-      openTabBtn.disabled = false;
-
-      hideNotice();
-      if (result.starting) {
-        // Project is spawning — start loading the iframe immediately.
-        // System log events from the server will update the status text
-        // with step-by-step progress (installing, waiting, etc.).
-        previewFrame.src = result.url;
-      } else {
-        // Static server — ready immediately
-        setStatus('running', 'running');
-        previewFrame.src = result.url;
-      }
-    } else if (result.starting) {
-      // Already being started (e.g. by the auto-start path on boot).
-      // Keep 'loading' / 'starting...' and wait for SSE events.
-      setStatus('loading', 'starting...');
-      previewNoticeText.textContent = 'starting...';
-      previewNotice.classList.remove('hidden');
-      previewFrame.classList.add('hidden');
-    } else {
-      setStatus('stopped', result.error || 'stopped');
-      activeProject.url = null;
-      openTabBtn.disabled = true;
-      previewFrame.src = '';
-      showNotice(result.error || 'This project cannot be started');
-    }
+    clearPrevActive();
+    applySelectResult(name, result);
   } else {
-    const status = await api(`/api/projects/${name}/status`);
-    if (autoStop) {
-      projects.forEach((p) => (p.running = false));
+    let status;
+    try {
+      status = await api(`/api/projects/${name}/status`);
+    } catch {
+      setDotStatus(name, 'stopped');
+      showNotice('Could not reach the dashboard server');
+      return;
     }
+    clearPrevActive();
     if (status.running) {
-      const p = projects.find((x) => x.name === name);
-      if (p) p.running = true;
+      setDotStatus(name, 'running'); // green dot
       activeProject.url = status.url;
       activeProject.runType = status.runType;
       projectUrlEl.textContent = status.url;
@@ -808,19 +919,59 @@ async function selectProject(name, start = true) {
   renderProjectList();
 }
 
+/** Apply the /select response: update dot state and preview wiring. */
+function applySelectResult(name, result) {
+  if (result.url) {
+    // Green only once the process is confirmed; still spawning → keep yellow
+    // until the SSE project-status 'running' broadcast flips it.
+    setDotStatus(name, result.starting ? 'starting' : 'running');
+    const p = projects.find((x) => x.name === name);
+    if (p) p.runType = result.runType;
+    activeProject.url = result.url;
+    activeProject.runType = result.runType;
+    projectUrlEl.textContent = result.url;
+    projectTypeEl.textContent = result.runType || '';
+    openTabBtn.disabled = false;
+
+    hideNotice();
+    if (result.starting) {
+      // Project is spawning — start loading the iframe immediately.
+      // System log events from the server will update the status text
+      // with step-by-step progress (installing, waiting, etc.).
+      previewFrame.src = result.url;
+    } else {
+      // Static server — ready immediately
+      setStatus('running', 'running');
+      previewFrame.src = result.url;
+    }
+  } else if (result.starting) {
+    // Already being started (e.g. by the auto-start path on boot).
+    // Keep 'loading' / 'starting...' and wait for SSE events.
+    setStatus('loading', 'starting...');
+    previewNoticeText.textContent = 'starting...';
+    previewNotice.classList.remove('hidden');
+    previewFrame.classList.add('hidden');
+  } else {
+    setStatus('stopped', result.error || 'stopped');
+    // A failure before anything spawned (no start method, install/build
+    // error) never produced a process — keep the dot gray; the notice
+    // explains why. Only real start attempts show a transient red, driven by
+    // project-exit / project-status SSE events that always follow a yellow.
+    setDotStatus(name, result.neverStarted ? 'stopped' : 'error');
+    activeProject.url = null;
+    openTabBtn.disabled = true;
+    previewFrame.src = '';
+    showNotice(result.error || 'This project cannot be started');
+  }
+}
+
 async function stopProject(name) {
   const result = await api(`/api/projects/${name}/stop`, { method: 'POST' });
   if (result.stopped) {
     if (activeProject && activeProject.name === name) {
-      activeProject.url = null;
-      openTabBtn.disabled = true;
-      setStatus('stopped', 'stopped');
-      projectUrlEl.textContent = '';
-      previewFrame.src = '';
-      showNotice('stopped');
+      clearActivePreview('stopped', 'stopped');
     }
-    const p = projects.find((x) => x.name === name);
-    if (p) p.running = false;
+    setDotStatus(name, 'stopped'); // gray dot
     renderProjectList();
   }
 }
@@ -921,15 +1072,11 @@ async function stopAll() {
     if (activeProject) {
       const wasStopped = result.stopped.includes(activeProject.name);
       if (wasStopped) {
-        activeProject.url = null;
-        openTabBtn.disabled = true;
-        setStatus('stopped', 'stopped');
-        projectUrlEl.textContent = '';
-        previewFrame.src = '';
+        clearActivePreview('stopped'); // no notice — matches the pre-existing UX
       }
     }
     projects.forEach((p) => {
-      if (result.stopped.includes(p.name)) p.running = false;
+      if (result.stopped.includes(p.name)) setDotStatus(p.name, 'stopped');
     });
     renderProjectList();
   }
@@ -1009,6 +1156,11 @@ evtSource.onmessage = (e) => {
   const data = JSON.parse(e.data);
 
   switch (data.type) {
+    case 'connected':
+      // Resync dot states after an SSE reconnect (or dashboard restart).
+      loadProjects();
+      break;
+
     case 'project-list-change':
       loadProjects();
       break;
@@ -1021,7 +1173,12 @@ evtSource.onmessage = (e) => {
       }
       break;
 
-    case 'project-status':
+    case 'project-status': {
+      // Update the status dot for every project, not just the active one.
+      setDotStatus(
+        data.project,
+        normalizeProjectStatus(data.status, projectStatuses[data.project]),
+      );
       if (activeProject && activeProject.name === data.project) {
         if (data.status === 'running') {
           setStatus('running', 'running');
@@ -1029,14 +1186,12 @@ evtSource.onmessage = (e) => {
           previewFrame.src = data.url;
           hideNotice();
         } else if (data.status === 'timeout') {
-          setStatus('stopped', 'not responding');
-          previewFrame.src = '';
-          showNotice('not responding');
+          clearActivePreview('not responding', 'not responding');
         }
-        // Update project list to reflect run state
-        loadProjects();
       }
+      renderProjectList();
       break;
+    }
 
     case 'log':
       // Buffer all log types for the log panel
@@ -1058,7 +1213,12 @@ evtSource.onmessage = (e) => {
       }
       break;
 
-    case 'project-exit':
+    case 'project-exit': {
+      // Non-zero exit / failed-to-start → error (red); clean stop → gray.
+      // Pre-spawn failures (no start method, install/build errors) never
+      // broadcast here — the server sends a clean project-status 'stopped'
+      // instead, so those dots stay gray.
+      setDotStatus(data.project, exitCodeToStatus(data.code));
       if (activeProject && activeProject.name === data.project) {
         const label =
           data.code === -1
@@ -1068,15 +1228,11 @@ evtSource.onmessage = (e) => {
               : data.code === 0
                 ? 'stopped (exit 0)'
                 : `exited (${data.code})`;
-        setStatus('stopped', label);
-        projectUrlEl.textContent = '';
-        previewFrame.src = '';
-        activeProject.url = null;
-        openTabBtn.disabled = true;
-        showNotice(label);
-        loadProjects();
+        clearActivePreview(label, label);
       }
+      renderProjectList();
       break;
+    }
   }
 };
 

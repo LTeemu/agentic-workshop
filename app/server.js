@@ -116,6 +116,13 @@ function killPortOwner(port) {
 let active = null; // The currently-focused project (shown in iframe)
 let runningProjects = {}; // All projects with live processes: { name: { port, child } }
 let startingProjects = new Set(); // Projects currently being started (prevents double-start)
+// ChildProcess refs whose exit broadcast was already sent by an explicit stop
+// request (stopActive / stop / stop-all). Their real 'exit' event re-fires
+// afterwards with the raw OS code (null after SIGTERM, non-zero after
+// taskkill /F on Windows); suppressing the duplicate keeps a clean manual stop
+// from looking like a crash in other tabs. Keyed by the child object so a
+// restart of the same project name can't be affected by a stale flag.
+let stoppedByRequest = new Set();
 let sseClients = [];
 let activeWatcher = null;
 let projectsWatcher = null;
@@ -124,6 +131,30 @@ const startTime = Date.now();
 
 function isProjectRunning(name) {
   return !!(runningProjects[name] && runningProjects[name].child);
+}
+
+/** Single source of truth for a project's dot state. */
+function projectStatus(name) {
+  return isProjectRunning(name) ? 'running' : startingProjects.has(name) ? 'starting' : 'stopped';
+}
+
+/**
+ * Stop a background (non-focused) project: mark its child so the duplicate
+ * exit broadcast is suppressed, kill it, then announce the clean stop.
+ * Static servers have no child process — close them directly.
+ */
+async function stopBackgroundProject(name) {
+  const entry = runningProjects[name];
+  if (!entry) return;
+  const child = entry.child;
+  if (child && typeof child.pid === 'number') {
+    stoppedByRequest.add(child);
+    await killProcessTree(child.pid, child);
+  } else if (child && typeof child.close === 'function') {
+    child.close(); // static server — no 'exit' event, nothing to suppress
+  }
+  delete runningProjects[name];
+  broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
 }
 
 // Deterministic port for a project — stable across project add/remove.
@@ -391,6 +422,9 @@ async function stopActive() {
   if (!prev) return;
 
   delete runningProjects[prev.name];
+  if (prev.process && typeof prev.process.pid === 'number') {
+    stoppedByRequest.add(prev.process); // suppress the duplicate exit broadcast
+  }
   broadcastSSE({ type: 'project-exit', project: prev.name, code: 'stopped' });
 
   // Guard against the early-start state where active is set but has no process yet
@@ -462,9 +496,25 @@ function startStaticServer(projectPath, port) {
 }
 
 async function startProject(name, { autoStop = true } = {}) {
+  // Forget a start attempt that never produced a live process, so a re-click
+  // re-attempts instead of being treated as "already active/starting".
+  const clearActivePlaceholder = (name) => {
+    if (active && active.name === name) active = null;
+  };
+
+  // A start that fails before any process is spawned must not look like a
+  // crash: clear the placeholder active, tell other tabs the attempt ended
+  // cleanly (their dot would otherwise stick on yellow after the 'starting'
+  // broadcast below), and mark the response so the client keeps the dot gray
+  // instead of red.
+  const neverStarted = (error) => {
+    broadcastSSE({ type: 'project-status', project: name, status: 'stopped' });
+    clearActivePlaceholder(name);
+    return { error, neverStarted: true };
+  };
   try {
     const projectPath = path.join(PROJECTS_DIR, name);
-    if (!fs.existsSync(projectPath)) return { error: 'not found' };
+    if (!fs.existsSync(projectPath)) return neverStarted('not found');
 
     const port = projectPort(name);
 
@@ -511,20 +561,20 @@ async function startProject(name, { autoStop = true } = {}) {
     if (!run) {
       const desc = describeProject(projectPath) || 'unknown';
       pushLog(name, 'system', `No start method detected — project type: ${desc}`);
-      return { error: `no start method detected (project type: ${desc})` };
+      return neverStarted(`no start method detected (project type: ${desc})`);
     }
 
     // Auto-install dependencies if node_modules is missing and project uses npm
     if (run.type === 'npm') {
       const depErr = await ensureDependencies(projectPath, name, (n, s, t) => pushLog(n, s, t));
-      if (depErr) return { error: depErr };
+      if (depErr) return neverStarted(depErr);
 
       let pkg;
       try {
         pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf-8'));
       } catch (err) {
         pushLog(name, 'system', `Failed to parse package.json: ${err.message}`);
-        return { error: `Failed to parse package.json for ${name}: ${err.message}` };
+        return neverStarted(`Failed to parse package.json for ${name}: ${err.message}`);
       }
 
       // If using 'start' but build output is missing, handle it.
@@ -555,7 +605,7 @@ async function startProject(name, { autoStop = true } = {}) {
             pushLog(name, 'system', 'Build completed');
           } catch (err) {
             pushLog(name, 'system', `Build failed: ${err.message}`);
-            return { error: `Build failed: ${err.message}` };
+            return neverStarted(`Build failed: ${err.message}`);
           }
         }
       }
@@ -566,6 +616,9 @@ async function startProject(name, { autoStop = true } = {}) {
     if (run.type === 'static') {
       const server = startStaticServer(projectPath, port);
       active = { name, process: server, port, url, runType: 'static' };
+      // Register like any other process so isProjectRunning, projectStatus and
+      // /stop agree with the client's green dot for a live static server.
+      runningProjects[name] = { port, child: server };
       pushLog(name, 'system', `Static server started on port ${port}`);
       // Static servers are ready immediately
       broadcastSSE({ type: 'project-status', project: name, status: 'running', url });
@@ -603,6 +656,7 @@ async function startProject(name, { autoStop = true } = {}) {
         error: immediateError.message,
       });
       console.error(`[${name}] Failed to start: ${immediateError.message}`);
+      clearActivePlaceholder(name);
       return { error: `Failed to start process: ${immediateError.message}` };
     }
 
@@ -611,18 +665,26 @@ async function startProject(name, { autoStop = true } = {}) {
       delete runningProjects[name];
       broadcastSSE({ type: 'project-exit', project: name, code: -1, error: err.message });
       console.error(`[${name}] Process error: ${err.message}`);
-      if (active && active.name === name) {
-        active = null;
-      }
+      clearActivePlaceholder(name);
     });
 
+    // Set when this specific child terminates, so the liveness polling below
+    // can discard stale results: a stop/restart reuses the same port, and the
+    // old chain must not broadcast 'timeout' (or 'running') for the new
+    // process on that port.
+    let processExited = false;
     child.on('exit', (code) => {
+      processExited = true;
       pushLog(name, 'system', `Process exited with code ${code}`);
       delete runningProjects[name];
-      broadcastSSE({ type: 'project-exit', project: name, code });
-      if (active && active.name === name) {
-        active = null;
+      // An explicit stop request already broadcast project-exit ('stopped');
+      // the real OS exit code (null on SIGTERM, non-zero after taskkill /F)
+      // would make a clean manual stop look like a crash in other tabs.
+      if (!stoppedByRequest.has(child)) {
+        broadcastSSE({ type: 'project-exit', project: name, code });
       }
+      stoppedByRequest.delete(child);
+      clearActivePlaceholder(name);
     });
 
     // Track in runningProjects (all live processes regardless of autoStop)
@@ -635,12 +697,14 @@ async function startProject(name, { autoStop = true } = {}) {
     const livenessUrl = `${url}/api/health`;
     waitForLiveness(livenessUrl)
       .then((ready) => {
+        if (processExited) return false; // stale — the process is already gone
         if (!ready) {
           return waitForLiveness(url, 3000, 300);
         }
         return ready;
       })
       .then((ready) => {
+        if (processExited) return; // stale result — never broadcast for a dead child
         if (ready) {
           pushLog(name, 'system', `Server is ready on ${url}`);
           broadcastSSE({ type: 'project-status', project: name, status: 'running', url });
@@ -654,15 +718,21 @@ async function startProject(name, { autoStop = true } = {}) {
     return { url, starting: true };
   } catch (err) {
     console.error(`Failed to start project ${name}:`, err.message);
+    // An exception before any process spawned (e.g. the project dir vanished
+    // mid-start) is still a never-started failure — keep the dot gray.
+    if (active && active.name === name && !active.process) {
+      return neverStarted(err.message);
+    }
     return { error: err.message };
   } finally {
     startingProjects.delete(name);
-    // If start failed and active still points to this project with no process
-    // (the early-start placeholder at line 587), clear it so re-clicks on the
-    // project list re-attempt start instead of getting stuck on "starting...".
+    // Safety net: never leave the placeholder active for an attempt that ended
+    // without a live process — a re-click would otherwise look "already
+    // active" and stick on starting. Every path above either cleared it or
+    // assigned a process. (Pre-spawn failures never broadcast project-exit
+    // here: they go through neverStarted, which sends a clean 'stopped'.)
     if (active && active.name === name && !active.process) {
-      active = null;
-      broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
+      clearActivePlaceholder(name);
     }
   }
 }
@@ -833,6 +903,7 @@ async function handleAPI(req, res) {
             name,
             modified: stat.mtimeMs,
             running,
+            status: projectStatus(name),
             url: isActive ? active.url : null,
             runType: isActive ? active.runType : run ? run.type : null,
             type: describeProject(projectPath),
@@ -880,12 +951,7 @@ async function handleAPI(req, res) {
     const names = Object.keys(runningProjects);
     for (const n of names) {
       if (active && active.name === n) continue; // keep the focused project
-      const entry = runningProjects[n];
-      if (entry) {
-        await killProcessTree(entry.child.pid, entry.child);
-        delete runningProjects[n];
-        broadcastSSE({ type: 'project-exit', project: n, code: 'stopped' });
-      }
+      await stopBackgroundProject(n);
     }
     return json(res, { stopped: names.filter((n) => !active || active.name !== n) });
   }
@@ -897,6 +963,7 @@ async function handleAPI(req, res) {
     if (req.method === 'DELETE') {
       if (!fs.existsSync(projectPath)) return json(res, { error: 'not found' }, 404);
       if (active && active.name === name) await stopActive();
+      else if (isProjectRunning(name)) await stopBackgroundProject(name);
       backupProject(name);
       fs.rmSync(projectPath, { recursive: true, force: true });
       try {
@@ -953,12 +1020,7 @@ async function handleAPI(req, res) {
           await stopActive();
         } else {
           // Stop a background project that isn't the focused one
-          const entry = runningProjects[name];
-          if (entry) {
-            await killProcessTree(entry.child.pid, entry.child);
-            delete runningProjects[name];
-            broadcastSSE({ type: 'project-exit', project: name, code: 'stopped' });
-          }
+          await stopBackgroundProject(name);
         }
         return json(res, { stopped: name });
       }
@@ -974,6 +1036,7 @@ async function handleAPI(req, res) {
         exists: fs.existsSync(projectPath),
         active: isActive,
         running,
+        status: projectStatus(name),
         url: isActive ? active.url : null,
         runType: isActive ? active.runType : run ? run.type : null,
         modified: fs.existsSync(projectPath) ? fs.statSync(projectPath).mtimeMs : null,

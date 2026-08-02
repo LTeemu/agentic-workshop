@@ -1,6 +1,8 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const { EventEmitter } = require('node:events');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const term = require('../../app/terminal');
 
@@ -58,6 +60,14 @@ function makeFakePtyWithPid(pid) {
   const p = makeFakePty();
   p.pid = pid;
   return p;
+}
+
+/** Fake pty that records every write; returns { pty, written }. */
+function makeRecordingPty() {
+  const pty = makeFakePty();
+  const written = [];
+  pty.write = (d) => written.push(d);
+  return { pty, written };
 }
 
 /** Swap in a pty factory and hand back the restore callback. Async-aware so
@@ -475,9 +485,7 @@ describe('terminal session lifecycle', () => {
 
 describe('terminal input, resize, kill', () => {
   it('writeInput forwards data to the pty', async () => {
-    const pty = makeFakePty();
-    const written = [];
-    pty.write = (d) => written.push(d);
+    const { pty, written } = makeRecordingPty();
     await withFakePtyFactory(
       () => pty,
       async () => {
@@ -515,6 +523,60 @@ describe('terminal input, resize, kill', () => {
         const t = term.startTerminal(process.cwd(), 80, 24, { run: NOOP_RUN });
         try {
           assert.strictEqual(term.writeInput(t.id, 'x'), false);
+        } finally {
+          term.killTerminal(t.id);
+        }
+      },
+    );
+  });
+
+  it('drops Device-Attributes responses so they cannot echo to the screen', async () => {
+    const { pty, written } = makeRecordingPty();
+    await withFakePtyFactory(
+      () => pty,
+      async () => {
+        const t = term.startTerminal(process.cwd(), 80, 24, { run: NOOP_RUN });
+        try {
+          for (const seq of term.DA_RESPONSES) {
+            assert.strictEqual(term.writeInput(t.id, seq), true);
+          }
+          assert.deepStrictEqual(written, [], 'DA responses must never reach the pty');
+        } finally {
+          term.killTerminal(t.id);
+        }
+      },
+    );
+  });
+
+  it('still forwards ordinary input after dropping DA responses', async () => {
+    const { pty, written } = makeRecordingPty();
+    await withFakePtyFactory(
+      () => pty,
+      async () => {
+        const t = term.startTerminal(process.cwd(), 80, 24, { run: NOOP_RUN });
+        try {
+          const [first] = term.DA_RESPONSES;
+          term.writeInput(t.id, first);
+          assert.strictEqual(term.writeInput(t.id, 'echo hi\r'), true);
+          assert.deepStrictEqual(written, ['echo hi\r']);
+        } finally {
+          term.killTerminal(t.id);
+        }
+      },
+    );
+  });
+
+  it('does not drop input that merely contains a DA sequence', async () => {
+    const { pty, written } = makeRecordingPty();
+    await withFakePtyFactory(
+      () => pty,
+      async () => {
+        const t = term.startTerminal(process.cwd(), 80, 24, { run: NOOP_RUN });
+        try {
+          const [first] = term.DA_RESPONSES;
+          // Exact-match filter: a keystroke coalesced with the sequence is real input.
+          assert.strictEqual(term.writeInput(t.id, first + 'x'), true);
+          assert.deepStrictEqual(written, [first + 'x']);
         } finally {
           term.killTerminal(t.id);
         }
@@ -572,6 +634,23 @@ describe('terminal input, resize, kill', () => {
         assert.strictEqual(term.killTerminal(t.id), false); // already gone
       },
     );
+  });
+});
+
+describe('Device-Attributes filter stays in sync with the vendored xterm', () => {
+  const vendor = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'app', 'public', 'vendor', 'xterm', 'xterm.js'),
+    'utf8',
+  );
+
+  it('every dropped sequence is still emitted by the vendored xterm.js', () => {
+    for (const seq of term.DA_RESPONSES) {
+      // ESC is emitted via the C0.ESC constant, so only the suffix is a literal.
+      assert.ok(
+        vendor.includes(seq.slice(1)),
+        `vendored xterm.js must still emit ${JSON.stringify(seq)}`,
+      );
+    }
   });
 });
 

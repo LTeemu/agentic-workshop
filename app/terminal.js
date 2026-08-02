@@ -26,6 +26,20 @@ const MAX_COLS = 500;
 const MAX_ROWS = 300;
 
 /**
+ * Device-Attributes responses xterm.js generates when the shell queries
+ * terminal capabilities (ESC[c / ESC[>c). Forwarding them into a fresh ConPTY
+ * lets the console echo the response to the screen before the shell is
+ * reading — the `[?1;2c` artifact at startup (and on each respawn). The shell
+ * doesn't need the answer (TERM=xterm-256color already says what it is), so
+ * drop the exact sequences instead. Only the xterm family applies here:
+ * xterm.js prefix-matches the pty name (spawnShell uses 'xterm-256color'),
+ * so these are the responses it can emit. A test pins them to the vendored
+ * xterm.js so a vendor bump that changes them fails loudly instead of
+ * resurrecting the artifact.
+ */
+const DA_RESPONSES = new Set(['\x1b[?1;2c', '\x1b[>0;276;0c']);
+
+/**
  * How much pty output to keep per session for replay. Late-attaching clients
  * (e.g. after a page refresh) get this buffer replayed so the screen isn't
  * blank. Trimmed at line boundaries so escape sequences survive the cut.
@@ -420,6 +434,7 @@ function getTerminal(id) {
 function writeInput(id, data) {
   const term = getTerminal(id);
   if (!term || term.exited) return false;
+  if (DA_RESPONSES.has(data)) return true; // terminal handshake — echoing it prints `[?1;2c`
   try {
     term.pty.write(data);
   } catch {
@@ -515,6 +530,7 @@ module.exports = {
   attachStream,
   appendBuffer,
   BUFFER_MAX,
+  DA_RESPONSES,
   IDLE_TTL_MS,
   resolveOpenCodeBin,
   quoteForShell,
