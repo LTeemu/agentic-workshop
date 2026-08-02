@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 import config from './config.js';
@@ -8,16 +8,23 @@ let db = null;
 /**
  * Initializes the SQLite database, creating tables if they don't exist.
  * Exports a singleton getter so all modules share one connection.
+ *
+ * Uses Node's built-in `node:sqlite` (DatabaseSync) instead of a native npm
+ * module: `npm install` needs no C++ toolchain, so fresh installs work on any
+ * machine with Node >= 22.5.
  */
 export function getDb() {
   if (db) return db;
 
   mkdirSync(dirname(config.dbPath), { recursive: true });
-  db = new Database(config.dbPath);
+  // allowBareNamedParameters (Node >= 22.13) keeps store.js's `{ id }`-style
+  // bindings working for `@id` placeholders.
+  db = new DatabaseSync(config.dbPath, { allowBareNamedParameters: true });
 
-  // Enable WAL mode for better concurrent read performance
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  // Enable WAL mode for better concurrent read performance. Foreign keys are
+  // enforced by default in node:sqlite; kept explicit for clarity.
+  db.exec('PRAGMA journal_mode = WAL;');
+  db.exec('PRAGMA foreign_keys = ON;');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS readings (

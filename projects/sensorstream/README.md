@@ -13,12 +13,14 @@ npm start
 
 Open `http://localhost:4000`.
 
+Requires **Node.js >= 22.13.0** (the built-in `node:sqlite` database; no native modules, so no C++ build tools are needed).
+
 ## Architecture
 
 ```
 sensor-sim.js  →  pipeline/validate.js  →  pipeline/clean.js  →  store.js  →  SSE clients
      │                                                              │
-     └─── random walk drift, 4 sensor types                         └─── SQLite (better-sqlite3)
+     └─── random walk drift, 4 sensor types                         └─── SQLite (node:sqlite)
 ```
 
 ### Pipeline Stages
@@ -94,7 +96,7 @@ tests/             — Unit tests
 
 - **Runtime:** Node.js (ESM)
 - **Server:** Express + Helmet
-- **Database:** SQLite via better-sqlite3
+- **Database:** SQLite via built-in `node:sqlite`
 - **Validation:** Zod
 - **Streaming:** Server-Sent Events
 - **Frontend:** Vanilla JS with Canvas API charts

@@ -94,8 +94,9 @@ before(async () => {
   });
 
   // If the server never becomes healthy, fail the suite loudly instead of
-  // silently skipping every API test (a crashed native module would otherwise
-  // turn the whole suite green as "skipped").
+  // silently skipping every API test (e.g. a node:sqlite incompatibility on
+  // the running Node version would otherwise turn the whole suite green as
+  // "skipped").
   await waitForServer();
 });
 
