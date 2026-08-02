@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "test:agents": "cd tests && npm test",
-    "test:projects": "node tests/projects/test-all.js"
+    "test:projects": "node tests/projects/test-all.js",
+    "test:workshop": "cd tests && node --test --test-force-exit workshop/*.test.js"
+  },
+  "dependencies": {
+    "node-pty": "^1.1.0"
   }
 }

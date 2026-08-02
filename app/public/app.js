@@ -33,7 +33,18 @@ const logClear = document.getElementById('log-clear');
 const logToggle = document.getElementById('log-toggle');
 const resizeHandle = document.querySelector('.resize-handle');
 const LOG_HEIGHT_KEY = 'workshop-log-height';
-const LOG_MIN_HEIGHT = 100;
+const LOG_VISIBLE_KEY = 'workshop-log-visible';
+const LOG_TAB_KEY = 'workshop-log-tab';
+const TERMINAL_ID_KEY = 'workshop-terminal-id'; // live session reused across refreshes
+const LOG_MIN_HEIGHT = 180;
+
+// Panel tabs
+const panelTabs = document.getElementById('panel-tabs');
+
+// Terminal tab
+const terminalTab = document.getElementById('terminal-tab');
+const terminalContainer = document.getElementById('terminal-container');
+const terminalOpenCodeBtn = document.getElementById('terminal-opencode');
 
 let projects = [];
 let activeProject = null; // { name, url, runType }
@@ -54,7 +65,9 @@ async function api(url, options = {}) {
 }
 
 async function loadProjects() {
-  projects = await api('/api/projects');
+  const data = await api('/api/projects');
+  if (!Array.isArray(data)) return; // failed response — keep the last known list
+  projects = data;
   renderProjectList();
 }
 
@@ -258,14 +271,14 @@ function appendLogLines(project, stream, lines) {
   }
 }
 
+function restoreLogHeight() {
+  const savedH = localStorage.getItem(LOG_HEIGHT_KEY);
+  logPanel.style.height = savedH ? savedH + 'px' : '200px';
+}
+
 function showLogPanel() {
   // Restore saved height before removing collapsed for smooth transition
-  const savedH = localStorage.getItem(LOG_HEIGHT_KEY);
-  if (savedH) {
-    logPanel.style.height = savedH + 'px';
-  } else {
-    logPanel.style.height = '200px';
-  }
+  restoreLogHeight();
   logPanel.classList.remove('collapsed');
   logVisible = true;
   logToggle.textContent = '▼';
@@ -283,8 +296,10 @@ function hideLogPanel() {
 logToggle.addEventListener('click', () => {
   if (logVisible) {
     hideLogPanel();
+    localStorage.setItem(LOG_VISIBLE_KEY, '0');
   } else {
     showLogPanel();
+    localStorage.setItem(LOG_VISIBLE_KEY, '1');
   }
 });
 
@@ -302,12 +317,7 @@ logClear.addEventListener('click', () => {
 // ── Log Panel Resize ──
 
 // Restore saved height
-const savedHeight = localStorage.getItem(LOG_HEIGHT_KEY);
-if (savedHeight) {
-  logPanel.style.height = savedHeight + 'px';
-} else {
-  logPanel.style.height = '200px';
-}
+restoreLogHeight();
 
 let isResizing = false;
 let resizeStartY = 0;
@@ -344,6 +354,373 @@ document.addEventListener('pointerup', (e) => {
   }
 });
 
+// ── Panel Tabs ──
+
+function bumpPanelHeight() {
+  const h = parseInt(logPanel.style.height, 10) || 0;
+  if (h < LOG_MIN_HEIGHT) {
+    logPanel.style.height = LOG_MIN_HEIGHT + 'px';
+    localStorage.setItem(LOG_HEIGHT_KEY, LOG_MIN_HEIGHT);
+  }
+}
+
+function activatePanelTab(tab) {
+  for (const btn of panelTabs.querySelectorAll('.panel-tab')) {
+    const active = btn.dataset.tab === tab;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  }
+  logPanel.classList.toggle('terminal-active', tab === 'terminal');
+  terminalTab.classList.toggle('hidden', tab !== 'terminal');
+}
+
+function setPanelTab(tab) {
+  activatePanelTab(tab);
+  localStorage.setItem(LOG_TAB_KEY, tab);
+  // Clicking a tab on a collapsed panel expands it.
+  if (!logVisible) showLogPanel();
+  localStorage.setItem(LOG_VISIBLE_KEY, '1');
+  bumpPanelHeight();
+  if (tab === 'terminal') {
+    if (!termInstance) initTerminal();
+    else {
+      if (!terminalId) startTerminalSession(); // TUI exited earlier — restart
+      requestAnimationFrame(fitTerminal); // re-fit after switching back
+    }
+  }
+}
+
+panelTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.panel-tab');
+  if (btn) setPanelTab(btn.dataset.tab);
+});
+
+// ── Terminal Tab (real shell, opencode2 shortcut) ──
+
+let termInstance = null; // xterm Terminal
+let termFit = null; // FitAddon
+let terminalId = null;
+let openCodeCommand = null; // shell command string that launches opencode2
+let terminalStream = null; // EventSource
+let terminalStarting = false;
+let terminalSessionPending = false; // in-flight startTerminalSession guard
+let terminalFitTimer = null;
+// Set while the page is being torn down (refresh/close/navigation). The browser
+// aborts the SSE EventSource during teardown and fires `error` with readyState
+// CLOSED; without this flag that abort would be mistaken for a lost session and
+// wipe the persisted session id, spawning a fresh shell on the next page load.
+// Both events are needed: `beforeunload` fires first in Chrome's teardown, with
+// `pagehide` (and visibilitychange) arriving only after the stream error.
+let pageUnloading = false;
+window.addEventListener('beforeunload', () => {
+  pageUnloading = true;
+});
+window.addEventListener('pagehide', () => {
+  pageUnloading = true;
+});
+// Back/forward cache restore re-runs this page without a fresh document: the
+// old document's stream may have been torn down while the flag was set, so
+// re-enable recovery and re-open the stream if it ended up CLOSED.
+window.addEventListener('pageshow', (e) => {
+  pageUnloading = false;
+  if (
+    e.persisted &&
+    terminalId &&
+    terminalStream &&
+    terminalStream.readyState === EventSource.CLOSED
+  ) {
+    openTerminalStream();
+  }
+});
+
+function initTerminal() {
+  if (termInstance || terminalStarting) return;
+  terminalStarting = true;
+  try {
+    termInstance = new Terminal({
+      cursorBlink: true,
+      fontSize: 13,
+      fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+      scrollback: 5000,
+      theme: {
+        background: '#0d1117',
+        foreground: '#c9d1d9',
+        cursor: '#58a6ff',
+        selectionBackground: '#1f6feb',
+        black: '#0d1117',
+        red: '#f85149',
+        green: '#3fb950',
+        yellow: '#d29922',
+        blue: '#58a6ff',
+        magenta: '#bc8cff',
+        cyan: '#39c5cf',
+        white: '#c9d1d9',
+        brightBlack: '#484f58',
+        brightRed: '#ff7b72',
+        brightGreen: '#56d364',
+        brightYellow: '#e3b341',
+        brightBlue: '#79c0ff',
+        brightMagenta: '#d2a8ff',
+        brightCyan: '#56d4dd',
+        brightWhite: '#f0f6fc',
+      },
+    });
+    termFit = new FitAddon.FitAddon();
+    termInstance.loadAddon(termFit);
+    termInstance.open(terminalContainer);
+    termInstance.onData(sendTerminalInput);
+    fitTerminal();
+    startTerminalSession();
+  } finally {
+    terminalStarting = false;
+  }
+}
+
+async function startTerminalSession() {
+  if (terminalSessionPending) return; // guard against re-entrant calls while awaiting
+  terminalSessionPending = true;
+  try {
+    // Reuse the session from before a refresh: the shell lives server-side and
+    // survives page reloads. A definitive "gone" (404/410) clears the key and
+    // falls through to a fresh shell; a network failure is surfaced instead so
+    // a transient blip can't orphan the still-running session.
+    const savedId = localStorage.getItem(TERMINAL_ID_KEY);
+    if (savedId) {
+      const probe = await probeSession(savedId);
+      if (probe.state) {
+        setOpenCodeButton(probe.state.running);
+        attachToSession(savedId, probe.state.openCodeCommand);
+        return;
+      }
+      if (probe.gone) {
+        localStorage.removeItem(TERMINAL_ID_KEY); // stale session — fall through
+      } else {
+        throw new Error('cannot reach the dashboard server');
+      }
+    }
+
+    await createFreshSession();
+  } catch (err) {
+    terminalOpenCodeBtn.disabled = true;
+    termInstance.write(`\r\n\x1b[31mFailed to start shell: ${err.message}\x1b[0m\r\n`);
+  } finally {
+    terminalSessionPending = false;
+  }
+}
+
+/** POST a new shell and attach to it (also persists the id for refreshes). */
+async function createFreshSession() {
+  const data = await api('/api/terminal', {
+    method: 'POST',
+    body: JSON.stringify({ cols: termInstance.cols, rows: termInstance.rows }),
+  });
+  if (data.error) throw new Error(data.error);
+  if (!data.id) throw new Error('server returned no session id');
+  localStorage.setItem(TERMINAL_ID_KEY, data.id);
+  termInstance.write('\x1b[2J\x1b[H');
+  attachToSession(data.id, data.openCodeCommand);
+}
+
+/** A response status that definitively means the session no longer exists. */
+function isSessionGone(status) {
+  return status === 404 || status === 410;
+}
+
+/**
+ * Probe a saved session. Result is `{ state }` when live, `{ gone: true }` on
+ * a definitive 404/410, or `{ error: true }` when the request itself failed —
+ * so a transient blip (network or a 5xx) never discards a running session.
+ */
+async function probeSession(id) {
+  try {
+    const res = await fetch(`/api/terminal/${id}/opencode`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) return isSessionGone(res.status) ? { gone: true } : { error: true };
+    return { state: await res.json() };
+  } catch {
+    return { error: true };
+  }
+}
+
+/** Wire the UI to a live session and open its SSE stream. */
+function attachToSession(id, command) {
+  terminalId = id;
+  openCodeCommand = command || 'opencode2';
+  terminalOpenCodeBtn.disabled = false;
+  fitTerminal(); // re-fit so the pty gets the current panel size after a refresh
+  openTerminalStream();
+}
+
+/** Tear down the SSE stream and forget the in-memory session binding. The
+ * persisted session id is deliberately kept: only startTerminalSession's probe
+ * (404/410) removes it, so a teardown caused by a transient stream error can
+ * never orphan a still-running server session. */
+function resetTerminalState() {
+  if (terminalStream) {
+    terminalStream.close();
+    terminalStream = null;
+  }
+  terminalId = null;
+  openCodeCommand = null;
+  setOpenCodeButton(false); // unhide + clear debounce (session ended)
+  terminalOpenCodeBtn.disabled = true; // then lock: no shell to type into
+}
+
+function openTerminalStream() {
+  if (terminalStream) terminalStream.close();
+  const es = new EventSource(`/api/terminal/${terminalId}/stream`);
+  terminalStream = es;
+  // Re-sync on (re)connect: the server only broadcasts opencode state on
+  // change, so after an SSE blip the button could be stale until then.
+  es.onopen = () => syncOpenCodeState();
+  es.addEventListener('message', (e) => {
+    let ev;
+    try {
+      ev = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    if (ev.type === 'data') {
+      termInstance.write(ev.data);
+    } else if (ev.type === 'replay') {
+      // Late attach (page refresh): replace the screen with the buffered state.
+      termInstance.write('\x1b[2J\x1b[H');
+      termInstance.write(ev.data);
+    } else if (ev.type === 'restart') {
+      const code = ev.data ? ` (code ${ev.data})` : '';
+      // The old shell's screen is dead — the new one starts blank.
+      termInstance.write('\x1b[2J\x1b[H');
+      termInstance.write(`\r\n\x1b[2m[shell restarted${code}]\x1b[0m\r\n`);
+    } else if (ev.type === 'opencode') {
+      setOpenCodeButton(ev.data === true);
+    } else if (ev.type === 'exit') {
+      const code = ev.data ? ` (code ${ev.data})` : '';
+      termInstance.write(`\r\n\x1b[90m[shell exited${code}]\x1b[0m\r\n`);
+      resetTerminalState();
+    }
+  });
+  // EventSource reconnects automatically on network blips (readyState
+  // CONNECTING). CLOSED means the session is gone for good (410/404, or the
+  // server restarted) — drop it and start a fresh shell. Exception: when the
+  // page itself is being unloaded, the browser aborts the connection and fires
+  // a spurious CLOSED error — recoverLostSession guards that case.
+  es.onerror = () => {
+    if (es.readyState !== EventSource.CLOSED) return;
+    if (terminalStream !== es) return; // superseded by a newer stream — ignore
+    recoverLostSession();
+  };
+}
+
+/**
+ * POST to the session; on 404 the session no longer exists server-side, so
+ * recover instead of spamming dead requests on every keystroke/mouse event.
+ * The id-capture guard prevents an in-flight response from an old session from
+ * tearing down a freshly recovered one.
+ */
+async function postTerminal(id, path, body) {
+  if (!id) return;
+  try {
+    const res = await fetch(`/api/terminal/${id}/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (isSessionGone(res.status) && terminalId === id) recoverLostSession();
+  } catch {
+    // network blip — the SSE stream or the next event will retry
+  }
+}
+
+function sendTerminalInput(data) {
+  postTerminal(terminalId, 'input', { data });
+}
+
+function sendResize(cols, rows) {
+  postTerminal(terminalId, 'resize', { cols, rows });
+}
+
+/**
+ * The attached session is gone — drop it and start a fresh shell. Self-guarded
+ * so concurrent triggers (a 404 from an in-flight POST plus a stream error)
+ * can't double-recover; the flag stays set until the new session is attached
+ * or the attempt failed. Also the single choke point for the page-teardown
+ * guard: any trigger (stream error, POST 404) that fires while the page is
+ * unloading must not discard the persisted session id — the next page load
+ * probes and re-attaches to the still-running session instead.
+ */
+let terminalRecovering = false;
+async function recoverLostSession() {
+  if (pageUnloading || terminalRecovering) return;
+  terminalRecovering = true;
+  try {
+    resetTerminalState();
+    termInstance.write('\r\n\x1b[90m[terminal session lost — starting a new shell]\x1b[0m\r\n');
+    await startTerminalSession();
+  } finally {
+    terminalRecovering = false;
+  }
+}
+
+// Shortcut: type the resolved opencode2 launch command into the live shell.
+// While the TUI is running the button is hidden — raw-mode input would land
+// in opencode's chat instead of the shell.
+
+function setOpenCodeButton(running) {
+  const isRunning = running === true;
+  const wasHidden = terminalOpenCodeBtn.classList.contains('hidden');
+  terminalOpenCodeBtn.classList.toggle('hidden', isRunning);
+  // Only a hidden → visible transition (opencode exited) clears the click-debounce
+  // set by the click handler while the TUI boots. A plain "not running" probe
+  // (e.g. SSE resync mid-boot) must not reopen the double-click window.
+  if (wasHidden && !isRunning) terminalOpenCodeBtn.disabled = false;
+}
+
+/** Query the server for TUI state and mirror it on the button. Returns state or null. */
+async function syncOpenCodeState() {
+  if (!terminalId) return null;
+  const probe = await probeSession(terminalId);
+  if (!probe.state) return null; // session gone/unreachable — leave the button as-is
+  setOpenCodeButton(probe.state.running);
+  return probe.state;
+}
+
+terminalOpenCodeBtn.addEventListener('click', async () => {
+  if (!terminalId) return;
+  const state = await syncOpenCodeState();
+  if (state && state.running) return; // opencode already running — don't type into its chat
+  terminalOpenCodeBtn.disabled = true; // block rapid re-clicks while the TUI boots
+  // Ctrl+C cancels any partial line at the shell prompt, so a half-typed
+  // command can't get mangled into the launch command.
+  sendTerminalInput('\x03' + openCodeCommand + '\r');
+  setTimeout(() => {
+    // Re-enable unless a probe has since confirmed the TUI is running (button hidden).
+    if (!terminalOpenCodeBtn.classList.contains('hidden')) terminalOpenCodeBtn.disabled = false;
+  }, 1500);
+});
+
+function fitTerminal() {
+  if (!termInstance || !termFit) return;
+  const cols = termInstance.cols;
+  const rows = termInstance.rows;
+  try {
+    termFit.fit();
+  } catch {
+    return; // hidden or zero-size container — a later resize event re-fits
+  }
+  if (terminalId && (termInstance.cols !== cols || termInstance.rows !== rows)) {
+    sendResize(termInstance.cols, termInstance.rows);
+  }
+}
+
+// Keep the terminal sized to the panel (drag handle, collapse, window resize).
+if ('ResizeObserver' in window) {
+  new ResizeObserver(() => {
+    clearTimeout(terminalFitTimer);
+    terminalFitTimer = setTimeout(fitTerminal, 150);
+  }).observe(terminalContainer);
+}
+
 async function selectProject(name, start = true) {
   // Clicking the already-running project — just reload the iframe
   if (start && activeProject && activeProject.name === name && activeProject.url) {
@@ -362,12 +739,6 @@ async function selectProject(name, start = true) {
   preview.classList.remove('hidden');
   projectUrlEl.textContent = '';
   previewFrame.src = ''; // Clear old project content immediately
-
-  // Show log panel if it has content for this project
-  if (logBuffers[name] && logBuffers[name].length > 0) {
-    showLogPanel();
-    renderLogs();
-  }
 
   if (start) {
     const result = await api(`/api/projects/${name}/select?autoStop=${autoStop}`, {
@@ -671,15 +1042,6 @@ evtSource.onmessage = (e) => {
       // Buffer all log types for the log panel
       appendLogLines(data.project, data.stream, data.lines);
 
-      // Auto-show log panel when logs arrive for the active project
-      if (
-        activeProject &&
-        activeProject.name === data.project &&
-        logPanel.classList.contains('collapsed')
-      ) {
-        showLogPanel();
-      }
-
       // Show system log lines as real-time progress during startup.
       // Display them prominently in the notice area (large centered overlay)
       // and also in the compact status badge.
@@ -717,11 +1079,6 @@ evtSource.onmessage = (e) => {
       break;
   }
 };
-
-// Also handle older SSE format (plain message)
-evtSource.addEventListener('message', (e) => {
-  // Already handled by onmessage above
-});
 
 // Dismiss test-all modal on background click, close button, or Escape
 testAllSummary.addEventListener('click', (e) => {
@@ -772,4 +1129,12 @@ if (sidebar && sidebarToggle) {
     sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
     localStorage.setItem('workshop-sidebar-collapsed', isCollapsed);
   });
+}
+
+// Restore saved panel state: open/closed + active tab.
+// Runs last so all declarations (termInstance etc.) exist before a
+// terminal-tab restore may initialize the TUI.
+if (localStorage.getItem(LOG_VISIBLE_KEY) === '1') {
+  const savedTab = localStorage.getItem(LOG_TAB_KEY);
+  setPanelTab(savedTab === 'terminal' ? 'terminal' : 'logs');
 }

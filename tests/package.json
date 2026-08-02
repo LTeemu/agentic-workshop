@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test agents/*.test.js colors.test.js"
+    "test": "node --test --test-force-exit agents/*.test.js workshop/*.test.js"
   }
 }

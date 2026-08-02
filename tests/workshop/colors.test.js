@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 
-const { paint, colorizeUrls } = require('../app/colors');
+const { paint, colorizeUrls } = require('../../app/colors');
 
 const CYAN_BOLD = '\x1b[36m\x1b[1m';
 const RESET = '\x1b[0m';

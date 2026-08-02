@@ -20,6 +20,8 @@ A live control panel for spinning up, previewing, and testing any project in the
 
 **Log panel** — collapsible, resizable panel with real-time log streaming via SSE. Color-coded output (stdout/stderr/system), text filter, auto-scroll toggle, clear. Panel height persists across sessions.
 
+**Terminal** — real shell session (PowerShell on Windows, `$SHELL` on Unix) spawned via node-pty and rendered with xterm.js. Output streams over SSE; input and resize go back over JSON. A shortcut launches the `opencode2` TUI inside the same session. The shell respawns in place after a crash (rate-limited), and sessions survive page refreshes via an output replay buffer. Requires `npm install` (node-pty).
+
 **Testing** — "Run Tests" button per project, "Test All" across every project. Convention: each project declares its test command in `package.json` `scripts.test` — regardless of language. The dashboard reads the script and executes it directly (bypassing npm to avoid lifecycle overhead). Results modal shows pass/fail per project with expandable output and summary counts.
 
 **Project management** — auto-detects run commands (`package.json` scripts, `server.js`, `index.html`). Auto-installs missing dependencies. Builds projects on demand. Creating and deleting projects available via API (with automatic backup on delete).
@@ -27,12 +29,13 @@ A live control panel for spinning up, previewing, and testing any project in the
 ## How to use
 
 ```
+npm install   # installs node-pty — required for the in-dashboard terminal
 node app/server.js
 ```
 
 Then open `http://localhost:3000`.
 
-The agent workspace (`.opencode/`, agents, plugins, skills) targets **OpenCode V2** — use the `opencode2` CLI, not V1's `opencode`:
+The agent workspace (`.opencode/`, agents, plugins, skills) targets **OpenCode V2** (beta) — use the `opencode2` CLI, not V1's `opencode`. Install it with `npm install -g @opencode-ai/cli@next`; see the [V2 docs](https://opencode.ai/v2/docs):
 
 ```
 opencode2 --version
@@ -43,46 +46,52 @@ opencode2 api get /api/health
 
 ## Project structure
 
-| Path                        | Purpose                                                                                                                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app/server.js`             | Dashboard server (port 3000)                                                                                                                                                   |
-| `app/project-utils.js`      | Shared dependency/build infrastructure                                                                                                                                         |
-| `app/test-runner.js`        | Shared test execution logic                                                                                                                                                    |
-| `app/public/`               | Dashboard frontend (HTML/CSS/JS)                                                                                                                                               |
-| `projects/`                 | Each subdirectory is a project                                                                                                                                                 |
-| `_backups/`                 | Auto-generated backups on project deletion                                                                                                                                     |
-| `tests/`                    | Agent & project test suites (`npm run test:*`)                                                                                                                                 |
-| `.active-project`           | Tracks which project is currently active                                                                                                                                       |
-| `.githooks/`                | Git hooks (format staged prettier types + tests scoped to changed files: per-project suites, agent suite when non-project agent/opencode paths change)                         |
-| `opencode.json`             | Loads `AGENTS.md` as the instruction file, registers agent files                                                                                                               |
-| `AGENTS.md`                 | Task planning workflow, role-prefix delegation rules, project guidelines                                                                                                       |
-| `.opencode/agents/`         | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools |
-| `.opencode/agents/coder.md` | Primary coding agent — includes the post-code verification pipeline (review → refactor → test → fix)                                                                           |
-| `.opencode/skills/`         | One file per skill — reusable domain instructions loaded on demand (e.g. backend, testing, database)                                                                           |
-| `.opencode/plugins/`        | `plan-enforcer.js` — validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls                                          |
+| Path                        | Purpose                                                                                                                                                                                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/server.js`             | Dashboard server (port 3000)                                                                                                                                                                                                                                                      |
+| `app/project-utils.js`      | Shared dependency/build infrastructure                                                                                                                                                                                                                                            |
+| `app/test-runner.js`        | Shared test execution logic                                                                                                                                                                                                                                                       |
+| `app/public/`               | Dashboard frontend (HTML/CSS/JS)                                                                                                                                                                                                                                                  |
+| `projects/`                 | Each subdirectory is a project                                                                                                                                                                                                                                                    |
+| `_backups/`                 | Auto-generated backups on project deletion                                                                                                                                                                                                                                        |
+| `tests/`                    | Test suites: `tests/agents/` (agent config & plugin), `tests/workshop/` (dashboard app), `tests/projects/` (cross-project runner) — `npm run test:*`                                                                                                                              |
+| `.active-project`           | Tracks which project is currently active                                                                                                                                                                                                                                          |
+| `.githooks/`                | Git hooks (format staged files with prettier + tests scoped to changed files: per-project suites, agent suite on agent/opencode paths or `tests/package.json`, workshop suite on `app/`/`tests/workshop/` paths — skipped when the agent suite already ran the full tests/ suite) |
+| `opencode.json`             | Loads `AGENTS.md` as the instruction file, registers agent files                                                                                                                                                                                                                  |
+| `AGENTS.md`                 | Task planning workflow, role-prefix delegation rules, project guidelines                                                                                                                                                                                                          |
+| `.opencode/agents/`         | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools                                                                                                    |
+| `.opencode/agents/coder.md` | Primary coding agent — includes the post-code verification pipeline (review → refactor → test → fix)                                                                                                                                                                              |
+| `.opencode/skills/`         | One file per skill — reusable domain instructions loaded on demand (e.g. backend, testing, database)                                                                                                                                                                              |
+| `.opencode/plugins/`        | `plan-enforcer.js` — validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls                                                                                                                                             |
 
 ## API
 
 The dashboard exposes a JSON API under `/api/`:
 
-| Endpoint                      | Method | Description                                                      |
-| ----------------------------- | ------ | ---------------------------------------------------------------- |
-| `/api/health`                 | GET    | Server health (uptime, memory, project stats)                    |
-| `/api/projects`               | GET    | List all projects                                                |
-| `/api/projects`               | POST   | Create a new project — not used in the UI                        |
-| `/api/active`                 | GET    | Get the currently active project                                 |
-| `/api/projects/:name`         | GET    | Get project running status (same as `/status`)                   |
-| `/api/projects/:name/status`  | GET    | Get project running status                                       |
-| `/api/projects/:name`         | DELETE | Delete a project — not used in the UI (backed up to `_backups/`) |
-| `/api/projects/:name/details` | GET    | Get project metadata (scripts, deps)                             |
-| `/api/projects/:name/logs`    | GET    | Get project log output                                           |
-| `/api/projects/:name/select`  | POST   | Select (start) a project                                         |
-| `/api/projects/:name/stop`    | POST   | Stop a running project                                           |
-| `/api/projects/:name/test`    | POST   | Run a project's tests                                            |
-| `/api/projects/:name/build`   | POST   | Build a project (minifies CSS/JS to dist/)                       |
-| `/api/projects/test-all`      | POST   | Run tests for all projects that define a test script             |
-| `/api/projects/stop-all`      | POST   | Stop all running projects                                        |
-| `/api/events`                 | GET    | SSE stream for real-time dashboard updates                       |
+| Endpoint                      | Method | Description                                                                                          |
+| ----------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `/api/health`                 | GET    | Server health (uptime, memory, project stats)                                                        |
+| `/api/projects`               | GET    | List all projects                                                                                    |
+| `/api/projects`               | POST   | Create a new project — not used in the UI                                                            |
+| `/api/active`                 | GET    | Get the currently active project                                                                     |
+| `/api/projects/:name`         | GET    | Get project running status (same as `/status`)                                                       |
+| `/api/projects/:name/status`  | GET    | Get project running status                                                                           |
+| `/api/projects/:name`         | DELETE | Delete a project — not used in the UI (backed up to `_backups/`)                                     |
+| `/api/projects/:name/details` | GET    | Get project metadata (scripts, deps)                                                                 |
+| `/api/projects/:name/logs`    | GET    | Get project log output                                                                               |
+| `/api/projects/:name/select`  | POST   | Select (start) a project                                                                             |
+| `/api/projects/:name/stop`    | POST   | Stop a running project                                                                               |
+| `/api/projects/:name/test`    | POST   | Run a project's tests                                                                                |
+| `/api/projects/:name/build`   | POST   | Build a project (minifies CSS/JS to dist/)                                                           |
+| `/api/projects/test-all`      | POST   | Run tests for all projects that define a test script                                                 |
+| `/api/projects/stop-all`      | POST   | Stop all running projects                                                                            |
+| `/api/events`                 | GET    | SSE stream for real-time dashboard updates                                                           |
+| `/api/terminal`               | POST   | Start a terminal session (body: `cwd?`, `cols?`, `rows?`) — returns session `id` (requires node-pty) |
+| `/api/terminal/:id`           | GET    | SSE output stream for a terminal (alias: `/api/terminal/:id/stream`)                                 |
+| `/api/terminal/:id/input`     | POST   | Write input to a terminal (body: `data`)                                                             |
+| `/api/terminal/:id/resize`    | POST   | Resize a terminal (body: `cols`, `rows`)                                                             |
+| `/api/terminal/:id/opencode`  | GET    | Check whether `opencode2` is running in the session                                                  |
+| `/api/terminal/:id/kill`      | POST   | Kill a terminal session                                                                              |
 
 ## AI agent workflow
 

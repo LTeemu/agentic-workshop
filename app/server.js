@@ -16,6 +16,7 @@ const {
 } = require('./project-utils');
 const { detectTest, runTest } = require('./test-runner');
 const { paint, colorizeUrls } = require('./colors');
+const term = require('./terminal');
 
 const PORT = 3000;
 const PROJECTS_BASE = 4000;
@@ -755,23 +756,51 @@ function serveStatic(req, res) {
   }
 }
 
+/** Reject request bodies larger than this (JSON API payloads are tiny). */
+const MAX_BODY_BYTES = 1024 * 1024;
+
 function parseBody(req) {
   return new Promise((resolve) => {
     let body = '';
-    req.on('data', (c) => (body += c));
+    let settled = false;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    req.on('data', (chunk) => {
+      if (settled) return; // oversized — ignore the rest of the body
+      body += chunk;
+      // Oversized body — stop buffering; the route sees an empty body. The
+      // connection is left alone so the route can still answer normally.
+      if (Buffer.byteLength(body) > MAX_BODY_BYTES) settle({});
+    });
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body));
+        settle(JSON.parse(body));
       } catch {
-        resolve({});
+        settle({});
       }
     });
+    // A reset or aborted socket must not leave the route hanging forever.
+    req.on('error', () => settle({}));
+    req.on('aborted', () => settle({}));
   });
 }
 
 function json(res, data, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
+}
+
+/** Start an SSE response: headers + initial `connected` event. */
+function startSSE(res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
 }
 
 async function handleAPI(req, res) {
@@ -1013,12 +1042,7 @@ async function handleAPI(req, res) {
   }
 
   if (parts[0] === 'api' && parts[1] === 'events' && !parts[2]) {
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    });
-    res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
+    startSSE(res);
     sseClients.push(res);
     req.on('close', () => {
       sseClients = sseClients.filter((c) => c !== res);
@@ -1026,60 +1050,164 @@ async function handleAPI(req, res) {
     return;
   }
 
+  // ── Terminal (real shell via PTY, opencode2 shortcut) ────────────
+
+  // Start a terminal: POST /api/terminal { cwd?, cols?, rows? }
+  if (parts[0] === 'api' && parts[1] === 'terminal' && !parts[2]) {
+    if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
+    const body = await parseBody(req);
+    const cwd = body.cwd && typeof body.cwd === 'string' ? body.cwd : ROOT;
+    if (!fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
+      return json(res, { error: 'invalid cwd' }, 400);
+    }
+    try {
+      const t = term.startTerminal(cwd, body.cols || 100, body.rows || 30);
+      return json(res, {
+        id: t.id,
+        cols: t.cols,
+        rows: t.rows,
+        openCodeCommand: term.openCodeLaunchCommand(),
+      });
+    } catch (err) {
+      console.error('[/api/terminal]', err.message);
+      return json(res, { error: err.message }, 500);
+    }
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'terminal' && parts[2]) {
+    const terminalID = parts[2];
+
+    // SSE stream: GET /api/terminal/:id or /api/terminal/:id/stream
+    if ((!parts[3] || (parts[3] === 'stream' && !parts[4])) && req.method === 'GET') {
+      if (!term.attachStream(terminalID, res, startSSE)) {
+        return json(res, { error: 'terminal exited' }, 410);
+      }
+      return;
+    }
+    if ((!parts[3] || parts[3] === 'stream') && req.method !== 'GET') {
+      return json(res, { error: 'method not allowed' }, 405);
+    }
+
+    if (parts[3] === 'input' && !parts[4]) {
+      if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
+      const body = await parseBody(req);
+      if (typeof body.data !== 'string') {
+        return json(res, { error: 'missing data' }, 400);
+      }
+      if (!term.writeInput(terminalID, body.data)) {
+        return json(res, { error: 'unknown terminal' }, 404);
+      }
+      return json(res, { ok: true });
+    }
+
+    if (parts[3] === 'resize' && !parts[4]) {
+      if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
+      const body = await parseBody(req);
+      if (!term.resizeTerminal(terminalID, body.cols, body.rows)) {
+        return json(res, { error: 'unknown terminal' }, 404);
+      }
+      return json(res, { ok: true });
+    }
+
+    if (parts[3] === 'opencode' && !parts[4]) {
+      if (req.method !== 'GET') return json(res, { error: 'method not allowed' }, 405);
+      const t = term.getTerminal(terminalID);
+      if (!t || t.exited) return json(res, { error: 'unknown terminal' }, 404);
+      try {
+        return json(res, {
+          running: await term.isOpenCodeRunning(t.pty.pid),
+          openCodeCommand: term.openCodeLaunchCommand(),
+        });
+      } catch {
+        // Probe failed — report the last known state instead of a wrong
+        // "not running", which would let the client type the launch command
+        // into a live TUI's chat.
+        return json(res, {
+          running: t.openCodeRunning === true,
+          openCodeCommand: term.openCodeLaunchCommand(),
+        });
+      }
+    }
+
+    if (parts[3] === 'kill' && !parts[4]) {
+      if (req.method !== 'POST') return json(res, { error: 'method not allowed' }, 405);
+      if (!term.killTerminal(terminalID)) {
+        return json(res, { error: 'unknown terminal' }, 404);
+      }
+      return json(res, { ok: true });
+    }
+  }
+
   json(res, { error: 'not found' }, 404);
 }
 
-const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/api/')) handleAPI(req, res);
-  else serveStatic(req, res);
-});
-
-server.listen(PORT, () => {
-  console.log(`Workshop running at ${paint(`http://localhost:${PORT}`, 'cyan', 'bold')}`);
-  watchProjectsDir();
-
-  // Auto-start a project. Priority: .active-project contents, then first
-  // project in projects/, then nothing.
-  let projectName = null;
-  try {
-    const activeFile = fs.readFileSync(ACTIVE_FILE, 'utf-8').trim();
-    const m = activeFile.match(/^projects\/([^/]+)$/);
-    if (m && fs.existsSync(path.join(PROJECTS_DIR, m[1]))) {
-      projectName = m[1];
-    }
-  } catch {
-    // .active-project missing or unreadable — fall through to first project.
-  }
-
-  // No valid pointer in .active-project — pick the first available project.
-  if (!projectName) {
-    const projects = getProjects();
-    if (projects.length > 0) {
-      projectName = projects[0];
-      try {
-        fs.writeFileSync(ACTIVE_FILE, `projects/${projectName}`, 'utf-8');
-      } catch {}
-      console.log(`No .active-project — auto-selected first project: ${projectName}`);
-    }
-  }
-
-  if (projectName) {
-    const projectPath = path.join(PROJECTS_DIR, projectName);
-    const run = fs.existsSync(projectPath) ? detectRun(projectPath) : null;
-    if (!run) {
-      console.log(`Project ${projectName} has no runnable entry point — skipping auto-start.`);
-    } else {
-      console.log(`Auto-starting project: ${projectName}`);
-      startProject(projectName).then((result) => {
-        if (result && !result.error) {
-          watchProject(projectName);
-          console.log(`Project ${projectName} is ready at ${result.url}`);
-        } else if (result && result.error) {
-          console.error(`Failed to auto-start ${projectName}: ${result.error}`);
-        }
+/** Create the dashboard HTTP server (exported so tests can run it on a port). */
+function createServer() {
+  return http.createServer((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      // handleAPI is async; a rejected route (e.g. a destroyed socket mid-parse)
+      // must never crash the process — answer with a 500 if still writable.
+      handleAPI(req, res).catch((err) => {
+        console.error('[api]', err.message);
+        try {
+          if (!res.headersSent) json(res, { error: 'internal error' }, 500);
+        } catch {}
       });
+    } else serveStatic(req, res);
+  });
+}
+
+module.exports = { createServer, PORT };
+
+if (require.main === module) {
+  const server = createServer();
+  server.listen(PORT, () => {
+    console.log(`Workshop running at ${paint(`http://localhost:${PORT}`, 'cyan', 'bold')}`);
+    watchProjectsDir();
+
+    // Auto-start a project. Priority: .active-project contents, then first
+    // project in projects/, then nothing.
+    let projectName = null;
+    try {
+      const activeFile = fs.readFileSync(ACTIVE_FILE, 'utf-8').trim();
+      const m = activeFile.match(/^projects\/([^/]+)$/);
+      if (m && fs.existsSync(path.join(PROJECTS_DIR, m[1]))) {
+        projectName = m[1];
+      }
+    } catch {
+      // .active-project missing or unreadable — fall through to first project.
     }
-  } else {
-    console.log('No projects found — nothing to auto-start.');
-  }
-});
+
+    // No valid pointer in .active-project — pick the first available project.
+    if (!projectName) {
+      const projects = getProjects();
+      if (projects.length > 0) {
+        projectName = projects[0];
+        try {
+          fs.writeFileSync(ACTIVE_FILE, `projects/${projectName}`, 'utf-8');
+        } catch {}
+        console.log(`No .active-project — auto-selected first project: ${projectName}`);
+      }
+    }
+
+    if (projectName) {
+      const projectPath = path.join(PROJECTS_DIR, projectName);
+      const run = fs.existsSync(projectPath) ? detectRun(projectPath) : null;
+      if (!run) {
+        console.log(`Project ${projectName} has no runnable entry point — skipping auto-start.`);
+      } else {
+        console.log(`Auto-starting project: ${projectName}`);
+        startProject(projectName).then((result) => {
+          if (result && !result.error) {
+            watchProject(projectName);
+            console.log(`Project ${projectName} is ready at ${result.url}`);
+          } else if (result && result.error) {
+            console.error(`Failed to auto-start ${projectName}: ${result.error}`);
+          }
+        });
+      }
+    } else {
+      console.log('No projects found — nothing to auto-start.');
+    }
+  });
+}

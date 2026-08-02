@@ -1,7 +1,8 @@
 #!/bin/sh
 # Pre-commit hook: format staged files with prettier, then run tests
 # scoped to the staged changes — per affected project, plus the agent
-# suite when agent/opencode paths change.
+# suite when agent/opencode paths change, plus the workshop suite when
+# app/ or tests/workshop/ paths change.
 # Aborts commit if formatting or any test suite fails.
 #
 # Setup: git config core.hooksPath .githooks
@@ -22,7 +23,7 @@ if [ -n "$STAGED_FILES" ]; then
   # Split only on newlines and disable globbing to handle spaces/special chars
   OLD_IFS="$IFS"
   IFS='
-  '
+'
   set -f
   if ! npx --yes prettier --ignore-unknown --write $STAGED_FILES; then
     IFS="$OLD_IFS"
@@ -45,6 +46,7 @@ fi
 AFFECTED_PROJECTS=""
 ROOT_CHANGED=0
 ROOT_AGENT_CHANGED=0
+ROOT_WORKSHOP_CHANGED=0
 
 # Save IFS, use newline-only splitting, disable globbing for safe path processing
 OLD_IFS="$IFS"
@@ -74,6 +76,10 @@ for file in $(git diff --cached --name-only --diff-filter=ACMR); do
       case "$file" in
         *[Aa][Gg][Ee][Nn][Tt][Ss]*|*[Oo][Pp][Ee][Nn][Cc][Oo][Dd][Ee]*|tests/package.json) ROOT_AGENT_CHANGED=1 ;;
       esac
+      # Workshop paths: dashboard app code and its test suite.
+      case "$file" in
+        app/*|tests/workshop/*) ROOT_WORKSHOP_CHANGED=1 ;;
+      esac
       ;;
   esac
 done
@@ -85,15 +91,44 @@ set +f
 # ── Shared helper: read test command from a package.json ──
 # Uses env vars (MODE + PKG) to avoid shell-to-JS injection. Mode "project"
 # reads scripts.test; mode "root" prefers scripts["test:agents"] (the agent
-# suite) and falls back to scripts.test.
+# suite) and falls back to scripts.test; mode "workshop" prefers
+# scripts["test:workshop"] and falls back to scripts.test.
 read_test_cmd() {
   MODE="$1" PKG="$2" node -e '
     const p = require(process.env.PKG);
     const s = p.scripts || {};
     const mode = process.env.MODE;
-    const script = mode === "root" && s["test:agents"] ? s["test:agents"] : (s.test || "");
+    const script =
+      mode === "root" && s["test:agents"] ? s["test:agents"] :
+      mode === "workshop" && s["test:workshop"] ? s["test:workshop"] :
+      (s.test || "");
     console.log(script);
   '
+}
+
+# ── Shared helper: run a root test suite (agent or workshop) ──
+run_root_suite() {
+  MODE="$1"
+  NAME="$2"
+  if [ -f "$ROOT/package.json" ]; then
+    if SCRIPT=$(read_test_cmd "$MODE" "$ROOT/package.json"); then
+      if [ -n "$SCRIPT" ]; then
+        echo "[pre-commit] $NAME-related files changed — running tests..."
+        if ! (cd "$ROOT" && eval "$SCRIPT"); then
+          echo "[pre-commit] FAILED: $NAME tests"
+          return 1
+        fi
+      else
+        echo "[pre-commit] $NAME-related files changed (no test script configured)"
+      fi
+    else
+      echo "[pre-commit] Failed to read root test scripts from package.json"
+      return 1
+    fi
+  else
+    echo "[pre-commit] $NAME-related files changed (no root package.json)"
+  fi
+  return 0
 }
 
 # ── Step 3: Run tests for affected projects ──
@@ -146,26 +181,23 @@ done
 # ── Step 4: Agent-related root changes → agent suite ──
 
 if [ "$ROOT_AGENT_CHANGED" -eq 1 ]; then
-  if [ -f "$ROOT/package.json" ]; then
-    if ROOT_TEST=$(read_test_cmd root "$ROOT/package.json"); then
-      if [ -n "$ROOT_TEST" ]; then
-        echo "[pre-commit] Agent-related files changed — running tests..."
-        if ! (cd "$ROOT" && eval "$ROOT_TEST"); then
-          echo "[pre-commit] FAILED: agent tests"
-          FAILED=1
-        fi
-      else
-        echo "[pre-commit] Agent-related files changed (no test script configured)"
-      fi
-    else
-      echo "[pre-commit] Failed to read root test scripts from package.json"
-      FAILED=1
-    fi
-  else
-    echo "[pre-commit] Agent-related files changed (no root package.json)"
+  run_root_suite root agent || FAILED=1
+fi
+
+# ── Step 5: Workshop app changes → workshop suite ──
+# Skipped when the agent suite already ran — `test:agents` runs the full
+# tests/ suite (agents + workshop) via npm test.
+
+if [ "$ROOT_AGENT_CHANGED" -eq 1 ]; then
+  if [ "$ROOT_WORKSHOP_CHANGED" -eq 1 ]; then
+    echo "[pre-commit] Agent suite already ran the full tests/ suite (incl. workshop) — skipping separate workshop run"
   fi
-elif [ "$ROOT_CHANGED" -eq 1 ]; then
-  echo "[pre-commit] Root files changed but no agent/opencode paths — skipping agent tests"
+elif [ "$ROOT_WORKSHOP_CHANGED" -eq 1 ]; then
+  run_root_suite workshop workshop || FAILED=1
+fi
+
+if [ "$ROOT_CHANGED" -eq 1 ] && [ "$ROOT_AGENT_CHANGED" -eq 0 ] && [ "$ROOT_WORKSHOP_CHANGED" -eq 0 ]; then
+  echo "[pre-commit] Root files changed but no agent/opencode/workshop paths — skipping tests"
 fi
 
 if [ "$FAILED" -eq 1 ]; then
