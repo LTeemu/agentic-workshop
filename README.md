@@ -29,7 +29,7 @@ A live control panel for spinning up, previewing, and testing any project in the
 ## How to use
 
 ```
-npm install   # installs node-pty — required for the in-dashboard terminal
+npm install   # installs node-pty (in-dashboard terminal) + @opencode-ai/plugin in .opencode via postinstall
 node app/server.js
 ```
 
