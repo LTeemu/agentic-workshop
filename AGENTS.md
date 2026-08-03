@@ -2,83 +2,55 @@
 
 Only read files directly relevant to the task. When a `[scope:...]` is declared in a todowrite entry, read only files within that scope.
 
-**Strict Cross-Project Isolation:** When working inside `projects/<project-name>/`, you MUST NOT read, search, or inspect files in any sibling directory under `projects/`. No browsing sibling projects for reference code, boilerplate, or examples — build from standard templates instead. Scope is the only gate.
+**Strict Cross-Project Isolation:** Inside `projects/<project-name>/`, do NOT read, search, or inspect any sibling directory under `projects/`. Build from standard templates, not sibling boilerplate. Scope is the only gate.
 
 ## Communication Style
 
-- Be concise. No repetition or filler language.
+Be concise. No repetition or filler language.
 
 ## On Each Prompt
 
-When you receive a new user message:
+- **Investigatory / Evaluative** (questions, architecture, evaluations): respond directly, no `todowrite` plan, unless edits are required. `read`/`glob`/`grep` are unrestricted before a plan exists; prefer `task(subagent_type="explore")` for broad exploration.
+- **Task / Code execution** (implement, refactor, fix): explore/research → plan (role-prefixed plan header) → execute.
 
-- **Investigatory / Evaluative Queries** (answering questions, explaining architecture, evaluating changes): You can respond directly without a formal `todowrite` plan, provided no file edits or direct code mutations are required. Note: `read`/`glob`/`grep` are unrestricted before a plan exists; for broad exploration, prefer `task(subagent_type="explore")` delegation.
-- **Task / Code Execution Queries** (implementing features, refactoring, fixing bugs):
-  1. **Explore / Research** — Use `task(subagent_type="explore")` / `task(subagent_type="researcher")` / `task(subagent_type="reviewer")` for read-only exploration.
-  2. **Plan** — Determine relevant subagents, skills, and scope. State your plan to the user via a role-prefixed plan header.
-  3. **Execute** — `Researcher:`/`Reviewer:`/`Refactor:` entries → delegate via `task(subagent_type="...")`. `Coder:` entries → handle directly.
-
-**Bash caveat:** Don't use bash to read files — use `read`/`glob`/`grep` instead.
+**Bash caveat:** Never use bash to read files — use `read`/`glob`/`grep`.
 
 ### Role Prefix Reference
 
-Every task entry must start with one of these prefixes:
+Every task entry must start with one of:
 
-| Prefix                 | You must delegate via...           | Pipeline reviewer gate?                                  |
-| ---------------------- | ---------------------------------- | -------------------------------------------------------- |
-| `Researcher:`          | `task(subagent_type="researcher")` | No                                                       |
-| `Reviewer:`            | `task(subagent_type="reviewer")`   | No                                                       |
-| `Refactor:`            | `task(subagent_type="refactor")`   | No                                                       |
-| `Coder:`               | Handle yourself — no delegation    | **Required** (reviewer must be called before completion) |
-| `Coder: ... (trivial)` | Handle yourself — no delegation    | Skipped                                                  |
+| Prefix                 | Action                             | Reviewer gate              |
+| ---------------------- | ---------------------------------- | -------------------------- |
+| `Researcher:`          | `task(subagent_type="researcher")` | No                         |
+| `Reviewer:`            | `task(subagent_type="reviewer")`   | No                         |
+| `Refactor:`            | `task(subagent_type="refactor")`   | No                         |
+| `Coder:`               | handle directly                    | Required before completion |
+| `Coder: ... (trivial)` | handle directly                    | Skipped                    |
 
-> **Every entry MUST start with the role prefix. Every Coder/Reviewer/Refactor entry MUST include `[scope:...]`.** Researcher may omit scope (exploratory search). At least one entry must have a non-empty scope.
+> Every entry must start with a role prefix; every Coder/Reviewer/Refactor entry must include `[scope:...]` (Researcher may omit scope). At least one entry must have a non-empty scope. `explore` is invoked directly via `task(subagent_type="explore")` — never as a plan prefix.
 
-#### Example — Non-trivial feature
+Example:
 
 ```
 ## Plan
-- **Subagents**: @researcher (research CSV parsing options)
+- **Subagents**: @researcher (CSV parsing in Node.js stdlib)
 - **Skills**: @backend, @testing
 - **Todos**:
   - Researcher: research CSV parsing in Node.js stdlib
-  - Coder:      [scope:src/parser.js] implement parseCSV function
+  - Coder:      [scope:src/parser.js] implement parseCSV
   - Coder:      [scope:src/] write unit tests for parseCSV
-```
-
-#### Example — Trivial fix
-
-```
-## Plan
-- **Todos**:
-  - Coder: [scope:src/] fix typo in comment (trivial)
+  - Coder:      [scope:src/] fix typo in comment (trivial)
 ```
 
 ### Error Handling
 
-When something fails:
-
-1. **Subagent failure** — retry once. If it fails again, do the work yourself and flag the subagent as unreliable in your output.
+1. **Subagent failure** — retry once. If it fails again, do the work yourself and flag the subagent as unreliable.
 2. **Tool call error** — assess: transient (retry) or logic bug (fix and retry).
-3. **Never** silently ignore a failure. Log what happened and how you adjusted.
+3. **Never** silently ignore a failure. Log it and your adjustment.
 
 ## Project Guidelines
 
-### Dependencies
-
-- Avoid adding dependencies. Prefer the standard library or well-maintained free/open-source options.
-
-### Comments
-
-- Prefer self-documenting code. Comments: WHY, not WHAT. Keep them concise.
-- No commented-out code.
-
-### Architecture
-
-- Keep it simple. Favor composition over inheritance.
-- Separate concerns: I/O, business logic, presentation.
-
-### Workshop
-
-- Projects live under `projects/`. Dashboard: `http://localhost:3000` — start with `node app/server.js`.
-- Dashboard iframe uses a port based on project name (DJB2 hash → `4001–4999`). Use it for the main page.
+- **Dependencies:** avoid adding. Prefer the standard library or well-maintained FOSS.
+- **Comments:** WHY, not WHAT. Self-documenting. No commented-out code.
+- **Architecture:** keep it simple; composition over inheritance; separate I/O, logic, presentation.
+- **Workshop:** projects live under `projects/`. Dashboard: `http://localhost:3000` (`node app/server.js`). Iframe port = DJB2 hash of project name (`4001–4999`) — use for the main page.

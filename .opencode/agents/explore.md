@@ -1,6 +1,7 @@
 ---
 description: Local codebase exploration — finds files, searches patterns, and explains how code works. No web access. Use when you need to understand existing code, not external docs.
 mode: subagent
+model: opencode/deepseek-v4-flash-free#high
 permissions:
   - action: edit
     resource: '*'
@@ -52,4 +53,4 @@ When asked to inspect code and explain how it works, return a structured summary
 - **Edge cases**: any special handling visible in the code
 ```
 
-Be concise. This is an information-gathering summary, not a defect report.
+Be concise. Return only what the caller asked for — a summary, never raw file contents. This is an information-gathering summary, not a defect report.
