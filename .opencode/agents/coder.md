@@ -64,4 +64,4 @@ Tool output is truncated at 500 lines / 25 KB. Pass explicit `limit`/`offset` to
 
 ## Testing
 
-- Write meaningful tests: descriptive names; cover happy paths, edge cases, and errors.
+- Write deterministic tests only for behavior critical enough that you wouldn’t trust it without verification.

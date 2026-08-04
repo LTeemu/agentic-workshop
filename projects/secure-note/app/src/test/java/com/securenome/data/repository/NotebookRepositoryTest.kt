@@ -5,8 +5,8 @@ import com.securenome.data.local.entity.NotebookEntity
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -23,18 +23,29 @@ import org.junit.Test
  * - `mockk()` without @Mock annotations
  * - Kotlin data classes with default parameters
  *
- * ## Why flowOf?
+ * ## Why MutableStateFlow for `allNotebooks`?
  *
- * `flowOf` creates a Flow that emits one value then completes.
- * Perfect for mocking DAO methods that return Flow<List>.
+ * The repository captures the DAO Flow once at construction, so tests
+ * cannot re-stub it afterwards. Stubbing `getAllNotebooks()` with a live
+ * MutableStateFlow lets tests emit the expected value after the repository
+ * is built.
  */
 class NotebookRepositoryTest {
 
     private val notebookDao: NotebookDao = mockk()
     private lateinit var repository: NotebookRepository
 
+    /**
+     * Backs the `allNotebooks` constructor-time DAO call. The repository captures
+     * this Flow instance at construction, so a live flow lets tests set the
+     * emitted value after the repository is built.
+     */
+    private val allNotebooksFlow = MutableStateFlow<List<NotebookEntity>>(emptyList())
+
     @Before
     fun setUp() {
+        coEvery { notebookDao.getAllNotebooks() } returns allNotebooksFlow
+        coEvery { notebookDao.getMaxSortOrder() } returns 0
         repository = NotebookRepository(notebookDao)
     }
 
@@ -44,7 +55,7 @@ class NotebookRepositoryTest {
             NotebookEntity(id = 1, title = "Work"),
             NotebookEntity(id = 2, title = "Personal")
         )
-        coEvery { notebookDao.getAllNotebooks() } returns flowOf(expected)
+        allNotebooksFlow.value = expected
 
         val result = repository.allNotebooks.first()
 

@@ -15,6 +15,7 @@
  *   - INVALID_SUBAGENT_TYPE: Validates subagent_type / agent parameters
  */
 
+const fs = require('fs');
 const path = require('path');
 
 const VALID_PREFIXES = ['Researcher:', 'Reviewer:', 'Refactor:', 'Coder:'];
@@ -201,6 +202,26 @@ function deriveValidSubagentTypes(agentFiles) {
     .map((file) => file.name);
 }
 
+/**
+ * Read an agents directory and derive the enabled subagent types
+ * (mode: subagent, not disabled). Returns undefined when the directory
+ * cannot be read — callers fall back to DEFAULT_SUBAGENT_TYPES.
+ */
+function loadValidSubagentTypes(agentsDir) {
+  try {
+    const files = fs
+      .readdirSync(agentsDir)
+      .filter((f) => f.endsWith('.md'))
+      .map((f) => ({
+        name: path.basename(f, '.md'),
+        content: fs.readFileSync(path.join(agentsDir, f), 'utf8'),
+      }));
+    return deriveValidSubagentTypes(files);
+  } catch {
+    return undefined;
+  }
+}
+
 function allResolved(todos) {
   return (
     todos.length > 0 &&
@@ -355,4 +376,4 @@ function PlanEnforcer(options = {}) {
   };
 }
 
-module.exports = { PlanEnforcer, deriveValidSubagentTypes, FRONTMATTER_RE };
+module.exports = { PlanEnforcer, deriveValidSubagentTypes, loadValidSubagentTypes, FRONTMATTER_RE };

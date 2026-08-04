@@ -455,9 +455,9 @@ private fun NoteCard(
             Column(modifier = Modifier.weight(1f)) {
                 val photoSuffix = if (photoCount > 0) " ($photoCount)" else ""
                 Text(
-                    text = when (type) {
-                        NoteType.TEXT, NoteType.PHOTO -> "Text$photoSuffix"
-                        NoteType.CHECKLIST -> "Checklist" + (if (hasChecklist) " ✓" else "") + photoSuffix
+                    text = typeLabel(type) + when (type) {
+                        NoteType.CHECKLIST -> (if (hasChecklist) " ✓" else "") + photoSuffix
+                        else -> photoSuffix
                     },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,

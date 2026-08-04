@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateReading, generateBatch, setRandom } from '../sensor-sim.js';
+import { generateReading, setRandom } from '../sensor-sim.js';
 import { validateReadingSafe } from '../pipeline/validate.js';
 import config from '../config.js';
 
@@ -80,26 +80,5 @@ describe('sensor-sim generateReading', () => {
       if (r.value > t.max) anomalies++;
     }
     assert.ok(anomalies >= 1, `Expected at least 1 natural threshold crossing, got ${anomalies}`);
-  });
-});
-
-describe('sensor-sim generateBatch', () => {
-  it('generates the requested number of readings', () => {
-    const batch = generateBatch(50);
-    assert.equal(batch.length, 50);
-  });
-
-  it('all readings in batch pass validation', () => {
-    const batch = generateBatch(100);
-    for (const r of batch) {
-      const result = validateReadingSafe(r);
-      assert.ok(result.ok, `Batch reading failed: ${JSON.stringify(result.errors)}`);
-    }
-  });
-
-  it('generates various sensor types across batch', () => {
-    const batch = generateBatch(200);
-    const types = new Set(batch.map((r) => r.type));
-    assert.ok(types.size >= 3, 'Should generate at least 3 different sensor types in 200 readings');
   });
 });

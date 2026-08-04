@@ -13,7 +13,7 @@
       <aside id="sidebar">
         <div id="sidebar-header">
           <button id="sidebar-toggle" aria-label="Toggle sidebar">◀</button>
-          <h1>Workshop</h1>
+          <h1>Projects</h1>
         </div>
         <div id="sidebar-body">
           <div id="project-list"></div>
@@ -22,13 +22,13 @@
             <span class="toggle-track">
               <span class="toggle-knob"></span>
             </span>
-            Auto-stop on switch
+            Auto-stop project on switch
           </label>
           <div id="sidebar-actions">
-            <button id="stop-all" class="sidebar-btn danger">
+            <button id="stop-all" class="sidebar-btn danger" title="Stop all running projects">
               <span class="btn-icon stop-icon"></span><span class="btn-label">Stop All</span>
             </button>
-            <button id="test-all" class="sidebar-btn">
+            <button id="test-all" class="sidebar-btn" title="Test all projects">
               <span class="btn-icon">▶</span><span class="btn-label">Test All</span>
             </button>
           </div>
@@ -36,16 +36,22 @@
         <div id="sidebar-compact" aria-label="Projects">
           <div id="sidebar-compact-projects"></div>
           <div id="sidebar-compact-controls">
-            <label id="compact-auto-stop" title="Auto-stop on switch">
+            <label id="compact-auto-stop" title="Auto-stop project on switch">
               <input type="checkbox" id="compact-auto-stop-input" checked />
               <span class="toggle-track small">
                 <span class="toggle-knob"></span>
               </span>
             </label>
-            <button id="compact-stop-all" class="compact-ctrl-btn danger" title="Stop All">
+            <button
+              id="compact-stop-all"
+              class="compact-ctrl-btn danger"
+              title="Stop all running projects"
+            >
               <span class="stop-icon"></span>
             </button>
-            <button id="compact-test-all" class="compact-ctrl-btn" title="Test All">▶</button>
+            <button id="compact-test-all" class="compact-ctrl-btn" title="Test all projects">
+              ▶
+            </button>
           </div>
         </div>
       </aside>
@@ -71,8 +77,10 @@
               <div id="log-panel-header">
                 <div id="log-panel-header-left">
                   <span id="project-url"></span>
-                  <button id="open-tab">Open in Tab</button>
-                  <button id="run-tests">Run Tests</button>
+                  <button id="open-tab" title="Open the project preview in a new tab">
+                    Open in Tab
+                  </button>
+                  <button id="run-tests" title="Run this project's tests">Run Tests</button>
                 </div>
                 <div id="log-panel-header-right">
                   <span id="log-panel-controls">

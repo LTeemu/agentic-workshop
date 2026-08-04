@@ -3,3 +3,4 @@ __pycache__/
 data/analysis.json
 data/spotify-playlist.csv
 package-lock.json
+.pytest_cache/

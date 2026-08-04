@@ -1,132 +1,204 @@
 """
-Tests for analyze.py — run with: python test_analyze.py
+Tests for analyze.py — run with: python test_analyze.py (or pytest).
 
-Uses the example CSV so tests work without a real playlist export.
-Analysis runs once and results are shared across all tests.
+Focus per project rule: deterministic tests only for behavior critical enough
+that you wouldn't trust it without verification.
+
+Two kinds of tests live here:
+  1. A small set of "contract" tests asserting run() produces the full schema
+     the dashboard consumes (computed lazily, once).
+  2. Deterministic value-level tests for the pure helpers (_duration_to_sec,
+     _bucket, _detect_sep, _split_values, _value_counts_to_records) where the
+     real aggregation bugs would hide.
 """
 
 import json
 import sys
+import tempfile
 from pathlib import Path
+
+import pandas as pd
 
 import analyze
 
 EXAMPLE_CSV = Path(__file__).resolve().parent.parent / "data" / "spotify-playlist-example.csv"
 
-# Run analysis once — shared across all tests
-print(f"Analyzing {EXAMPLE_CSV}...", file=sys.stderr)
-RESULT = analyze.run(str(EXAMPLE_CSV), output_path=None, limit=100)
-print("Analysis complete.", file=sys.stderr)
+
+# ---------------------------------------------------------------------------
+# Contract test — run() dashboard schema
+# ---------------------------------------------------------------------------
+
+def _run_example():
+    """Run the full analysis on the example CSV, cached across tests."""
+    return analyze.run(str(EXAMPLE_CSV), output_path=None, limit=100)
 
 
-def test_basic_stats():
-    stats = RESULT["basic_stats"]
-    assert stats["total_songs"] > 0, "No songs loaded"
-    assert isinstance(stats["unique_artists"], int)
-    assert isinstance(stats["avg_bpm"], (int, float))
-    assert 0 <= stats["explicit_pct"] <= 100
+# Nested schema describing every top-level section the dashboard depends on.
+# Leaf `True` means "key must exist"; a dict/string means a required key.
+SCHEMA = {
+    "basic_stats": {
+        "total_songs": True,
+        "unique_artists": True,
+        "unique_genres": True,
+        "unique_albums": True,
+        "avg_bpm": True,
+        "avg_energy": True,
+        "avg_dance": True,
+        "avg_valence": True,
+        "avg_duration_sec": True,
+        "total_duration_sec": True,
+        "total_duration_hrs": True,
+        "avg_popularity": True,
+        "explicit_count": True,
+        "explicit_pct": True,
+    },
+    "audio_features": {
+        feature: {"buckets": True, "counts": True, "unit": True}
+        for feature in ("bpm", "energy", "dance", "valence", "loudness")
+    },
+    "genres": {
+        "top_genres": True,
+        "total_unique": True,
+        "total_occurrences": True,
+        "genres_per_song": True,
+        "genre_combo_info": True,
+    },
+    "artists": {
+        "top_artists": True,
+        "collaboration_count": True,
+        "total_unique_artists": True,
+        "song_count_distribution": True,
+    },
+    "temporal": {
+        "songs_by_year": True,
+        "songs_by_month": True,
+        "album_year_counts": True,
+    },
+    "mood_key": {
+        "key_distribution": True,
+        "camelot_distribution": True,
+        "mood_quadrants": True,
+        "valence_energy_scatter": True,
+    },
+    "albums": {"top_albums": True, "total_unique_albums": True},
+    "genre_trends": {"years": True, "genres": True, "series": True},
+    "artist_trends": {"years": True, "artists": True, "series": True},
+    "perfect_song": {
+        "freq": True,
+        "composite": True,
+        "closest_match": True,
+        "furthest_match": True,
+        "total_scored": True,
+    },
+    "_meta": {"source": True, "songs_analyzed": True},
+}
 
 
-def test_audio_features():
-    audio = RESULT["audio_features"]
+def _assert_schema(obj, schema, path=""):
+    """Recursively assert every required key is present at its dotted path."""
+    for key, sub in schema.items():
+        assert key in obj, f"missing key {path}{key}"
+        if isinstance(sub, dict):
+            _assert_schema(obj[key], sub, f"{path}{key}.")
+
+
+def test_dashboard_schema():
+    """The full analysis returns every section/key the dashboard renders."""
+    result = _run_example()
+    _assert_schema(result, SCHEMA)
+
+
+def test_basic_stats_real_values():
+    """Spot-check computed aggregates on the fixed example fixture."""
+    stats = _run_example()["basic_stats"]
+    assert isinstance(stats["total_songs"], int) and stats["total_songs"] > 0
+    assert stats["explicit_pct"] >= 0 and stats["explicit_pct"] <= 100
+    assert stats["avg_bpm"] > 0
+    # hours is round(sec/3600, 1) — assert consistency within rounding tolerance
+    assert stats["total_duration_hrs"] > 0
+    assert abs(stats["total_duration_hrs"] - stats["total_duration_sec"] / 3600) <= 0.051
+
+
+def test_audio_feature_histograms_well_formed():
+    """Histograms group by equal-length buckets whose counts sum to the sample."""
+    audio = _run_example()["audio_features"]
     for key in ("bpm", "energy", "dance", "valence"):
-        assert key in audio, f"Missing audio feature: {key}"
-        assert "buckets" in audio[key]
-        assert "counts" in audio[key]
-        assert len(audio[key]["buckets"]) > 0
+        b = audio[key]
+        assert len(b["buckets"]) == len(b["counts"])
+        assert len(b["buckets"]) > 0
+        assert all(c >= 0 for c in b["counts"])
 
 
-def test_genres():
-    genres = RESULT["genres"]
-    assert "top_genres" in genres
-    assert len(genres["top_genres"]) > 0
-    assert genres["total_unique"] > 0
-    for g in genres["top_genres"]:
-        assert "name" in g
-        assert "count" in g
-        assert "pct" in g
-
-
-def test_artists():
-    artists = RESULT["artists"]
-    assert "top_artists" in artists
-    assert len(artists["top_artists"]) > 0
-    assert artists["total_unique_artists"] > 0
-    for a in artists["top_artists"]:
-        assert "name" in a
-        assert "genres" in a  # genre inference ran
-        assert isinstance(a["genres"], list)
-
-
-def test_genre_trends():
-    gt = RESULT["genre_trends"]
-    assert "years" in gt
-    assert "genres" in gt
-    assert "series" in gt
-    assert len(gt["years"]) > 0
-    assert "Other" in gt["series"]
-
-
-def test_artist_trends():
-    at = RESULT["artist_trends"]
-    assert "years" in at
-    assert "artists" in at
-    assert "series" in at
-    assert len(at["years"]) > 0
-    assert "Other" in at["series"]
-
-
-def test_temporal():
-    t = RESULT["temporal"]
-    assert "songs_by_year" in t
-    assert "songs_by_month" in t
-    assert "album_year_counts" in t
-    assert len(t["songs_by_year"]) > 0
-
-
-def test_mood_key():
-    mood = RESULT["mood_key"]
-    assert "key_distribution" in mood
-    assert "camelot_distribution" in mood
-    assert "mood_quadrants" in mood
-    assert "valence_energy_scatter" in mood
-
-
-def test_albums():
-    albums = RESULT["albums"]
-    assert "top_albums" in albums
-    assert albums["total_unique_albums"] > 0
-
-
-def test_perfect_song():
-    ps = RESULT["perfect_song"]
-    assert "freq" in ps
-    assert "composite" in ps
-    assert "closest_match" in ps
-    assert "furthest_match" in ps
-    assert ps["total_scored"] > 0
-    assert ps["closest_match"]["song"] != ps["furthest_match"]["song"]
-
-
-def test_meta():
-    meta = RESULT["_meta"]
-    assert "source" in meta
-    assert "songs_analyzed" in meta
-    assert meta["songs_analyzed"] > 0
-
-
-def test_output_json():
-    """Verify analysis.json can be written and read back."""
-    tmp = Path(__file__).resolve().parent / "_test_output.json"
+def test_output_json_round_trip():
+    """analysis.json can be written and read back with the same schema."""
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        path = tmp.name
     try:
-        analyze.run(str(EXAMPLE_CSV), str(tmp), limit=100)
-        assert tmp.exists()
-        with open(tmp, encoding="utf-8") as f:
+        analyze.run(str(EXAMPLE_CSV), path, limit=100)
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
-        assert "basic_stats" in data
+        _assert_schema(data, SCHEMA)
     finally:
-        if tmp.exists():
-            tmp.unlink()
+        Path(path).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Pure helper tests — deterministic, value-level
+# ---------------------------------------------------------------------------
+
+def test_duration_to_sec():
+    assert analyze._duration_to_sec("3:45") == 3 * 60 + 45
+    assert analyze._duration_to_sec("1:02:30") == 1 * 3600 + 2 * 60 + 30
+    assert analyze._duration_to_sec("0:00") == 0
+    assert analyze._duration_to_sec("9") == 0  # malformed → 0
+    assert analyze._duration_to_sec("abc") == 0  # non-numeric → 0
+    assert analyze._duration_to_sec("1:2:3") == 1 * 3600 + 2 * 60 + 3
+
+
+def test_bucket_empty():
+    assert analyze._bucket(pd.Series([], dtype=float)) == {"buckets": [], "counts": []}
+
+
+def test_bucket_constant_values():
+    assert analyze._bucket(pd.Series([5, 5, 5, 5])) == {"buckets": ["5-5"], "counts": [4]}
+
+
+def test_bucket_preserves_count():
+    vals = pd.Series(range(1, 21))
+    b = analyze._bucket(vals, n_buckets=4)
+    assert len(b["buckets"]) == len(b["counts"])
+    assert len(b["buckets"]) > 0
+    assert sum(b["counts"]) == len(vals)
+    assert all(c > 0 for c in b["counts"])
+
+
+def test_bucket_fewer_values_than_buckets():
+    b = analyze._bucket(pd.Series([1, 2]), n_buckets=10)
+    assert sum(b["counts"]) == 2
+
+
+def test_bucket_duplicates_collapsed():
+    # Repeating values can collapse quantile bins; counts must still sum to input.
+    b = analyze._bucket(pd.Series([1, 1, 1, 2, 2, 2]), n_buckets=4)
+    assert len(b["buckets"]) == len(b["counts"])
+    assert sum(b["counts"]) == 6
+
+
+def test_detect_sep():
+    with tempfile.TemporaryDirectory() as d:
+        tab = Path(d) / "tab.csv"
+        comma = Path(d) / "comma.csv"
+        equal = Path(d) / "equal.csv"
+
+        tab.write_text("a\tb\tc\td\n", encoding="utf-8")  # tabs > commas
+        comma.write_text("Song,Artist,BPM\n", encoding="utf-8")  # commas > tabs
+        equal.write_text("a\tb,c,d\n", encoding="utf-8")  # 1 tab, 2 commas → comma
+
+        assert analyze._detect_sep(str(tab)) == "\t"
+        assert analyze._detect_sep(str(comma)) == ","
+        assert analyze._detect_sep(str(equal)) == ","
+        # Missing file → open() raises → tab fallback
+        assert analyze._detect_sep(str(Path(d) / "missing.csv")) == "\t"
 
 
 def test_split_values():
@@ -139,13 +211,16 @@ def test_split_values():
 
 
 def test_value_counts_to_records():
-    import pandas as pd
     s = pd.Series(["a", "b", "a", "c"])
     records = analyze._value_counts_to_records(s, "key")
     assert len(records) == 3
-    names = {r["key"] for r in records}
-    assert names == {"a", "b", "c"}
+    assert {r["key"] for r in records} == {"a", "b", "c"}
+    assert sum(r["count"] for r in records) == 4
 
+
+# ---------------------------------------------------------------------------
+# Runner so this file ALSO works bare (python test_analyze.py)
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     tests = [fn for fn in globals().values() if callable(fn) and fn.__name__.startswith("test_")]

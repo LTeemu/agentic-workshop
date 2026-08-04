@@ -68,16 +68,3 @@ export function generateReading() {
     unit: t.unit,
   };
 }
-
-/**
- * Generates a batch of readings (useful for testing).
- * @param {number} count
- * @returns {Array}
- */
-export function generateBatch(count) {
-  const readings = [];
-  for (let i = 0; i < count; i++) {
-    readings.push(generateReading());
-  }
-  return readings;
-}

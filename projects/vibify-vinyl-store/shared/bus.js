@@ -180,9 +180,10 @@ function getAllMatchingListeners(event) {
 
 /**
  * Check if event matches wildcard pattern
- * Supports: * (wildcard) and ** (deep wildcard)
+ * Supports: * (single-segment wildcard) and ** (deep wildcard,
+ * only as the FINAL segment — mid-pattern ** matches literally).
  */
-function matchesWildcard(event, pattern) {
+export function matchesWildcard(event, pattern) {
   if (pattern === '*') return true;
 
   const eventParts = event.split('.');

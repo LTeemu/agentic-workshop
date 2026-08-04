@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.securenome.data.local.entity.NoteType
 import com.securenome.data.repository.NoteRepository
 import com.securenome.security.CryptoManager
+import com.securenome.util.canonicalChecklistKey
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -64,6 +65,8 @@ class NoteEditorViewModel @Inject constructor(
     private var notebookId: Long = 0
     private var noteType: NoteType = NoteType.TEXT
     private var autoSaveJob: Job? = null
+    /** Monotonically decreasing source of temporary IDs for unsaved (new) items. */
+    private var nextNewItemId = -1L
 
     fun initialize(notebookId: Long, noteId: Long?, noteType: NoteType? = null) {
         this.notebookId = notebookId
@@ -288,13 +291,14 @@ class NoteEditorViewModel @Inject constructor(
     // --- Checklist item management ---
 
     fun addChecklistItem(text: String) {
-        val trimmed = text.trim()
-        if (trimmed.isEmpty()) return
-        // Dedup: skip if same text already exists (case-insensitive)
-        if (_state.value.checklistItems.any { it.text.equals(trimmed, ignoreCase = true) }) return
+        val newText = text.trim()
+        if (newText.isEmpty()) return
+        // Same canonical key (trim + Locale.ROOT case fold) as the repository.
+        val key = canonicalChecklistKey(newText)
+        if (_state.value.checklistItems.any { canonicalChecklistKey(it.text) == key }) return
         val newItem = ChecklistItemUi(
-            id = -System.currentTimeMillis(), // temporary negative id for new items
-            text = trimmed,
+            id = nextNewItemId--, // unique negative id reserved for unsaved items
+            text = newText,
             isDone = false
         )
         _state.value = _state.value.copy(

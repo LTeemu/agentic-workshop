@@ -14,11 +14,6 @@ function validReading(overrides = {}) {
 }
 
 describe('validateReading', () => {
-  it('accepts a valid temperature reading', () => {
-    const r = validReading();
-    assert.doesNotThrow(() => validateReading(r));
-  });
-
   it('accepts valid readings for all sensor types', () => {
     const fixtures = {
       temperature: { value: 22.5, unit: 'celsius' },

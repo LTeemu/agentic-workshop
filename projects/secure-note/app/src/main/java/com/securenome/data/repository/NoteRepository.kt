@@ -8,10 +8,12 @@ import com.securenome.data.local.entity.NoteEntity
 import com.securenome.data.local.entity.NoteType
 import com.securenome.data.local.entity.NoteWithDetails
 import com.securenome.data.local.entity.PhotoEntity
+import com.securenome.data.share.ShareCodeGenerator
 import com.securenome.security.CryptoManager
+import com.securenome.util.canonicalChecklistKey
+import com.securenome.util.normalizeChecklistItems
 import kotlinx.coroutines.flow.Flow
 import java.io.ByteArrayOutputStream
-import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -76,15 +78,11 @@ class NoteRepository @Inject constructor(
             )
         )
         // Insert checklist items (trimmed, deduped)
-        val seen = mutableSetOf<String>()
-        for (text in items) {
-            val trimmed = text.trim()
-            if (trimmed.isEmpty()) continue
-            if (!seen.add(trimmed.lowercase())) continue // case-insensitive dedup
+        for (text in normalizeChecklistItems(items)) {
             noteDao.insertChecklistItem(
                 ChecklistItemEntity(
                     noteId = noteId,
-                    encryptedText = cryptoManager.encrypt(trimmed.toByteArray())
+                    encryptedText = cryptoManager.encrypt(text.toByteArray())
                 )
             )
         }
@@ -94,9 +92,10 @@ class NoteRepository @Inject constructor(
     suspend fun addChecklistItem(noteId: Long, text: String, isDone: Boolean = false): Long {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return -1L
-        // Dedup: skip if same text already exists for this note (case-insensitive)
+        // Dedup via the shared canonical key so it agrees with the editor and
+        // the bulk createChecklistNote path.
         val existing = noteDao.getChecklistItemEntities(noteId)
-        if (existing.any { String(cryptoManager.decrypt(it.encryptedText)).equals(trimmed, ignoreCase = true) }) {
+        if (existing.any { canonicalChecklistKey(String(cryptoManager.decrypt(it.encryptedText))) == canonicalChecklistKey(trimmed) }) {
             return -1L
         }
         return noteDao.insertChecklistItem(
@@ -193,14 +192,7 @@ class NoteRepository @Inject constructor(
         // If code already exists, return it
         if (existing.shareCode != null) return existing.shareCode
 
-        // 8-character token: e.g. "A3F9-K2B1"
-        val random = SecureRandom()
-        val token = (1..4).map {
-            val letter = ('A'.code + random.nextInt(26)).toChar()
-            val digit = random.nextInt(10)
-            "$letter$digit"
-        }.joinToString("-")
-
+        val token = ShareCodeGenerator.generate()
         noteDao.updateShareCode(noteId, token)
         return token
     }

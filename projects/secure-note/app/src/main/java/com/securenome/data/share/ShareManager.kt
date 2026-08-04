@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.security.SecureRandom
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,7 +65,7 @@ class ShareManager @Inject constructor(
         println("[ShareManager] Server unavailable, falling back to local export")
 
         // Fallback: local .securenome file
-        val localCode = generateLocalCode()
+        val localCode = ShareCodeGenerator.generate()
         val blob = ShareBlob(
             encryptedNoteData = encryptedData,
             createdAt = System.currentTimeMillis()
@@ -126,12 +125,5 @@ class ShareManager @Inject constructor(
      */
     suspend fun isServerReachable(): Boolean = withContext(Dispatchers.IO) {
         shareApi.healthCheck().getOrDefault(false)
-    }
-
-    private fun generateLocalCode(): String {
-        val random = SecureRandom()
-        val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        fun pair() = "${chars[random.nextInt(chars.length)]}${chars[random.nextInt(chars.length)]}"
-        return "${pair()}${pair()}-${pair()}${pair()}"
     }
 }

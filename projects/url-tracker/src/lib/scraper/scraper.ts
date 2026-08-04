@@ -1,12 +1,12 @@
-import * as cheerio from "cheerio";
-import type { Element, AnyNode } from "domhandler";
+import * as cheerio from 'cheerio';
+import type { Element, AnyNode } from 'domhandler';
 
 // ── Types ──
 
 export interface ScrapeField {
   cssSelector: string;
-  attribute: "text" | "href" | "src";
-  valueType: "text" | "number" | "boolean";
+  attribute: 'text' | 'href' | 'src';
+  valueType: 'text' | 'number' | 'boolean';
 }
 
 export interface ScrapedValue {
@@ -24,8 +24,8 @@ export interface ScrapeResult {
 export interface DetectedField {
   label: string;
   cssSelector: string;
-  attribute: "text" | "href" | "src";
-  valueType: "text" | "number" | "boolean";
+  attribute: 'text' | 'href' | 'src';
+  valueType: 'text' | 'number' | 'boolean';
 }
 
 export interface PreviewResult {
@@ -45,7 +45,7 @@ export interface ScrapeOptions {
 
 // ── Constants ──
 
-const OUR_UA = "URLTracker/1.0 (respects robots.txt; +https://github.com/url-tracker)";
+const OUR_UA = 'URLTracker/1.0 (respects robots.txt; +https://github.com/url-tracker)';
 
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -97,12 +97,12 @@ class RobotsChecker {
 
     // Check allow rules first (take precedence over disallow)
     for (const pattern of rules.allowed) {
-      if (this.matchPattern(pattern, path)) return true;
+      if (matchRobotsPattern(pattern, path)) return true;
     }
 
     // Check disallow rules
     for (const pattern of rules.disallowed) {
-      if (this.matchPattern(pattern, path)) return false;
+      if (matchRobotsPattern(pattern, path)) return false;
     }
 
     return true;
@@ -119,7 +119,7 @@ class RobotsChecker {
     try {
       const response = await fetch(`${origin}/robots.txt`, {
         signal: AbortSignal.timeout(5_000),
-        headers: { "User-Agent": OUR_UA },
+        headers: { 'User-Agent': OUR_UA },
       });
 
       if (!response.ok) {
@@ -131,25 +131,25 @@ class RobotsChecker {
       const text = await response.text();
       let currentAgent: string | null = null;
 
-      for (const line of text.split("\n")) {
+      for (const line of text.split('\n')) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
+        if (!trimmed || trimmed.startsWith('#')) continue;
 
-        if (trimmed.toLowerCase().startsWith("user-agent:")) {
-          currentAgent = trimmed.slice("user-agent:".length).trim().toLowerCase();
+        if (trimmed.toLowerCase().startsWith('user-agent:')) {
+          currentAgent = trimmed.slice('user-agent:'.length).trim().toLowerCase();
           continue;
         }
 
         // Only apply rules for our agent or wildcard
-        if (currentAgent !== null && currentAgent !== "*" && currentAgent !== "urltracker/1.0") {
+        if (currentAgent !== null && currentAgent !== '*' && currentAgent !== 'urltracker/1.0') {
           continue;
         }
 
-        if (trimmed.toLowerCase().startsWith("disallow:")) {
-          const pattern = trimmed.slice("disallow:".length).trim();
+        if (trimmed.toLowerCase().startsWith('disallow:')) {
+          const pattern = trimmed.slice('disallow:'.length).trim();
           if (pattern) rules.disallowed.push(pattern);
-        } else if (trimmed.toLowerCase().startsWith("allow:")) {
-          const pattern = trimmed.slice("allow:".length).trim();
+        } else if (trimmed.toLowerCase().startsWith('allow:')) {
+          const pattern = trimmed.slice('allow:'.length).trim();
           if (pattern) rules.allowed.push(pattern);
         }
       }
@@ -159,41 +159,6 @@ class RobotsChecker {
 
     this.cache.set(origin, { rules, expiresAt: Date.now() + ROBOTS_CACHE_TTL_MS });
     return rules;
-  }
-
-  /**
-   * Match a robots.txt pattern against a path.
-   * Supports wildcard `*` (matches any sequence) and trailing `$` (end-of-path match).
-   */
-  private matchPattern(pattern: string, path: string): boolean {
-    if (!pattern) return false;
-
-    let regexStr = "";
-    let i = 0;
-    const endsWith = pattern.endsWith("$");
-    const pat = endsWith ? pattern.slice(0, -1) : pattern;
-
-    while (i < pat.length) {
-      const ch = pat[i];
-      if (ch === "*") {
-        regexStr += ".*";
-      } else if (ch === "." || ch === "?" || ch === "+" || ch === "^" || ch === "$" || ch === "{" || ch === "}" || ch === "|" || ch === "(" || ch === ")" || ch === "[" || ch === "]") {
-        regexStr += "\\" + ch;
-      } else {
-        regexStr += ch;
-      }
-      i++;
-    }
-
-    if (endsWith) {
-      regexStr += "$";
-    }
-
-    try {
-      return new RegExp(regexStr).test(path);
-    } catch {
-      return false;
-    }
   }
 
   /** Clear cache (for testing) */
@@ -206,39 +171,87 @@ const robotsChecker = new RobotsChecker();
 
 // ── Helpers ──
 
-function parseNumber(text: string): string | null {
+export function parseNumber(text: string): string | null {
   const cleaned = text
-    .replace(/^[$\€\£\¥\s]+|[$\€\£\¥\s]+$/g, "")
-    .replace(/,/g, "")
+    .replace(/^[$\€\£\¥\s]+|[$\€\£\¥\s]+$/g, '')
+    .replace(/,/g, '')
     .trim();
   const parsed = parseFloat(cleaned);
   return !isNaN(parsed) ? String(parsed) : null;
 }
 
-function parseBoolean(text: string): string | null {
+export function parseBoolean(text: string): string | null {
   const lower = text.toLowerCase().trim();
   // Use startsWith because elements often contain trailing data attributes or JSON
-  const truthy = ["in stock", "available", "instock", "true", "yes", "enabled"];
-  const falsy = ["out of stock", "unavailable", "outofstock", "false", "no", "disabled"];
-  if (truthy.some((v) => lower.startsWith(v))) return "true";
-  if (falsy.some((v) => lower.startsWith(v))) return "false";
+  const truthy = ['in stock', 'available', 'instock', 'true', 'yes', 'enabled'];
+  const falsy = ['out of stock', 'unavailable', 'outofstock', 'false', 'no', 'disabled'];
+  if (truthy.some((v) => lower.startsWith(v))) return 'true';
+  if (falsy.some((v) => lower.startsWith(v))) return 'false';
   return null;
 }
 
 function extractAttribute(
   $: cheerio.CheerioAPI,
   el: ReturnType<cheerio.CheerioAPI> | undefined,
-  attribute: ScrapeField["attribute"],
+  attribute: ScrapeField['attribute'],
 ): string {
-  if (!el || el.length === 0) return "";
+  if (!el || el.length === 0) return '';
   switch (attribute) {
-    case "href":
-      return el.attr("href")?.trim() ?? "";
-    case "src":
-      return el.attr("src")?.trim() ?? "";
-    case "text":
+    case 'href':
+      return el.attr('href')?.trim() ?? '';
+    case 'src':
+      return el.attr('src')?.trim() ?? '';
+    case 'text':
     default:
-      return el.text().replace(/\s+/g, " ").trim();
+      return el.text().replace(/\s+/g, ' ').trim();
+  }
+}
+
+/**
+ * Match a robots.txt pattern against a path.
+ * Supports wildcard `*` (matches any sequence) and trailing `$` (end-of-path match).
+ */
+export function matchRobotsPattern(pattern: string, path: string): boolean {
+  if (!pattern) return false;
+
+  let regexStr = '';
+  let i = 0;
+  const endsWith = pattern.endsWith('$');
+  const pat = endsWith ? pattern.slice(0, -1) : pattern;
+
+  while (i < pat.length) {
+    const ch = pat[i];
+    if (ch === '*') {
+      regexStr += '.*';
+    } else if (
+      ch === '.' ||
+      ch === '?' ||
+      ch === '+' ||
+      ch === '^' ||
+      ch === '$' ||
+      ch === '{' ||
+      ch === '}' ||
+      ch === '|' ||
+      ch === '(' ||
+      ch === ')' ||
+      ch === '[' ||
+      ch === ']'
+    ) {
+      regexStr += '\\' + ch;
+    } else {
+      regexStr += ch;
+    }
+    i++;
+  }
+
+  if (endsWith) {
+    regexStr += '$';
+  }
+
+  try {
+    return new RegExp(regexStr).test(path);
+  } catch {
+    return false;
   }
 }
 
@@ -272,22 +285,22 @@ export async function scrapeUrl(
     try {
       const els = $(field.cssSelector);
       if (els.length === 0) {
-        return { value: "", error: `Selector "${field.cssSelector}" matched no elements` };
+        return { value: '', error: `Selector "${field.cssSelector}" matched no elements` };
       }
 
       const raw = extractAttribute($, els.first(), field.attribute);
       if (!raw) {
-        return { value: "", error: `Selector matched but no ${field.attribute} found` };
+        return { value: '', error: `Selector matched but no ${field.attribute} found` };
       }
 
       let value = raw;
-      if (field.valueType === "number") {
+      if (field.valueType === 'number') {
         const parsed = parseNumber(raw);
         if (parsed === null) {
           return { value: raw, error: `Could not parse "${raw}" as a number` };
         }
         value = parsed;
-      } else if (field.valueType === "boolean") {
+      } else if (field.valueType === 'boolean') {
         const parsed = parseBoolean(raw);
         if (parsed === null) {
           return { value: raw, error: `Could not parse "${raw}" as boolean` };
@@ -297,8 +310,8 @@ export async function scrapeUrl(
 
       return { value };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return { value: "", error: message };
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { value: '', error: message };
     }
   });
 
@@ -338,10 +351,7 @@ async function fetchPage(url: string): Promise<PageData> {
   // 1. Check robots.txt
   const allowed = await robotsChecker.isAllowed(url);
   if (!allowed) {
-    throw new RobotsBlockedError(
-      `URL blocked by ${hostname}/robots.txt`,
-      hostname,
-    );
+    throw new RobotsBlockedError(`URL blocked by ${hostname}/robots.txt`, hostname);
   }
 
   // 2. Rate limit per hostname
@@ -355,8 +365,8 @@ async function fetchPage(url: string): Promise<PageData> {
   try {
     response = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": OUR_UA },
-      redirect: "follow",
+      headers: { 'User-Agent': OUR_UA },
+      redirect: 'follow',
     });
   } finally {
     clearTimeout(timeout);
@@ -371,19 +381,19 @@ async function fetchPage(url: string): Promise<PageData> {
   const $ = cheerio.load(html);
 
   const title =
-    $('meta[property="og:title"]').attr("content")?.trim() ||
-    $('meta[name="twitter:title"]').attr("content")?.trim() ||
-    $("title").text().trim() ||
+    $('meta[property="og:title"]').attr('content')?.trim() ||
+    $('meta[name="twitter:title"]').attr('content')?.trim() ||
+    $('title').text().trim() ||
     hostname;
 
   const image =
-    $('meta[property="og:image"]').attr("content")?.trim() ||
-    $('meta[name="twitter:image"]').attr("content")?.trim() ||
+    $('meta[property="og:image"]').attr('content')?.trim() ||
+    $('meta[name="twitter:image"]').attr('content')?.trim() ||
     null;
 
   const description =
-    $('meta[property="og:description"]').attr("content")?.trim() ||
-    $('meta[name="description"]').attr("content")?.trim() ||
+    $('meta[property="og:description"]').attr('content')?.trim() ||
+    $('meta[name="description"]').attr('content')?.trim() ||
     null;
 
   return { html, title, image, description };
@@ -396,7 +406,7 @@ export class RobotsBlockedError extends Error {
 
   constructor(message: string, hostname: string) {
     super(message);
-    this.name = "RobotsBlockedError";
+    this.name = 'RobotsBlockedError';
     this.hostname = hostname;
   }
 }
@@ -407,7 +417,12 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
   const fields: DetectedField[] = [];
   const seen = new Set<string>();
 
-  function add(label: string, selector: string, attribute: ScrapeField["attribute"], valueType: ScrapeField["valueType"]) {
+  function add(
+    label: string,
+    selector: string,
+    attribute: ScrapeField['attribute'],
+    valueType: ScrapeField['valueType'],
+  ) {
     const key = `${selector}:${attribute}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -419,43 +434,53 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
   // scrape time. The microdata and common-pattern steps below handle HTML elements.
 
   // 1. Microdata (itemprop)
-  $("[itemprop]").each((_, el) => {
+  $('[itemprop]').each((_, el) => {
     const $el = $(el);
-    const prop = $el.attr("itemprop")?.trim();
-    if (!prop || prop.includes(" ")) return;
+    const prop = $el.attr('itemprop')?.trim();
+    if (!prop || prop.includes(' ')) return;
 
-    const tag = el.type === "tag" ? (el as Element).name?.toLowerCase() ?? "" : "";
-    const attr: ScrapeField["attribute"] =
-      tag === "img" || tag === "video" ? "src" :
-      tag === "a" ? "href" :
-      "text";
+    const tag = el.type === 'tag' ? ((el as Element).name?.toLowerCase() ?? '') : '';
+    const attr: ScrapeField['attribute'] =
+      tag === 'img' || tag === 'video' ? 'src' : tag === 'a' ? 'href' : 'text';
 
     const selector = buildSelector($el);
 
-    if (prop === "name" || prop === "title") add(prop, selector, attr, "text");
-    else if (prop === "price" || prop === "priceCurrency" || prop === "amount") add(prop, selector, attr, "number");
-    else if (prop === "availability") add("Availability", selector, attr, "boolean");
-    else if (prop === "image") add("Image", selector, "src", "text");
-    else if (prop === "description") add(prop, selector, attr, "text");
-    else if (prop === "sku" || prop === "mpn" || prop === "gtin") add(prop, selector, attr, "text");
-    else if (prop === "ratingValue" || prop === "ratingCount" || prop === "reviewCount") add(prop, selector, attr, "number");
-    else add(prop, selector, attr, "text");
+    if (prop === 'name' || prop === 'title') add(prop, selector, attr, 'text');
+    else if (prop === 'price' || prop === 'priceCurrency' || prop === 'amount')
+      add(prop, selector, attr, 'number');
+    else if (prop === 'availability') add('Availability', selector, attr, 'boolean');
+    else if (prop === 'image') add('Image', selector, 'src', 'text');
+    else if (prop === 'description') add(prop, selector, attr, 'text');
+    else if (prop === 'sku' || prop === 'mpn' || prop === 'gtin') add(prop, selector, attr, 'text');
+    else if (prop === 'ratingValue' || prop === 'ratingCount' || prop === 'reviewCount')
+      add(prop, selector, attr, 'number');
+    else add(prop, selector, attr, 'text');
   });
 
   // 2. Common CSS class/element patterns for prices
   const pricePatterns = [
-    ".price", ".product-price", ".sale-price", ".current-price",
-    "[data-price]", "[class*='price']", ".amount", ".total",
-    ".a-price-whole", ".a-offscreen",
-    ".product__price", ".product-price__current", ".price--main",
-    ".ProductPrice", ".product-single__price",
+    '.price',
+    '.product-price',
+    '.sale-price',
+    '.current-price',
+    '[data-price]',
+    "[class*='price']",
+    '.amount',
+    '.total',
+    '.a-price-whole',
+    '.a-offscreen',
+    '.product__price',
+    '.product-price__current',
+    '.price--main',
+    '.ProductPrice',
+    '.product-single__price',
   ];
   for (const sel of pricePatterns) {
     const el = $(sel).first();
     if (el.length && el.text().trim()) {
       const text = el.text().trim();
       if (/[$€£¥\d.]/.test(text)) {
-        add("Price", sel, "text", "number");
+        add('Price', sel, 'text', 'number');
         break;
       }
     }
@@ -463,27 +488,38 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
 
   // 3. Common stock/availability patterns
   const stockPatterns = [
-    "[itemprop='availability']", ".stock", ".availability", ".in-stock",
-    ".out-of-stock", ".product__stock", "#availability", ".a-stock",
-    "[class*='stock']", "[class*='availability']",
+    "[itemprop='availability']",
+    '.stock',
+    '.availability',
+    '.in-stock',
+    '.out-of-stock',
+    '.product__stock',
+    '#availability',
+    '.a-stock',
+    "[class*='stock']",
+    "[class*='availability']",
   ];
   for (const sel of stockPatterns) {
     const el = $(sel).first();
     if (el.length && el.text().trim()) {
-      add("Stock Status", sel, "text", "boolean");
+      add('Stock Status', sel, 'text', 'boolean');
       break;
     }
   }
 
   // 4. Rating patterns
   const ratingPatterns = [
-    ".rating", ".star-rating", ".stars", "[itemprop='ratingValue']",
-    ".product-rating", ".review-rating",
+    '.rating',
+    '.star-rating',
+    '.stars',
+    "[itemprop='ratingValue']",
+    '.product-rating',
+    '.review-rating',
   ];
   for (const sel of ratingPatterns) {
     const el = $(sel).first();
     if (el.length && el.text().trim()) {
-      add("Rating", sel, "text", "number");
+      add('Rating', sel, 'text', 'number');
       break;
     }
   }
@@ -492,24 +528,24 @@ function autoDetectFields($: cheerio.CheerioAPI): DetectedField[] {
 }
 
 function buildSelector($el: cheerio.Cheerio<AnyNode>): string {
-  const id = $el.attr("id");
+  const id = $el.attr('id');
   if (id) return `#${cssEscape(id)}`;
 
-  const tag = ($el[0] as Element)?.name ?? "";
-  const classes = $el.attr("class");
+  const tag = ($el[0] as Element)?.name ?? '';
+  const classes = $el.attr('class');
   if (classes) {
     const classList = classes.split(/\s+/).filter(Boolean);
     if (classList.length > 0) {
-      return `${tag}.${classList.map((c) => cssEscape(c)).join(".")}`;
+      return `${tag}.${classList.map((c) => cssEscape(c)).join('.')}`;
     }
   }
 
-  const itemprop = $el.attr("itemprop");
+  const itemprop = $el.attr('itemprop');
   if (itemprop) return `[itemprop='${itemprop}']`;
 
-  return tag || "*";
+  return tag || '*';
 }
 
 function cssEscape(value: string): string {
-  return value.replace(/[ !"#$%&'()*+,./:;<=>?@[\]^`{|}~]/g, "\\$&");
+  return value.replace(/[ !"#$%&'()*+,./:;<=>?@[\]^`{|}~]/g, '\\$&');
 }

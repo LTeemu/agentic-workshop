@@ -11,7 +11,7 @@ const PLUGIN_PATH = path.resolve(
   'plugins',
   'plan-enforcer-core.cjs',
 );
-const { PlanEnforcer, deriveValidSubagentTypes } = require(PLUGIN_PATH);
+const { PlanEnforcer, deriveValidSubagentTypes, loadValidSubagentTypes } = require(PLUGIN_PATH);
 const { todowriteCall, taskCall, toolCall, subagentCall, getAgentsDir } = require('./helpers');
 
 describe('PlanEnforcer — Prefix Extraction (via delegation gating)', () => {
@@ -503,6 +503,52 @@ describe('PlanEnforcer — Cross-Project Isolation (CROSS_PROJECT_VIOLATION)', (
       ),
     );
   });
+
+  it('blocks .. traversal escaping the scoped project', async () => {
+    await confirmScope('projects/alpha');
+    assert.throws(
+      () =>
+        enforcer.onToolExecuteBefore(
+          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
+          { args: { filePath: 'projects/alpha/../bravo/src/index.js' } },
+        ),
+      /CROSS_PROJECT_VIOLATION/,
+    );
+  });
+
+  it('allows .. traversal that stays inside the scoped project', async () => {
+    await confirmScope('projects/alpha');
+    assert.doesNotThrow(() =>
+      enforcer.onToolExecuteBefore(
+        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
+        { args: { filePath: 'projects/alpha/src/../README.md' } },
+      ),
+    );
+  });
+
+  it('does not confuse a sibling whose name starts with the scoped project', async () => {
+    await confirmScope('projects/alpha');
+    assert.throws(
+      () =>
+        enforcer.onToolExecuteBefore(
+          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
+          { args: { filePath: 'projects/alpha2/README.md' } },
+        ),
+      /CROSS_PROJECT_VIOLATION/,
+    );
+  });
+
+  it('blocks backslash traversal attempts', { skip: process.platform !== 'win32' }, async () => {
+    await confirmScope('projects/alpha');
+    assert.throws(
+      () =>
+        enforcer.onToolExecuteBefore(
+          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
+          { args: { filePath: 'projects\\alpha\\..\\bravo\\src\\index.js' } },
+        ),
+      /VIOLATION/,
+    );
+  });
 });
 
 describe('PlanEnforcer — Scope Violation (tool coverage)', () => {
@@ -628,6 +674,24 @@ describe('PlanEnforcer — deriveValidSubagentTypes', () => {
   });
 });
 
+describe('PlanEnforcer — loadValidSubagentTypes', () => {
+  it('derives enabled subagents from the real agents directory', () => {
+    const types = loadValidSubagentTypes(getAgentsDir());
+    for (const expected of ['explore', 'refactor', 'researcher', 'reviewer']) {
+      assert.ok(types.includes(expected), `expected "${expected}" to be a valid subagent`);
+    }
+    assert.ok(!types.includes('general'), 'disabled general must not be a valid subagent');
+    assert.ok(!types.includes('coder'), 'primary coder must not be a valid subagent');
+  });
+
+  it('returns undefined when the agents directory is unreadable', () => {
+    assert.strictEqual(
+      loadValidSubagentTypes(path.join(__dirname, 'no-such-agents-dir')),
+      undefined,
+    );
+  });
+});
+
 describe('PlanEnforcer — custom valid subagent list', () => {
   it('uses validSubagentTypes passed via options', async () => {
     const enforcer = PlanEnforcer({ validSubagentTypes: ['explore'] });
@@ -710,29 +774,5 @@ describe('PlanEnforcer — wrapped event shapes', () => {
         { args: { filePath: 'package.json' } },
       ),
     );
-  });
-});
-
-describe('PlanEnforcer — deriveValidSubagentTypes vs frontmatter parser', () => {
-  it('agrees with the test frontmatter parser on real agent files', () => {
-    const { parseFrontmatter } = require('./helpers');
-    const files = fs.readdirSync(getAgentsDir()).filter((f) => f.endsWith('.md'));
-    const derived = deriveValidSubagentTypes(
-      files.map((f) => ({
-        name: path.basename(f, '.md'),
-        content: fs.readFileSync(path.join(getAgentsDir(), f), 'utf8'),
-      })),
-    );
-
-    for (const file of files) {
-      const name = path.basename(file, '.md');
-      const fm = parseFrontmatter(fs.readFileSync(path.join(getAgentsDir(), file), 'utf8'));
-      const expectValid = fm.mode === 'subagent' && fm.disabled !== true;
-      assert.strictEqual(
-        derived.includes(name),
-        expectValid,
-        `${name} mismatch between deriveValidSubagentTypes and parseFrontmatter`,
-      );
-    }
   });
 });

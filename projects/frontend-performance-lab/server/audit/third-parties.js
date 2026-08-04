@@ -29,7 +29,12 @@ export function auditThirdParties(resources, pageUrl) {
       try {
         const resHost = new URL(res.url).hostname;
         if (resHost !== pageHost) {
-          const isTracker = KNOWN_TRACKERS.some((t) => resHost.includes(t));
+          // Domain entries match on hostname; path-based entries (e.g.
+          // linkedin.com/tr) can never appear in a bare hostname, so those
+          // match against the full URL instead.
+          const isTracker = KNOWN_TRACKERS.some((t) =>
+            t.includes('/') ? res.url.includes(t) : resHost.includes(t),
+          );
           if (isTracker) trackerDomains.add(resHost);
 
           external.push({

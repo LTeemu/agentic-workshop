@@ -1,5 +1,6 @@
 import { Enemy } from './Enemy.js';
 import { ENEMY_JUMP } from '../config.js';
+import { obstacleDecision, shouldTurnForEdge } from '../logic/enemyDecision.js';
 
 /**
  * FreeroamEnemy — walks freely with no patrol bounds.
@@ -43,31 +44,40 @@ export class FreeroamEnemy extends Enemy {
     switch (this._state) {
       case 'walk': {
         // Edge ahead (sensor red = no ground in 32×48 zone) → turn, never drop
-        if (onGround && this.edgeAhead) {
+        if (shouldTurnForEdge({ onGround, edgeAhead: this.edgeAhead })) {
           this.log('drop sensor red → PIT, turn');
-          sprite.setFlipX(!sprite.flipX);
-          sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
+          this.turnAround();
           break;
         }
 
         // Obstacle ahead — three tiers
-        if (this.wallAhead && onGround) {
-          if (this.clearanceBlocked) {
+        if (onGround) {
+          const decision = obstacleDecision({
+            wallAhead: this.wallAhead,
+            clearanceBlocked: this.clearanceBlocked,
+            stepUpBlocked: this.stepUpBlocked,
+          });
+          if (decision === 'turn') {
             // 3+ tile wall — turn
             sprite.setFlipX(!sprite.flipX);
             sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
-          } else if (this.stepUpBlocked) {
+            break;
+          }
+          if (decision === 'jump') {
             // 2-tile wall — full jump with failure check
             this._state = 'jump';
             this._stateTimer = 0;
             sprite.setVelocityY(ENEMY_JUMP);
             sprite.setVelocityX(sprite.flipX ? this.speed * 0.4 : -this.speed * 0.4);
-          } else {
+            break;
+          }
+          if (decision === 'step') {
             // 1-tile wall — small step
             sprite.setVelocityY(ENEMY_JUMP * 0.55);
             sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
+            break;
           }
-          break;
+          // decision === 'none' → fall through to normal movement
         }
 
         // Normal forward movement

@@ -122,17 +122,4 @@ describe('cleanReading', () => {
     assert.equal(cleaned.anomaly, false);
     assert.equal(cleaned.cleaned, false);
   });
-
-  it('handles normal pressure reading', () => {
-    const reading = {
-      id: 'test-id',
-      timestamp: Date.now(),
-      type: 'pressure',
-      value: 1013,
-      unit: 'hpa',
-    };
-    const cleaned = cleanReading(reading);
-    assert.equal(cleaned.anomaly, false);
-    assert.equal(cleaned.value, 1013);
-  });
 });

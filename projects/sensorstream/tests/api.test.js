@@ -187,6 +187,31 @@ describe('API SSE Stream', () => {
   });
 });
 
+describe('API Rate Limit', () => {
+  it('returns 429 once the token bucket is exhausted', async () => {
+    // Burst far past maxBurst (20) with the 10/sec refill active. Each
+    // connection is cancelled immediately, so sseClients never approaches
+    // maxClients (50) and the 503 guard cannot fire before the 429. 60
+    // requests need ~4s of refill to all pass, so the burst stays well under
+    // that even on a slow/loaded loopback.
+    const BURST = 60;
+    const statuses = [];
+    for (let i = 0; i < BURST; i++) {
+      const resp = await fetch(`${BASE}/api/sensors/stream`);
+      statuses.push(resp.status);
+      await resp.body.cancel();
+    }
+    assert.ok(
+      statuses.includes(429),
+      `expected a 429 among ${BURST} rapid stream requests, got: ${JSON.stringify(statuses)}`,
+    );
+    assert.ok(
+      statuses.every((s) => s === 200 || s === 429),
+      `unexpected status code in burst: ${JSON.stringify(statuses)}`,
+    );
+  });
+});
+
 describe('API 404', () => {
   it('GET /api/nonexistent returns 404', async () => {
     const resp = await fetch(`${BASE}/api/nonexistent`);

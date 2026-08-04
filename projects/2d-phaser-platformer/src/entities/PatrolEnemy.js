@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Enemy } from './Enemy.js';
 import { ENEMY_JUMP } from '../config.js';
+import { obstacleDecision, shouldTurnForEdge } from '../logic/enemyDecision.js';
 
 /**
  * PatrolEnemy — walks between patrolLeft/patrolRight bounds,
@@ -97,7 +98,7 @@ export class PatrolEnemy extends Enemy {
         }
 
         // Edge ahead (sensor red = no ground in 32×48 zone) → turn, never drop
-        if (onGround && this.edgeAhead) {
+        if (shouldTurnForEdge({ onGround, edgeAhead: this.edgeAhead })) {
           this.log('drop sensor red → PIT, turn');
           sprite.setFlipX(!sprite.flipX);
           sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
@@ -105,21 +106,30 @@ export class PatrolEnemy extends Enemy {
         }
 
         // Obstacle ahead — three tiers
-        if (this.wallAhead && onGround) {
-          if (this.clearanceBlocked) {
+        if (onGround) {
+          const decision = obstacleDecision({
+            wallAhead: this.wallAhead,
+            clearanceBlocked: this.clearanceBlocked,
+            stepUpBlocked: this.stepUpBlocked,
+          });
+          if (decision === 'turn') {
             this.log('wall + top clearance BLOCKED → 3+ tile, turn');
-            sprite.setFlipX(!sprite.flipX);
-            sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
-          } else if (this.stepUpBlocked) {
+            this.turnAround();
+            break;
+          }
+          if (decision === 'jump') {
             this.log('wall + step-up BLOCKED → 2-tile, full jump');
             sprite.setVelocityY(ENEMY_JUMP);
             sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
-          } else {
+            break;
+          }
+          if (decision === 'step') {
             this.log('wall only → 1-tile, small step');
             sprite.setVelocityY(ENEMY_JUMP * 0.55); // ~ -3.0 → 18px (1-tile step)
             sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
+            break;
           }
-          break;
+          // decision === 'none' → fall through to normal movement
         }
 
         // Normal forward movement

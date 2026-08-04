@@ -13,35 +13,26 @@
  */
 import { Plugin } from '@opencode-ai/plugin';
 import { createRequire } from 'module';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const { PlanEnforcer, deriveValidSubagentTypes } = require('./plan-enforcer-core.cjs');
+const { PlanEnforcer, loadValidSubagentTypes } = require('./plan-enforcer-core.cjs');
 
 const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
 // .opencode/plugins → .opencode → workspace root (independent of process CWD)
 const WORKSPACE_ROOT = path.dirname(path.dirname(PLUGIN_DIR));
 const AGENTS_DIR = path.join(path.dirname(PLUGIN_DIR), 'agents');
 
-/** Read .opencode/agents/*.md and derive valid subagent_type values. */
-function loadValidSubagentTypes() {
-  try {
-    const files = fs
-      .readdirSync(AGENTS_DIR)
-      .filter((f) => f.endsWith('.md'))
-      .map((f) => ({
-        name: path.basename(f, '.md'),
-        content: fs.readFileSync(path.join(AGENTS_DIR, f), 'utf8'),
-      }));
-    const types = deriveValidSubagentTypes(files);
+/** Derive valid subagent_type values from .opencode/agents/*.md (defaults on failure). */
+function discoverSubagentTypes() {
+  const types = loadValidSubagentTypes(AGENTS_DIR);
+  if (types) {
     console.log(`[plan-enforcer] Valid subagent types: ${types.join(', ')}`);
-    return types;
-  } catch (err) {
-    console.warn('[plan-enforcer] Could not derive subagent types from disk:', err.message);
-    return undefined;
+  } else {
+    console.warn('[plan-enforcer] Could not derive subagent types from disk; using defaults.');
   }
+  return types;
 }
 
 export default Plugin.define({
@@ -49,7 +40,7 @@ export default Plugin.define({
 
   setup: async (ctx) => {
     const enforcer = PlanEnforcer({
-      validSubagentTypes: loadValidSubagentTypes(),
+      validSubagentTypes: discoverSubagentTypes(),
       workspaceRoot: WORKSPACE_ROOT,
     });
     const abortController = new AbortController();

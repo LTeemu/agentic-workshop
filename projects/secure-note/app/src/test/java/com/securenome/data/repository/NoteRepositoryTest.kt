@@ -62,6 +62,7 @@ class NoteRepositoryTest {
         val encryptedBytes = byteArrayOf(1, 2, 3, 4, 5)
 
         every { cryptoManager.encrypt(plainText.toByteArray()) } returns encryptedBytes
+        coEvery { noteDao.getMaxSortOrder(notebookId) } returns 0
         coEvery { noteDao.insertNote(any<NoteEntity>()) } returns 1L
 
         val id = repository.createTextNote(notebookId, plainText)
@@ -87,6 +88,7 @@ class NoteRepositoryTest {
         every { cryptoManager.encrypt(byteArrayOf()) } returns encryptedEmpty
         every { cryptoManager.encrypt("Item 1".toByteArray()) } returns encryptedItem1
         every { cryptoManager.encrypt("Item 2".toByteArray()) } returns encryptedItem2
+        coEvery { noteDao.getMaxSortOrder(notebookId) } returns 0
         coEvery { noteDao.insertNote(any<NoteEntity>()) } returns 1L
         coEvery { noteDao.insertChecklistItem(any<ChecklistItemEntity>()) } returns 1L
 
@@ -108,7 +110,9 @@ class NoteRepositoryTest {
         every { cryptoManager.encrypt(any<ByteArray>()) } returns encryptedThumbnail
         coEvery { noteDao.insertPhoto(any<PhotoEntity>()) } returns 1L
 
-        val id = repository.addPhoto(noteId, imageBytes)
+        // Thumbnail passed explicitly: the default createThumbnail() path uses
+        // android.graphics.BitmapFactory, which is not available on plain JVM.
+        val id = repository.addPhoto(noteId, imageBytes, thumbnailBytes = byteArrayOf(9, 9))
 
         assertEquals(1L, id)
         coVerify {

@@ -1,6 +1,7 @@
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const {
@@ -8,6 +9,7 @@ const {
   splitKeyValue,
   parseFrontmatter,
   validateAgentConfig,
+  validateSkill,
   readFile,
 } = require('./helpers');
 
@@ -134,6 +136,51 @@ describe('validateAgentConfig', () => {
 
   it('accepts a valid primary config without permissions', () => {
     const issues = validateAgentConfig({ description: 'x', mode: 'primary' });
+    assert.deepStrictEqual(issues, []);
+  });
+});
+
+describe('validateSkill', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  /** Create a SKILL.md in the temp dir and return the dir path. */
+  function skill(content) {
+    fs.writeFileSync(path.join(tmpDir, 'SKILL.md'), content);
+    return tmpDir;
+  }
+
+  it('flags a missing SKILL.md', () => {
+    const issues = validateSkill(tmpDir);
+    assert.ok(issues.some((i) => i.includes('missing SKILL.md')));
+  });
+
+  it('flags an empty SKILL.md', () => {
+    const issues = validateSkill(skill(''));
+    assert.ok(issues.some((i) => i.includes('SKILL.md is empty')));
+  });
+
+  it('flags content that does not start with a heading', () => {
+    const issues = validateSkill(skill('para one\npara two\npara three\n'));
+    assert.ok(issues.some((i) => i.includes('heading')));
+  });
+
+  it('flags a too-minimal SKILL.md', () => {
+    const issues = validateSkill(skill('# Title\n'));
+    assert.ok(issues.some((i) => i.includes('too minimal')));
+  });
+
+  it('accepts a well-formed SKILL.md', () => {
+    const issues = validateSkill(
+      skill('---\nname: x\ndescription: y\n---\n\n# Title\n\nSome content.\n\nMore content.\n'),
+    );
     assert.deepStrictEqual(issues, []);
   });
 });

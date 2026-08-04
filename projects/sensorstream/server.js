@@ -312,7 +312,7 @@ function tryListen(attempt) {
   }
 
   server = app.listen(config.port, config.bindAddr, () => {
-    console.log(`SensorStream running at http://${config.bindAddr}:${config.port}`);
+    console.log(`SensorStream running at http://localhost:${config.port}`);
   });
 
   server.on('error', (err) => {

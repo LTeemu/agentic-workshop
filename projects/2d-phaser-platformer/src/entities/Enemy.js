@@ -181,6 +181,13 @@ export class Enemy {
     return this._groundContacts > 0;
   }
 
+  /** Reverse direction and continue moving at full speed */
+  turnAround() {
+    const { sprite, speed } = this;
+    sprite.setFlipX(!sprite.flipX);
+    sprite.setVelocityX(sprite.flipX ? speed : -speed);
+  }
+
   get wallAhead() {
     return this.sprite.flipX ? this._wallRight.size > 0 : this._wallLeft.size > 0;
   }

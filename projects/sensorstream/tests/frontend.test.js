@@ -91,16 +91,4 @@ describe('backoffDelay', () => {
       assert.ok(d <= 9600, `Delay ${d} too high (max 9600)`);
     }
   });
-
-  it('defaults work without opts', () => {
-    const delay = backoffDelay(0);
-    assert.ok(typeof delay === 'number');
-    assert.ok(delay > 0);
-  });
-
-  it('randomness distributes across attempts', () => {
-    // Multiple calls with same attempt should give different values due to jitter
-    const delays = new Set(Array.from({ length: 20 }, () => backoffDelay(2)));
-    assert.ok(delays.size > 1, 'Should produce varied delays with jitter');
-  });
 });

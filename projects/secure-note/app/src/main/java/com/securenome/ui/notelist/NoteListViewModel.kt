@@ -145,12 +145,7 @@ class NoteListViewModel @Inject constructor(
      */
     val noteSummaries: StateFlow<List<NoteSummary>> =
         combine(allNoteSummaries, _searchQuery) { notes, query ->
-            if (query.isBlank()) notes
-            else notes.filter { note ->
-                note.preview.contains(query, ignoreCase = true) ||
-                typeLabel(note.type).contains(query, ignoreCase = true) ||
-                note.photoNames.any { it.contains(query, ignoreCase = true) }
-            }
+            filterNoteSummaries(notes, query)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -160,12 +155,6 @@ class NoteListViewModel @Inject constructor(
     /** Update the search query. */
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
-    }
-
-    /** User-facing label for a note type. Must match what NoteCard shows. */
-    private fun typeLabel(type: NoteType): String = when (type) {
-        NoteType.TEXT, NoteType.PHOTO -> "Text"
-        NoteType.CHECKLIST -> "Checklist"
     }
 
     /**

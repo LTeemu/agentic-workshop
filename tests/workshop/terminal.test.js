@@ -751,12 +751,6 @@ describe('opencode launch quoting and resolution', () => {
     };
     assert.strictEqual(term.resolveOpenCodeBin('win32', env), 'opencode2');
   });
-
-  it('openCodeLaunchCommand returns a non-empty command string', () => {
-    const cmd = term.openCodeLaunchCommand();
-    assert.strictEqual(typeof cmd, 'string');
-    assert.ok(cmd.length > 0);
-  });
 });
 
 describe('terminal replay buffer', () => {

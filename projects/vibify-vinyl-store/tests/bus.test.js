@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { on, emit, once, clearBus, createNamespace } from '../shared/bus.js';
+import { on, emit, once, clearBus, createNamespace, matchesWildcard } from '../shared/bus.js';
 
 describe('EventBus', () => {
   beforeEach(() => {
@@ -56,6 +56,42 @@ describe('EventBus', () => {
     on('test', () => order.push('high'), { priority: 10 });
     emit('test', {});
     expect(order).toEqual(['high', 'low']);
+  });
+});
+
+describe('matchesWildcard', () => {
+  // Direct value-level tests for the subtle segment-matching logic, covering
+  // single-segment `*`, deep `**` prefix matching, exact matches, and the
+  // length-mismatch short-circuit — the edge cases the event-delivery tests
+  // above only exercise indirectly.
+  it.each([
+    // single * matches any event
+    ['anything.at.all', '*', true],
+    ['a', '*', true],
+    // deep ** only at the end matches prefix + any/zero remaining segments
+    ['vibify.cart.add', 'vibify.**', true],
+    ['vibify.cart', 'vibify.**', true],
+    ['vibify', 'vibify.**', true],
+    ['a.b.c.d', 'a.b.**', true],
+    // deep ** rejected when prefix mismatches or event is shorter
+    ['other.cart', 'vibify.**', false],
+    ['a', 'a.b.**', false],
+    // ** is only deep in the FINAL segment; mid-pattern it matches literally
+    ['a.x.b', 'a.**.b', false],
+    ['a.**.b', 'a.**.b', true],
+    // wildcard in a prefix segment combined with deep **
+    ['x.cart.add', '*.cart.**', true],
+    // single-segment * matches exactly one segment
+    ['cart.add', 'cart.*', true],
+    ['x.cart', '*.cart', true],
+    ['cart.add', 'cart.add', true],
+    // length mismatch → non-match (single * cannot span extra segments)
+    ['cart.add.remove', 'cart.*', false],
+    ['cart', 'cart.*', false],
+    // exact event does not match a different event
+    ['cart.add', 'cart.remove', false],
+  ])("M('%s', '%s') → %s", (event, pattern, expected) => {
+    expect(matchesWildcard(event, pattern)).toBe(expected);
   });
 });
 

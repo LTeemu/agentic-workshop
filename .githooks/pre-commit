@@ -9,7 +9,9 @@
 
 set -e
 
-ROOT="$(git rev-parse --show-toplevel)"
+# Normalize to a POSIX path so node_modules/.bin entries resolve in
+# sh on Windows (git rev-parse returns a Windows-style path there).
+ROOT="$(cd "$(git rev-parse --show-toplevel)" && pwd)"
 
 # ── Step 1: Format staged files ──
 

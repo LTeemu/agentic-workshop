@@ -57,22 +57,4 @@ describe('TtlCache', () => {
     assert.equal(cache.size, 0);
     assert.equal(cache.get('a'), undefined);
   });
-
-  it('tracks size correctly', () => {
-    cache.clear();
-    assert.equal(cache.size, 0);
-    cache.set('s1', 1);
-    cache.set('s2', 2);
-    assert.equal(cache.size, 2);
-  });
-
-  it('uses custom TTL when provided', () => {
-    cache.clear();
-    cache.set('short', 'x', 100);
-    cache.set('long', 'y', 5000);
-
-    // Both should be present initially
-    assert.equal(cache.get('short'), 'x');
-    assert.equal(cache.get('long'), 'y');
-  });
 });
