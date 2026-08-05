@@ -1,39 +1,47 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import * as THREE from 'three'
-import { lockBody, unlockBody } from '../composables/useBodyLock'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import * as THREE from 'three';
+import { lockBody, unlockBody } from '../composables/useBodyLock';
 
-const waterCanvas = ref(null)
-const rippleCanvas = ref(null)
-let scene, camera, renderer, material, mesh
-let animId = null
-let animPaused = false
-let visibilityObserver = null
-let texture = null
-let resizeObserver = null
-let rippleCtx = null
-let ripples = []
-let rippleW = 0
-let rippleH = 0
+const waterCanvas = ref(null);
+const rippleCanvas = ref(null);
+let scene, camera, renderer, material, mesh;
+let animId = null;
+let animPaused = false;
+let visibilityObserver = null;
+let texture = null;
+let resizeObserver = null;
+let rippleCtx = null;
+let ripples = [];
+let rippleW = 0;
+let rippleH = 0;
 
-const BG_IMAGE = '/images/water-bg.jpg'
+const BG_IMAGE = '/images/water-bg.jpg';
 
 function loadTexture(url) {
   return new Promise((resolve, reject) => {
     fetch(url)
-      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob() })
-      .then(blob => {
-        const blobUrl = URL.createObjectURL(blob)
-        new THREE.TextureLoader().load(blobUrl, tex => {
-          URL.revokeObjectURL(blobUrl)
-          resolve(tex)
-        }, undefined, err => {
-          URL.revokeObjectURL(blobUrl)
-          reject(err)
-        })
+      .then((r) => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.blob();
       })
-      .catch(reject)
-  })
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        new THREE.TextureLoader().load(
+          blobUrl,
+          (tex) => {
+            URL.revokeObjectURL(blobUrl);
+            resolve(tex);
+          },
+          undefined,
+          (err) => {
+            URL.revokeObjectURL(blobUrl);
+            reject(err);
+          },
+        );
+      })
+      .catch(reject);
+  });
 }
 
 const vertexShader = `
@@ -42,7 +50,7 @@ const vertexShader = `
     vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
-`
+`;
 
 // ─── Full water shader: multi-layer distortion + caustic light + surface shimmer ──
 const fragmentShader = `
@@ -142,7 +150,7 @@ const fragmentShader = `
 
     gl_FragColor = vec4(result, 1.0);
   }
-`
+`;
 
 const uniforms = {
   uTexture: { value: null },
@@ -150,82 +158,82 @@ const uniforms = {
   uRipplePos: { value: Array.from({ length: 15 }, () => new THREE.Vector2(-1, -1)) },
   uRippleAge: { value: new Array(15).fill(0) },
   uRippleCount: { value: 0 },
-}
+};
 
 async function initWater() {
-  if (!waterCanvas.value) return
+  if (!waterCanvas.value) return;
 
-  scene = new THREE.Scene()
-  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
-  camera.position.z = 1
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  camera.position.z = 1;
 
   renderer = new THREE.WebGLRenderer({
     canvas: waterCanvas.value,
     alpha: false,
     antialias: true,
-  })
-  syncWaterSize()
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  });
+  syncWaterSize();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   try {
-    texture = await loadTexture(BG_IMAGE)
-    texture.minFilter = THREE.LinearFilter
-    texture.magFilter = THREE.LinearFilter
-    uniforms.uTexture.value = texture
+    texture = await loadTexture(BG_IMAGE);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    uniforms.uTexture.value = texture;
   } catch (err) {
-    console.warn('[WaterMarquee] texture failed, using fallback')
-    const canvas = document.createElement('canvas')
-    canvas.width = 64
-    canvas.height = 64
-    const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#0c2e40'
-    ctx.fillRect(0, 0, 64, 64)
-    texture = new THREE.CanvasTexture(canvas)
-    uniforms.uTexture.value = texture
+    console.warn('[WaterMarquee] texture failed, using fallback');
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0c2e40';
+    ctx.fillRect(0, 0, 64, 64);
+    texture = new THREE.CanvasTexture(canvas);
+    uniforms.uTexture.value = texture;
   }
 
   material = new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
     uniforms,
-  })
+  });
 
-  const geometry = new THREE.PlaneGeometry(2, 2)
-  mesh = new THREE.Mesh(geometry, material)
-  scene.add(mesh)
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
 
-  animate()
+  animate();
 }
 
-let time = 0
+let time = 0;
 
 // ─── Wave displacement (same math as the shader's distortion, no texture drift) ──
 function waveDisp(x, y, t) {
-  const w1 = Math.sin(y * 14.0 + t * 0.7) * 0.014
-  const w2 = Math.sin(y * 7.0 + x * 5.0 + t * 0.5) * 0.01
-  const w3 = Math.sin(y * 22.0 - x * 4.0 + t * 1.1) * 0.008
-  const w4 = Math.sin((x + y) * 9.0 + t * 0.35) * 0.006
-  return { dx: (w1 + w2) * 0.6, dy: (w3 + w4) * 0.5 }
+  const w1 = Math.sin(y * 14.0 + t * 0.7) * 0.014;
+  const w2 = Math.sin(y * 7.0 + x * 5.0 + t * 0.5) * 0.01;
+  const w3 = Math.sin(y * 22.0 - x * 4.0 + t * 1.1) * 0.008;
+  const w4 = Math.sin((x + y) * 9.0 + t * 0.35) * 0.006;
+  return { dx: (w1 + w2) * 0.6, dy: (w3 + w4) * 0.5 };
 }
 
 // ─── Card pool — each card drifts independently, recycles when off-screen ──
-const sectionRef = ref(null)
-const sectionHovered = ref(false)
-const selectedWork = ref(null)
-const CARD_W = 280
-const GAP = 80
-const POOL_SIZE = 30
-const ROW_SPACING = 150 // distance from center for each row (tighter fit)
-const ROW_JITTER = 8   // random jitter within row
-const HALF_STEP = (CARD_W + GAP) / 2 // base half offset for staggered brick pattern
+const sectionRef = ref(null);
+const sectionHovered = ref(false);
+const selectedWork = ref(null);
+const CARD_W = 280;
+const GAP = 80;
+const POOL_SIZE = 30;
+const ROW_SPACING = 150; // distance from center for each row (tighter fit)
+const ROW_JITTER = 8; // random jitter within row
+const HALF_STEP = (CARD_W + GAP) / 2; // base half offset for staggered brick pattern
 // Scale spacing so cards span at least 150vw
-const _vw = typeof window !== 'undefined' ? window.innerWidth : 1920
-const rawSpan = (POOL_SIZE - 1) * HALF_STEP + CARD_W
-const minSpan = _vw
-const spanScale = Math.max(1, (minSpan - CARD_W) / (rawSpan - CARD_W))
-const effectiveStep = HALF_STEP * spanScale // scaled half-step used for all placement
-const scaledSpan = (rawSpan - CARD_W) * spanScale + CARD_W
-const startOffset = Math.max(0, (_vw - scaledSpan) / 2)
+const _vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+const rawSpan = (POOL_SIZE - 1) * HALF_STEP + CARD_W;
+const minSpan = _vw;
+const spanScale = Math.max(1, (minSpan - CARD_W) / (rawSpan - CARD_W));
+const effectiveStep = HALF_STEP * spanScale; // scaled half-step used for all placement
+const scaledSpan = (rawSpan - CARD_W) * spanScale + CARD_W;
+const startOffset = Math.max(0, (_vw - scaledSpan) / 2);
 
 // ─── Themed SVG placeholder generator — matches cave aesthetic ──
 function getInitials(title) {
@@ -233,15 +241,15 @@ function getInitials(title) {
     .split(/[\s—–-]+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map(w => w[0])
+    .map((w) => w[0])
     .join('')
-    .toUpperCase()
+    .toUpperCase();
 }
 
 function svgPlaceholder(title, bg) {
-  const initials = getInitials(title)
-  const c1 = bg[0].slice(1)
-  const c2 = bg[1].slice(1)
+  const initials = getInitials(title);
+  const c1 = bg[0].slice(1);
+  const c2 = bg[1].slice(1);
   return `data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
       <defs>
@@ -253,43 +261,115 @@ function svgPlaceholder(title, bg) {
       <rect width="600" height="450" fill="url(#g)"/>
       <text x="300" y="225" font-family="Georgia,serif" font-size="120" font-style="italic" fill="rgba(232,184,48,0.12)" text-anchor="middle" dominant-baseline="central">${initials}</text>
       <line x1="200" y1="225" x2="400" y2="225" stroke="rgba(232,184,48,0.08)" stroke-width="1"/>
-    </svg>`
-  )}`
+    </svg>`,
+  )}`;
 }
 
 const works = [
-  { title: 'Lumina — Brand Identity', medium: 'Branding', size: '2026', image: null, client: 'Lumina Tech', desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.' },
-  { title: 'Verdant — E-Commerce', medium: 'Web Dev', size: '2025', image: null, client: 'Verdant Plants', desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.' },
-  { title: 'Pulse — Digital Platform', medium: 'Platform', size: '2025', image: null, client: 'Pulse Health', desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.' },
-  { title: 'Nomad — Travel App', medium: 'App', size: '2025', image: null, client: 'Nomad Co.', desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.' },
-  { title: 'Form — Design System', medium: 'Design', size: '2024', image: null, client: 'Form Studio', desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.' },
-  { title: 'Cipher — Brand Campaign', medium: 'Campaign', size: '2024', image: null, client: 'Cipher Security', desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.' },
-  { title: 'Aether — Music Visualiser', medium: 'Interactive', size: '2026', image: null, client: 'Aether Labs', desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.' },
-  { title: 'Drift — Mobile Game', medium: 'Game', size: '2025', image: null, client: 'Drift Studio', desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.' },
-  { title: 'Ember — Design Studio', medium: 'Branding', size: '2026', image: null, client: 'Ember Studio', desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.' },
-  { title: 'Tide — Analytics Dashboard', medium: 'Platform', size: '2026', image: null, client: 'Tide Analytics', desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.' },
-]
+  {
+    title: 'Lumina — Brand Identity',
+    medium: 'Branding',
+    size: '2026',
+    image: null,
+    client: 'Lumina Tech',
+    desc: 'A complete visual identity for an AI-driven lighting startup. From logo and color systems to typography and brand guidelines — a cohesive system across digital and print.',
+  },
+  {
+    title: 'Verdant — E-Commerce',
+    medium: 'Web Dev',
+    size: '2025',
+    image: null,
+    client: 'Verdant Plants',
+    desc: 'Custom e-commerce experience with real-time inventory, AR plant previews, and seamless checkout. Built with a headless CMS for flexible content management.',
+  },
+  {
+    title: 'Pulse — Digital Platform',
+    medium: 'Platform',
+    size: '2025',
+    image: null,
+    client: 'Pulse Health',
+    desc: 'Patient-facing health platform with interactive dashboards, appointment scheduling, telemedicine integration, and secure messaging between patients and providers.',
+  },
+  {
+    title: 'Nomad — Travel App',
+    medium: 'App',
+    size: '2025',
+    image: null,
+    client: 'Nomad Co.',
+    desc: 'Cross-platform travel companion app with interactive maps, itinerary building, social features, and real-time collaboration for group trip planning.',
+  },
+  {
+    title: 'Form — Design System',
+    medium: 'Design',
+    size: '2024',
+    image: null,
+    client: 'Form Studio',
+    desc: 'Comprehensive design system with 200+ components, interactive documentation, Figma integration, and themeable tokens for multi-brand use.',
+  },
+  {
+    title: 'Cipher — Brand Campaign',
+    medium: 'Campaign',
+    size: '2024',
+    image: null,
+    client: 'Cipher Security',
+    desc: 'Multi-channel brand campaign including a redesigned website, motion identity, print materials, and social media assets for a cybersecurity company.',
+  },
+  {
+    title: 'Aether — Music Visualiser',
+    medium: 'Interactive',
+    size: '2026',
+    image: null,
+    client: 'Aether Labs',
+    desc: 'Real-time music visualisation experience using WebGL and audio analysis. Custom shaders, particle systems, and reactive lighting that respond to any audio input.',
+  },
+  {
+    title: 'Drift — Mobile Game',
+    medium: 'Game',
+    size: '2025',
+    image: null,
+    client: 'Drift Studio',
+    desc: 'A meditative mobile game about guiding a paper boat through procedurally generated water landscapes. Minimalist art style with ambient generative soundscapes.',
+  },
+  {
+    title: 'Ember — Design Studio',
+    medium: 'Branding',
+    size: '2026',
+    image: null,
+    client: 'Ember Studio',
+    desc: 'A bold visual identity for a boutique design studio. Custom typography, warm earthy palette, and a modular component library spanning web, print, and environmental graphics.',
+  },
+  {
+    title: 'Tide — Analytics Dashboard',
+    medium: 'Platform',
+    size: '2026',
+    image: null,
+    client: 'Tide Analytics',
+    desc: 'Real-time business intelligence dashboard with interactive data visualisation, custom report builder, team collaboration tools, and live data streaming from multiple sources.',
+  },
+];
 
 const colors = [
-  ['#0c2e40', '#061a24'],   // deep teal
-  ['#1e4034', '#0f241c'],   // rich jade
-  ['#322214', '#1c1610'],   // warm amber earth
-  ['#301e30', '#180c18'],   // deep plum
-  ['#1e2e22', '#0f1a12'],   // sage-green
-  ['#302412', '#1c160a'],   // bronze
-  ['#1e2430', '#0c141c'],   // midnight navy
-  ['#301e22', '#180c12'],   // burgundy
-  ['#30100a', '#1c0a06'],   // rust
-  ['#0a2028', '#061014'],   // dark petrel
-]
+  ['#0c2e40', '#061a24'], // deep teal
+  ['#1e4034', '#0f241c'], // rich jade
+  ['#322214', '#1c1610'], // warm amber earth
+  ['#301e30', '#180c18'], // deep plum
+  ['#1e2e22', '#0f1a12'], // sage-green
+  ['#302412', '#1c160a'], // bronze
+  ['#1e2430', '#0c141c'], // midnight navy
+  ['#301e22', '#180c12'], // burgundy
+  ['#30100a', '#1c0a06'], // rust
+  ['#0a2028', '#061014'], // dark petrel
+];
 
-let nextWorkIndex = 0
+let nextWorkIndex = 0;
 
-function randFlag() { return Math.floor(Math.random() * 6) }
+function randFlag() {
+  return Math.floor(Math.random() * 6);
+}
 
 // Linear constant speed based on viewport width
 function getScrollSpeed(_t, vw) {
-  return vw * 0.02 // 2% of viewport per second
+  return vw * 0.02; // 2% of viewport per second
 }
 
 const cards = ref(
@@ -301,241 +381,240 @@ const cards = ref(
     x: startOffset + Math.floor(i / 2) * effectiveStep * 2 + (i % 2) * effectiveStep,
     row: i % 2, // 0, 1, 0, 1...
     y: (Math.random() - 0.5) * ROW_JITTER * 2, // small jitter within row
-  }))
-)
+  })),
+);
 
 function animate() {
   if (animPaused) {
-    animId = null
-    return
+    animId = null;
+    return;
   }
 
-  time = (time + 0.01) % 2000
-  if (uniforms.uTime) uniforms.uTime.value = time
-  if (renderer && scene && camera) renderer.render(scene, camera)
+  time = (time + 0.01) % 2000;
+  if (uniforms.uTime) uniforms.uTime.value = time;
+  if (renderer && scene && camera) renderer.render(scene, camera);
 
-  const w = window.innerWidth
-  const h = window.innerHeight
-  const speed = getScrollSpeed(time, w)
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const speed = getScrollSpeed(time, w);
 
-  const items = document.querySelectorAll('[data-card-id]')
-  const cardMap = new Map()
-  for (const el of items) cardMap.set(Number(el.dataset.cardId), el)
+  const items = document.querySelectorAll('[data-card-id]');
+  const cardMap = new Map();
+  for (const el of items) cardMap.set(Number(el.dataset.cardId), el);
 
   // First pass: find rightmost card position and its row for zigzag continuation
-  let maxX = -Infinity
-  let rightmostRow = 0
+  let maxX = -Infinity;
+  let rightmostRow = 0;
   for (const card of cards.value) {
     if (card.x > maxX) {
-      maxX = card.x
-      rightmostRow = card.row
+      maxX = card.x;
+      rightmostRow = card.row;
     }
   }
 
   // Second pass: update and recycle
   for (const card of cards.value) {
     if (!sectionHovered.value) {
-      card.x -= speed * 0.016
+      card.x -= speed * 0.016;
     }
 
     if (card.x + CARD_W < -50) {
-      card.x = maxX + effectiveStep
-      maxX = card.x
-      card.y = (Math.random() - 0.5) * ROW_JITTER * 2
-      card.row = rightmostRow === 0 ? 1 : 0
-      rightmostRow = card.row
-      card.flagIndex = randFlag()
-      card.workIndex = nextWorkIndex++ % works.length
+      card.x = maxX + effectiveStep;
+      maxX = card.x;
+      card.y = (Math.random() - 0.5) * ROW_JITTER * 2;
+      card.row = rightmostRow === 0 ? 1 : 0;
+      rightmostRow = card.row;
+      card.flagIndex = randFlag();
+      card.workIndex = nextWorkIndex++ % works.length;
     }
 
     // Apply position + wave displacement + flag clip-path
-    const el = cardMap.get(card.id)
+    const el = cardMap.get(card.id);
     if (el) {
-      const rowBase = card.row === 0 ? -ROW_SPACING : ROW_SPACING
-      const actualY = rowBase + card.y
-      const cy = (actualY + ROW_SPACING + ROW_JITTER) / h + 0.4
-      const { dy } = waveDisp(0.5, cy, time)
-      el.style.transform = `translate(${card.x}px, ${actualY + dy * h}px)`
+      const rowBase = card.row === 0 ? -ROW_SPACING : ROW_SPACING;
+      const actualY = rowBase + card.y;
+      const cy = (actualY + ROW_SPACING + ROW_JITTER) / h + 0.4;
+      const { dy } = waveDisp(0.5, cy, time);
+      el.style.transform = `translate(${card.x}px, ${actualY + dy * h}px)`;
 
-      const visual = el.querySelector('.marquee-item-visual')
-      if (visual) visual.style.clipPath = `url(#flag-${card.flagIndex})`
+      const visual = el.querySelector('.marquee-item-visual');
+      if (visual) visual.style.clipPath = `url(#flag-${card.flagIndex})`;
     }
   }
 
   // ── Update & draw 2D ripple overlay ──
-  syncRippleUniforms()
-  drawRipples()
+  syncRippleUniforms();
+  drawRipples();
 
-  animId = requestAnimationFrame(animate)
+  animId = requestAnimationFrame(animate);
 }
 
 function syncWaterSize() {
-  if (!renderer || !waterCanvas.value) return
-  const parent = waterCanvas.value.parentElement
-  if (!parent) return
-  const rect = parent.getBoundingClientRect()
-  renderer.setSize(rect.width, rect.height, false)
+  if (!renderer || !waterCanvas.value) return;
+  const parent = waterCanvas.value.parentElement;
+  if (!parent) return;
+  const rect = parent.getBoundingClientRect();
+  renderer.setSize(rect.width, rect.height, false);
 }
 
 function closeModal() {
-  selectedWork.value = null
+  selectedWork.value = null;
 }
 
 watch(selectedWork, (work) => {
-  if (work !== null) lockBody()
-  else unlockBody()
-})
+  if (work !== null) lockBody();
+  else unlockBody();
+});
 
 // ─── 2D Ripple overlay — expanding stroke circles (like CodePen) ───
-const RIPPLE_SPEED = 0.8
-const RIPPLE_MAX = 36
-const RIPPLE_COLOR = [20, 36, 40]
+const RIPPLE_SPEED = 0.8;
+const RIPPLE_MAX = 36;
+const RIPPLE_COLOR = [70, 95, 110];
 
 class Ripple {
   constructor(x, y, startSize) {
-    this.x = x
-    this.y = y
-    this.size = startSize
-    this.opacity = 1
-    this.born = performance.now()
-    this.opacityStep = (RIPPLE_SPEED / (RIPPLE_MAX - startSize)) / 2
+    this.x = x;
+    this.y = y;
+    this.size = startSize;
+    this.opacity = 1;
+    this.born = performance.now();
+    this.opacityStep = RIPPLE_SPEED / (RIPPLE_MAX - startSize) / 2;
   }
   update() {
-    this.size += RIPPLE_SPEED
-    this.opacity -= this.opacityStep
+    this.size += RIPPLE_SPEED;
+    this.opacity -= this.opacityStep;
   }
   draw(ctx) {
-    if (this.opacity <= 0) return
-    ctx.beginPath()
-    ctx.strokeStyle = `rgba(${RIPPLE_COLOR[0]}, ${RIPPLE_COLOR[1]}, ${RIPPLE_COLOR[2]}, ${this.opacity})`
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-    ctx.stroke()
+    if (this.opacity <= 0) return;
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(${RIPPLE_COLOR[0]}, ${RIPPLE_COLOR[1]}, ${RIPPLE_COLOR[2]}, ${this.opacity})`;
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
 function initRippleCanvas() {
-  if (!rippleCanvas.value) return
-  rippleCtx = rippleCanvas.value.getContext('2d')
-  syncRippleSize()
+  if (!rippleCanvas.value) return;
+  rippleCtx = rippleCanvas.value.getContext('2d');
+  syncRippleSize();
 }
 
 function syncRippleSize() {
-  if (!rippleCanvas.value || !sectionRef.value) return
-  const rect = sectionRef.value.getBoundingClientRect()
-  rippleW = rect.width
-  rippleH = rect.height
-  const dpr = Math.min(window.devicePixelRatio, 2)
-  rippleCanvas.value.width = rippleW * dpr
-  rippleCanvas.value.height = rippleH * dpr
+  if (!rippleCanvas.value || !sectionRef.value) return;
+  const rect = sectionRef.value.getBoundingClientRect();
+  rippleW = rect.width;
+  rippleH = rect.height;
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  rippleCanvas.value.width = rippleW * dpr;
+  rippleCanvas.value.height = rippleH * dpr;
   if (rippleCtx) {
-    rippleCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    rippleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 }
 
 function drawRipples() {
-  if (!rippleCtx) return
-  rippleCtx.clearRect(0, 0, rippleW, rippleH)
+  if (!rippleCtx) return;
+  rippleCtx.clearRect(0, 0, rippleW, rippleH);
 
   for (let i = ripples.length - 1; i >= 0; i--) {
-    const r = ripples[i]
-    r.update()
-    r.draw(rippleCtx)
+    const r = ripples[i];
+    r.update();
+    r.draw(rippleCtx);
     if (r.opacity <= 0) {
-      ripples.splice(i, 1)
+      ripples.splice(i, 1);
     }
   }
 }
 
 // Sync current ripple positions/ages to shader uniforms for UV displacement
 function syncRippleUniforms() {
-  if (rippleW === 0 || rippleH === 0) return
-  const count = Math.min(ripples.length, 15)
-  uniforms.uRippleCount.value = count
-  const now = performance.now()
+  if (rippleW === 0 || rippleH === 0) return;
+  const count = Math.min(ripples.length, 15);
+  uniforms.uRippleCount.value = count;
+  const now = performance.now();
   for (let i = 0; i < count; i++) {
-    const r = ripples[i]
-    uniforms.uRipplePos.value[i].set(r.x / rippleW, 1.0 - r.y / rippleH)
-    uniforms.uRippleAge.value[i] = (now - r.born) / 1000
+    const r = ripples[i];
+    uniforms.uRipplePos.value[i].set(r.x / rippleW, 1.0 - r.y / rippleH);
+    uniforms.uRippleAge.value[i] = (now - r.born) / 1000;
   }
 }
 
 function onKeydown(e) {
-  if (e.key === 'Escape') closeModal()
+  if (e.key === 'Escape') closeModal();
 }
 
 // ─── Mouse tracking for ripple canvas ───
 function onMouseEnter() {}
 function onMouseLeave() {}
 function onMouseMove(e) {
-  if (!sectionRef.value || !rippleCtx) return
-  const rect = sectionRef.value.getBoundingClientRect()
-  ripples.push(new Ripple(e.clientX - rect.left, e.clientY - rect.top, 2))
+  if (!sectionRef.value || !rippleCtx) return;
+  const rect = sectionRef.value.getBoundingClientRect();
+  ripples.push(new Ripple(e.clientX - rect.left, e.clientY - rect.top, 2));
 }
 
 onMounted(() => {
-  requestAnimationFrame(() => initWater())
-  requestAnimationFrame(() => initRippleCanvas())
+  requestAnimationFrame(() => initWater());
+  requestAnimationFrame(() => initRippleCanvas());
 
   // Observe parent for size changes (handles initial & resize robustly)
   if (waterCanvas.value) {
-    const parent = waterCanvas.value.parentElement
+    const parent = waterCanvas.value.parentElement;
     if (parent) {
       resizeObserver = new ResizeObserver(() => {
-        syncWaterSize()
-        syncRippleSize()
-      })
-      resizeObserver.observe(parent)
+        syncWaterSize();
+        syncRippleSize();
+      });
+      resizeObserver.observe(parent);
     }
   }
 
-  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('keydown', onKeydown);
 
-  const section = sectionRef.value
+  const section = sectionRef.value;
   if (section) {
-    section.addEventListener('mouseenter', onMouseEnter)
-    section.addEventListener('mouseleave', onMouseLeave)
-    section.addEventListener('mousemove', onMouseMove)
+    section.addEventListener('mouseenter', onMouseEnter);
+    section.addEventListener('mouseleave', onMouseLeave);
+    section.addEventListener('mousemove', onMouseMove);
 
     // Pause animation when scrolled out of view
     visibilityObserver = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          animPaused = !entry.isIntersecting
+          animPaused = !entry.isIntersecting;
           if (!animPaused && !animId) {
-            animId = requestAnimationFrame(animate)
+            animId = requestAnimationFrame(animate);
           }
         }
       },
-      { threshold: 0 }
-    )
-    visibilityObserver.observe(section)
+      { threshold: 0 },
+    );
+    visibilityObserver.observe(section);
   }
-})
+});
 
 onBeforeUnmount(() => {
-  if (animId) cancelAnimationFrame(animId)
-  if (visibilityObserver) visibilityObserver.disconnect()
-  if (renderer) renderer.dispose()
-  if (resizeObserver) resizeObserver.disconnect()
-  window.removeEventListener('keydown', onKeydown)
+  if (animId) cancelAnimationFrame(animId);
+  if (visibilityObserver) visibilityObserver.disconnect();
+  if (renderer) renderer.dispose();
+  if (resizeObserver) resizeObserver.disconnect();
+  window.removeEventListener('keydown', onKeydown);
 
-  const section = sectionRef.value
+  const section = sectionRef.value;
   if (section) {
-    section.removeEventListener('mouseenter', onMouseEnter)
-    section.removeEventListener('mouseleave', onMouseLeave)
-    section.removeEventListener('mousemove', onMouseMove)
+    section.removeEventListener('mouseenter', onMouseEnter);
+    section.removeEventListener('mouseleave', onMouseLeave);
+    section.removeEventListener('mousemove', onMouseMove);
   }
-})
+});
 </script>
 
 <template>
-  <section
-    ref="sectionRef"
-    class="marquee-section"
-    id="reflection"
-  >
+  <section ref="sectionRef" class="marquee-section" id="reflection">
     <!-- Water-eroded rock edge top — masked to show bg-brown texture -->
-    <div class="rock-edge-divider rock-edge-divider-top bg-brown" style="mask: url(#marquee-rock-mask-top); -webkit-mask: url(#marquee-rock-mask-top);"></div>
+    <div
+      class="rock-edge-divider rock-edge-divider-top bg-brown"
+      style="mask: url(#marquee-rock-mask-top); -webkit-mask: url(#marquee-rock-mask-top)"
+    ></div>
 
     <!-- Fallback image behind Three.js canvas -->
     <div class="marquee-bg-layer">
@@ -575,7 +654,10 @@ onBeforeUnmount(() => {
             }"
           >
             <img
-              :src="works[card.workIndex].image || svgPlaceholder(works[card.workIndex].title, colors[card.workIndex])"
+              :src="
+                works[card.workIndex].image ||
+                svgPlaceholder(works[card.workIndex].title, colors[card.workIndex])
+              "
               :alt="works[card.workIndex].title"
               class="marquee-item-img"
               loading="lazy"
@@ -583,7 +665,9 @@ onBeforeUnmount(() => {
           </div>
           <div class="marquee-item-info">
             <div class="marquee-item-title">{{ works[card.workIndex].title }}</div>
-            <div class="marquee-item-meta">{{ works[card.workIndex].medium }} &mdash; {{ works[card.workIndex].size }}</div>
+            <div class="marquee-item-meta">
+              {{ works[card.workIndex].medium }} &mdash; {{ works[card.workIndex].size }}
+            </div>
           </div>
         </div>
       </div>
@@ -594,8 +678,20 @@ onBeforeUnmount(() => {
       <div v-if="selectedWork !== null" class="modal-backdrop" @click.self="closeModal">
         <article class="modal-card">
           <button class="modal-close" @click="closeModal" aria-label="Close">&times;</button>
-          <div class="modal-visual" :style="{ background: `linear-gradient(135deg, ${colors[selectedWork][0]}, ${colors[selectedWork][1]})` }">
-            <img :src="works[selectedWork].image || svgPlaceholder(works[selectedWork].title, colors[selectedWork])" :alt="works[selectedWork].title" class="modal-img" />
+          <div
+            class="modal-visual"
+            :style="{
+              background: `linear-gradient(135deg, ${colors[selectedWork][0]}, ${colors[selectedWork][1]})`,
+            }"
+          >
+            <img
+              :src="
+                works[selectedWork].image ||
+                svgPlaceholder(works[selectedWork].title, colors[selectedWork])
+              "
+              :alt="works[selectedWork].title"
+              class="modal-img"
+            />
             <div class="modal-img-overlay"></div>
           </div>
           <div class="modal-body">
@@ -612,34 +708,55 @@ onBeforeUnmount(() => {
     </Transition>
 
     <!-- Water-eroded rock edge bottom — masked to show bg-brown texture -->
-    <div class="rock-edge-divider rock-edge-divider-bottom bg-brown" style="mask: url(#marquee-rock-mask-bottom); -webkit-mask: url(#marquee-rock-mask-bottom);"></div>
+    <div
+      class="rock-edge-divider rock-edge-divider-bottom bg-brown"
+      style="mask: url(#marquee-rock-mask-bottom); -webkit-mask: url(#marquee-rock-mask-bottom)"
+    ></div>
 
     <!-- Hidden SVG defs for rock-edge masks + flag-shaped clip-paths -->
-    <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden">
       <defs>
         <mask id="marquee-rock-mask-top" maskContentUnits="objectBoundingBox">
-          <path d="M0,0 L1,0 L1,1 C0.93,0.72 0.87,0.88 0.80,0.65 C0.73,0.42 0.67,0.58 0.60,0.75 C0.53,0.92 0.47,0.38 0.40,0.55 C0.33,0.72 0.27,0.85 0.20,0.62 C0.13,0.39 0.07,0.50 0,0.28 Z" fill="white" />
+          <path
+            d="M0,0 L1,0 L1,1 C0.93,0.72 0.87,0.88 0.80,0.65 C0.73,0.42 0.67,0.58 0.60,0.75 C0.53,0.92 0.47,0.38 0.40,0.55 C0.33,0.72 0.27,0.85 0.20,0.62 C0.13,0.39 0.07,0.50 0,0.28 Z"
+            fill="white"
+          />
         </mask>
         <mask id="marquee-rock-mask-bottom" maskContentUnits="objectBoundingBox">
-          <path d="M0,1 L1,1 L1,0 C0.93,0.28 0.87,0.12 0.80,0.35 C0.73,0.58 0.67,0.42 0.60,0.25 C0.53,0.08 0.47,0.62 0.40,0.45 C0.33,0.28 0.27,0.15 0.20,0.38 C0.13,0.61 0.07,0.50 0,0.72 Z" fill="white" />
+          <path
+            d="M0,1 L1,1 L1,0 C0.93,0.28 0.87,0.12 0.80,0.35 C0.73,0.58 0.67,0.42 0.60,0.25 C0.53,0.08 0.47,0.62 0.40,0.45 C0.33,0.28 0.27,0.15 0.20,0.38 C0.13,0.61 0.07,0.50 0,0.72 Z"
+            fill="white"
+          />
         </mask>
         <clipPath id="flag-0" clipPathUnits="objectBoundingBox">
-          <path d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 L0,0.99 Z" />
+          <path
+            d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 L0,0.99 Z"
+          />
         </clipPath>
         <clipPath id="flag-1" clipPathUnits="objectBoundingBox">
-          <path d="M0,0.01 L1,0.01 L1,0.99 C0.85,1.015 0.65,0.965 0.5,0.99 C0.35,1.015 0.15,0.965 0,0.99 Z" />
+          <path
+            d="M0,0.01 L1,0.01 L1,0.99 C0.85,1.015 0.65,0.965 0.5,0.99 C0.35,1.015 0.15,0.965 0,0.99 Z"
+          />
         </clipPath>
         <clipPath id="flag-2" clipPathUnits="objectBoundingBox">
-          <path d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 C0.85,1.015 0.65,0.965 0.5,0.99 C0.35,1.015 0.15,0.965 0,0.99 Z" />
+          <path
+            d="M0,0.01 C0.15,-0.015 0.35,0.035 0.5,0.01 C0.65,-0.015 0.85,0.035 1,0.01 L1,0.99 C0.85,1.015 0.65,0.965 0.5,0.99 C0.35,1.015 0.15,0.965 0,0.99 Z"
+          />
         </clipPath>
         <clipPath id="flag-3" clipPathUnits="objectBoundingBox">
-          <path d="M0,0.01 L0.99,0.01 C1.015,0.15 0.965,0.35 0.99,0.5 C1.015,0.65 0.965,0.85 0.99,0.99 L0,0.99 Z" />
+          <path
+            d="M0,0.01 L0.99,0.01 C1.015,0.15 0.965,0.35 0.99,0.5 C1.015,0.65 0.965,0.85 0.99,0.99 L0,0.99 Z"
+          />
         </clipPath>
         <clipPath id="flag-4" clipPathUnits="objectBoundingBox">
-          <path d="M0,0.01 C0.2,-0.005 0.4,0.025 0.6,0.01 C0.8,-0.005 1,0.025 1,0.015 L1,0.99 C0.8,0.975 0.6,1.005 0.4,0.99 C0.2,0.975 0,1.005 0,0.99 Z" />
+          <path
+            d="M0,0.01 C0.2,-0.005 0.4,0.025 0.6,0.01 C0.8,-0.005 1,0.025 1,0.015 L1,0.99 C0.8,0.975 0.6,1.005 0.4,0.99 C0.2,0.975 0,1.005 0,0.99 Z"
+          />
         </clipPath>
         <clipPath id="flag-5" clipPathUnits="objectBoundingBox">
-          <path d="M0.005,0.01 C0.3,0 0.7,0.02 0.995,0.01 L0.995,0.99 C0.7,1.01 0.3,0.99 0.005,0.99 Z" />
+          <path
+            d="M0.005,0.01 C0.3,0 0.7,0.02 0.995,0.01 L0.995,0.99 C0.7,1.01 0.3,0.99 0.005,0.99 Z"
+          />
         </clipPath>
       </defs>
     </svg>
@@ -721,7 +838,7 @@ onBeforeUnmount(() => {
     rgba(15, 18, 24, 0.2) 25%,
     rgba(10, 30, 40, 0.28) 45%,
     rgba(8, 22, 32, 0.32) 65%,
-    rgba(5, 10, 15, 0.4) 100% 
+    rgba(5, 10, 15, 0.4) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -767,13 +884,7 @@ onBeforeUnmount(() => {
   min-height: 580px;
   align-self: flex-start;
   margin: var(--space-16) 0;
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
 }
 
 .marquee-item {

@@ -1,5 +1,5 @@
 <script setup>
-import AppearTransition from './AppearTransition.vue'
+import AppearTransition from './AppearTransition.vue';
 
 const steps = [
   {
@@ -22,7 +22,7 @@ const steps = [
     title: 'Grow',
     desc: 'Analytics, iteration, and ongoing support. We stay with you to measure impact and evolve the product over time.',
   },
-]
+];
 </script>
 
 <template>
@@ -63,7 +63,6 @@ const steps = [
 @media (max-width: 900px) {
   .steps-track {
     flex-direction: column;
-    gap: var(--space-8);
   }
 }
 
@@ -72,29 +71,30 @@ const steps = [
   min-width: 0;
   padding: var(--space-6) var(--space-5);
   position: relative;
-  transition: background var(--duration-normal) var(--ease-out-expo), transform var(--duration-normal) var(--ease-out-expo);
+  transition:
+    background var(--duration-normal) var(--ease-out-expo),
+    transform var(--duration-normal) var(--ease-out-expo);
+}
+
+/* Gradient reveal from the left, stays visible on hover */
+.step-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--color-water-dim), transparent 90%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.step-card:hover::before {
+  transform: scaleX(1);
 }
 
 .step-card:hover {
   background: rgba(255, 255, 255, 0.015);
   transform: translateY(-2px);
-}
-
-/* Left accent on hover — thin cyan line */
-.step-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 0;
-  background: var(--color-water-surface);
-  box-shadow: 0 0 6px var(--color-water-dim);
-  transition: height var(--duration-slow) var(--ease-out-expo);
-}
-
-.step-card:hover::before {
-  height: 100%;
 }
 
 .step-title {
@@ -114,16 +114,13 @@ const steps = [
   line-height: 1.7;
 }
 
-/* Connector between steps */
+/* Connector between steps — decoration only, reserves no layout space */
 .step-connector {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 32px;
+  width: 0;
   align-self: stretch;
-  padding: var(--space-2) 0;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 /* Continuous vertical line behind the dot */
@@ -132,7 +129,9 @@ const steps = [
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 50%;
   width: 2px;
+  transform: translateX(-50%);
   background: linear-gradient(
     180deg,
     transparent 0%,
@@ -144,32 +143,34 @@ const steps = [
 }
 
 .connector-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--color-water-surface);
   opacity: 0.55;
-  flex-shrink: 0;
   z-index: 1;
   box-shadow: 0 0 8px var(--color-water-glow);
 }
 
 @media (max-width: 900px) {
   .step-connector {
-    width: auto;
-    height: 48px;
-    align-self: stretch;
-    padding: 0;
+    width: 100%;
+    height: 0;
+    align-self: center;
   }
 
   .step-connector::before {
-    top: calc(50% - 1px);
+    top: 50%;
     left: 12px;
     right: 12px;
     bottom: auto;
     width: auto;
-    height: 2px;
-    transform: none;
+    height: 1px;
+    transform: translateY(-50%);
     opacity: 0.25;
     background: linear-gradient(
       90deg,

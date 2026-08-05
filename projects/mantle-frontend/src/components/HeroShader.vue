@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import * as THREE from 'three'
-import { useThreeScene } from '../composables/useThreeScene'
+import { ref, onMounted } from 'vue';
+import * as THREE from 'three';
+import { useThreeScene } from '../composables/useThreeScene';
 
-const canvas = ref(null)
+const canvas = ref(null);
 
 // ─── Shader ──────────────────────────────────────────
 const vertexShader = `
@@ -12,7 +12,7 @@ const vertexShader = `
     vUv = uv;
     gl_Position = vec4(position, 1.0);
   }
-`
+`;
 
 const fragmentShader = `
   precision highp float;
@@ -164,12 +164,12 @@ const fragmentShader = `
 
     gl_FragColor = vec4(color, 1.0);
   }
-`
+`;
 
 const uniforms = {
   uTime: { value: 0 },
   uAspect: { value: 1 },
-}
+};
 
 // ─── Shared Three.js boilerplate — scene, camera, renderer,
 //      ResizeObserver, IntersectionObserver pause, rAF loop, cleanup ──
@@ -179,26 +179,27 @@ const { start } = useThreeScene(canvas, {
       vertexShader,
       fragmentShader,
       uniforms,
-    })
+    });
 
     // Full-screen quad
-    const geo = new THREE.BufferGeometry()
-    const verts = new Float32Array([-1, -1, 0,  1, -1, 0,  -1, 1, 0,  1, 1, 0])
-    const uvs = new Float32Array([0, 0,  1, 0,  0, 1,  1, 1])
-    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
-    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-    geo.setIndex([0, 1, 2, 2, 1, 3])
-    scene.add(new THREE.Mesh(geo, material))
+    const geo = new THREE.BufferGeometry();
+    const verts = new Float32Array([-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0]);
+    const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setIndex([0, 1, 2, 2, 1, 3]);
+    scene.add(new THREE.Mesh(geo, material));
   },
-  onAnimate: () => {
-    uniforms.uTime.value += 0.01
+  onAnimate: ({ delta }) => {
+    // ~1.2 shader-time units/sec — doubled for snappier explosions
+    uniforms.uTime.value += delta * 1.2;
   },
   onResize: (w, h) => {
-    uniforms.uAspect.value = w / h
+    uniforms.uAspect.value = w / h;
   },
-})
+});
 
-onMounted(() => start())
+onMounted(() => start());
 </script>
 
 <template>

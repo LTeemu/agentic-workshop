@@ -1,5 +1,5 @@
 <script setup>
-import AppearTransition from './AppearTransition.vue'
+import AppearTransition from './AppearTransition.vue';
 </script>
 
 <template>
@@ -10,20 +10,23 @@ import AppearTransition from './AppearTransition.vue'
           <span class="section-label">Who we are</span>
         </AppearTransition>
         <AppearTransition :idx="1">
-          <h2 class="section-title about-title">We believe the best work happens at the intersection of discipline and play.</h2>
+          <h2 class="section-title about-title">
+            We believe the best work happens at the intersection of discipline and play.
+          </h2>
         </AppearTransition>
       </div>
       <div class="about-right">
         <AppearTransition :idx="2">
           <p class="about-text">
-            Mantle is a small creative agency founded on a simple idea: <em>craft matters</em>. We partner with
-            ambitious brands to design and build digital products that feel as good as they function.
+            Mantle is a small creative agency founded on a simple idea: <em>craft matters</em>. We
+            partner with ambitious brands to design and build digital products that feel as good as
+            they function.
           </p>
         </AppearTransition>
         <AppearTransition :idx="3">
           <p class="about-text">
-            Based in Nowhere, working worldwide. Our team brings together expertise from design, engineering,
-            and strategy — because great digital experiences don't happen in silos.
+            Based in Nowhere, working worldwide. Our team brings together expertise from design,
+            engineering, and strategy — because great digital experiences don't happen in silos.
           </p>
         </AppearTransition>
         <AppearTransition :idx="4">
@@ -103,10 +106,17 @@ import AppearTransition from './AppearTransition.vue'
   position: absolute;
   top: -1px;
   left: 0;
-  width: 80px;
+  width: 100%;
   height: 1px;
-  background: var(--color-water-surface);
-  box-shadow: 0 0 8px var(--color-water-dim);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-water-dim) 20%,
+    var(--color-water-surface) 50%,
+    var(--color-water-dim) 80%,
+    transparent 100%
+  );
+  opacity: 0.5;
 }
 
 @media (max-width: 640px) {
