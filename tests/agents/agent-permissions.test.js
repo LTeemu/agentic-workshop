@@ -16,7 +16,7 @@ const ROLE_PERMISSIONS = {
   reviewer: { edit: 'deny', shell: 'deny' },
   researcher: { edit: 'deny', shell: 'deny' },
   explore: { edit: 'deny', shell: 'deny', webfetch: 'deny', websearch: 'deny' },
-  refactor: { edit: 'allow', shell: 'deny' },
+  refactor: { edit: 'allow', shell: 'deny', webfetch: 'deny', websearch: 'deny' },
   general: { edit: 'deny', shell: 'deny' },
 };
 

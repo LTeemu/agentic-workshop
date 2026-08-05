@@ -1,5 +1,5 @@
 ---
-description: Reviews code for duplication, DRY violations, naming, long functions, and test coverage. Read-only — never edits files.
+description: Reviews code for duplication, DRY violations, broken logic, unhandled errors, naming, long functions, and test coverage. Read-only — never edits files.
 mode: subagent
 model: opencode/deepseek-v4-flash-free#high
 permissions:
@@ -35,10 +35,13 @@ You do NOT edit files or run shell commands.
 7. **Style mismatches**: Deviations from project patterns.
 8. **Missing or weak tests**: Public code without tests, tests testing implementation, or missing edge cases.
 9. **Commented-out code**: Any dead code left in comments — flag for removal.
+10. **Unhandled errors / broken logic**: Swallowed exceptions, missing error paths, incorrect branching, logic that can't work as written.
 
-- **General**: Be mindful of security (hardcoded secrets, injection, input validation) but don't block on it unless explicitly requested.
+- **General**: Flag security issues (hardcoded secrets, injection, input validation) only if explicitly requested.
 
 Report only actionable findings — no restatements of code, no praise.
+
+Severity: **high** = blocking (duplication, broken logic, unhandled errors) · **medium/low** = advisory (naming, style).
 
 ### Output format
 
