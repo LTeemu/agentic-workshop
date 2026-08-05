@@ -14,9 +14,16 @@
     "research": {
       "description": "Research a topic using @researcher",
       "template": "Run @researcher on the following topic: $ARGUMENTS"
+    },
+    "new-skill": {
+      "description": "Create a new skill with the opencode-skill-creator eval-driven workflow",
+      "template": "Use the opencode-skill-creator skill to create a new skill: $ARGUMENTS"
     }
   },
-  "plugins": [{ "package": "./.opencode/plugins/plan-enforcer.js" }],
+  "plugins": [
+    { "package": "./.opencode/plugins/plan-enforcer.js" },
+    "opencode-skill-creator@0.2.25"
+  ],
   "skills": [".opencode/skills"],
   "permissions": [
     { "action": "edit", "resource": "*", "effect": "allow" },

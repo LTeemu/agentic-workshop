@@ -1,6 +1,5 @@
-const { describe, it, beforeEach } = require('node:test');
+const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const fs = require('node:fs');
 const path = require('node:path');
 
 const PLUGIN_PATH = path.resolve(
@@ -12,203 +11,7 @@ const PLUGIN_PATH = path.resolve(
   'plan-enforcer-core.cjs',
 );
 const { PlanEnforcer, deriveValidSubagentTypes, loadValidSubagentTypes } = require(PLUGIN_PATH);
-const { todowriteCall, taskCall, toolCall, subagentCall, getAgentsDir } = require('./helpers');
-
-describe('PlanEnforcer — Prefix Extraction (via delegation gating)', () => {
-  let enforcer;
-
-  beforeEach(() => {
-    enforcer = PlanEnforcer();
-  });
-
-  it('rejects todowrite entries without a role prefix', async () => {
-    const { input, output } = todowriteCall([{ content: 'do something', status: 'pending' }]);
-    await assert.rejects(
-      async () => enforcer.onToolExecuteBefore(input, output),
-      /ROLE_PREFIX_REQUIRED/,
-    );
-  });
-
-  it('accepts todowrite entries with valid Coder prefix', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] do something', status: 'pending' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-
-  it('accepts all valid prefixes: Researcher, Reviewer, Refactor, Coder', async () => {
-    for (const prefix of ['Researcher', 'Reviewer', 'Refactor', 'Coder']) {
-      const e = PlanEnforcer();
-      const { input, output } = todowriteCall([
-        { content: `${prefix}: [scope:.] test task`, status: 'pending' },
-      ]);
-      await assert.doesNotReject(
-        async () => e.onToolExecuteBefore(input, output),
-        `Prefix "${prefix}:" should be accepted`,
-      );
-    }
-  });
-
-  it('accepts the "todo" tool alias for todowrite calls', async () => {
-    const enforcer = PlanEnforcer();
-    const { input, output } = toolCall('todo', {
-      todos: [{ content: 'Coder: [scope:.] work', status: 'pending' }],
-    });
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-});
-
-describe('PlanEnforcer — Scope Enforcement (SCOPE_REQUIRED)', () => {
-  let enforcer;
-
-  beforeEach(() => {
-    enforcer = PlanEnforcer();
-  });
-
-  it('rejects Coder entry without [scope:...]', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Coder: implement feature', status: 'pending' },
-    ]);
-    await assert.rejects(async () => enforcer.onToolExecuteBefore(input, output), /SCOPE_REQUIRED/);
-  });
-
-  it('rejects Reviewer entry without [scope:...]', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Reviewer: review code', status: 'pending' },
-    ]);
-    await assert.rejects(async () => enforcer.onToolExecuteBefore(input, output), /SCOPE_REQUIRED/);
-  });
-
-  it('rejects Refactor entry without [scope:...]', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Refactor: clean code', status: 'pending' },
-    ]);
-    await assert.rejects(async () => enforcer.onToolExecuteBefore(input, output), /SCOPE_REQUIRED/);
-  });
-
-  it('allows Researcher entry without [scope...] provided another entry has a scope', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Researcher: research topic', status: 'pending' },
-      { content: 'Coder: [scope:src/] implement feature', status: 'pending' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-
-  it('rejects plan if all entries omit scope', async () => {
-    const { input, output } = todowriteCall([
-      { content: 'Researcher: research topic without scope', status: 'pending' },
-    ]);
-    await assert.rejects(async () => enforcer.onToolExecuteBefore(input, output), /SCOPE_REQUIRED/);
-  });
-});
-
-describe('PlanEnforcer — Delegation Gate (DELEGATE_FIRST)', () => {
-  const CASES = [
-    { prefix: 'Researcher', type: 'researcher' },
-    { prefix: 'Reviewer', type: 'reviewer' },
-    { prefix: 'Refactor', type: 'refactor' },
-  ];
-
-  for (const { prefix, type } of CASES) {
-    it(`blocks ${prefix} in_progress without prior task(${type})`, async () => {
-      const enforcer = PlanEnforcer();
-      const { input: setupIn, output: setupOut } = todowriteCall([
-        { content: 'Coder: [scope:.] setup', status: 'pending' },
-      ]);
-      await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-      const { input, output } = todowriteCall([
-        { content: 'Coder: [scope:.] setup', status: 'pending' },
-        { content: `${prefix}: [scope:.] task`, status: 'in_progress' },
-      ]);
-      await assert.rejects(
-        async () => enforcer.onToolExecuteBefore(input, output),
-        /DELEGATE_FIRST/,
-      );
-    });
-
-    it(`allows ${prefix} in_progress after task(${type}) delegation`, async () => {
-      const enforcer = PlanEnforcer();
-      const { input: taskIn, output: taskOut } = taskCall(type);
-      await enforcer.onToolExecuteBefore(taskIn, taskOut);
-
-      const { input: setupIn, output: setupOut } = todowriteCall([
-        { content: 'Coder: [scope:.] setup', status: 'pending' },
-      ]);
-      await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-      const { input, output } = todowriteCall([
-        { content: 'Coder: [scope:.] setup', status: 'pending' },
-        { content: `${prefix}: [scope:.] task`, status: 'in_progress' },
-      ]);
-      await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-    });
-  }
-
-  it('does not block Coder items from being marked in_progress', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: [scope:.] first task (trivial)', status: 'pending' },
-    ]);
-    await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] first task (trivial)', status: 'completed' },
-      { content: 'Coder: [scope:.] second task', status: 'in_progress' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-});
-
-describe('PlanEnforcer — Pipeline Gate (PIPELINE_REQUIRED)', () => {
-  it('blocks non-trivial Coder completed without reviewer', async () => {
-    const enforcer = PlanEnforcer();
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] implement feature', status: 'completed' },
-    ]);
-    await assert.rejects(
-      async () => enforcer.onToolExecuteBefore(input, output),
-      /PIPELINE_REQUIRED/,
-    );
-  });
-
-  it('allows Coder completed with (trivial) suffix', async () => {
-    const enforcer = PlanEnforcer();
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] fix typo (trivial)', status: 'completed' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-
-  it('allows non-trivial Coder completed after reviewer was called', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: taskIn, output: taskOut } = taskCall('reviewer');
-    await enforcer.onToolExecuteBefore(taskIn, taskOut);
-
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] implement feature', status: 'completed' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-
-  it('does not block non-Coder items from completing without reviewer', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: taskIn, output: taskOut } = taskCall('researcher');
-    await enforcer.onToolExecuteBefore(taskIn, taskOut);
-
-    const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: [scope:.] setup', status: 'pending' },
-      { content: 'Researcher: [scope:.] research', status: 'pending' },
-    ]);
-    await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-    const { input, output } = todowriteCall([
-      { content: 'Coder: [scope:.] setup', status: 'pending' },
-      { content: 'Researcher: [scope:.] research', status: 'completed' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-  });
-});
+const { taskCall, toolCall, getAgentsDir } = require('./helpers');
 
 describe('PlanEnforcer — Invalid subagent_type rejection', () => {
   it('rejects task() with invalid subagent_type', async () => {
@@ -229,8 +32,8 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
     );
   });
 
-  it('accepts valid subagent types: explore, researcher, reviewer, refactor', async () => {
-    for (const type of ['explore', 'researcher', 'reviewer', 'refactor']) {
+  it('accepts valid subagent types: explore, researcher, reviewer', async () => {
+    for (const type of ['explore', 'researcher', 'reviewer']) {
       const e = PlanEnforcer();
       const { input, output } = taskCall(type);
       await assert.doesNotReject(
@@ -242,391 +45,96 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
 
   it('rejects subagent() with invalid agent param', async () => {
     const enforcer = PlanEnforcer();
-    const { input, output } = subagentCall('invalid-agent');
+    const { input, output } = toolCall('subagent', { agent: 'invalid-agent' });
     await assert.rejects(
       async () => enforcer.onToolExecuteBefore(input, output),
       /INVALID_SUBAGENT_TYPE/,
     );
   });
 
-  it('accepts subagent() with valid agent param: explore, researcher, reviewer, refactor', async () => {
-    for (const agent of ['explore', 'researcher', 'reviewer', 'refactor']) {
+  it('accepts subagent() with valid agent param', async () => {
+    for (const agent of ['explore', 'researcher', 'reviewer']) {
       const e = PlanEnforcer();
-      const { input, output } = subagentCall(agent);
+      const { input, output } = toolCall('subagent', { agent });
       await assert.doesNotReject(
         async () => e.onToolExecuteBefore(input, output),
         `agent "${agent}" should be accepted`,
       );
     }
   });
-});
 
-describe('PlanEnforcer — subagent agent param before todowrite', () => {
-  for (const agent of ['explore', 'researcher', 'reviewer', 'refactor']) {
-    it(`allows subagent({agent: "${agent}"}) before plan is confirmed`, async () => {
-      const enforcer = PlanEnforcer();
-      const { input, output } = subagentCall(agent);
-      await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
-    });
-  }
-
-  it('registers the delegated type for gating when using agent param', async () => {
+  it('ignores delegation calls with no subagent type', async () => {
     const enforcer = PlanEnforcer();
-    // Call subagent with agent param — should register delegation
-    const { input: subIn, output: subOut } = subagentCall('researcher');
-    await enforcer.onToolExecuteBefore(subIn, subOut);
-
-    // Now a Researcher: entry can be marked in_progress
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Researcher: [scope:.] check', status: 'in_progress' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(tdIn, tdOut));
-  });
-});
-
-describe('PlanEnforcer — non-blocking before todowrite', () => {
-  let enforcer;
-
-  beforeEach(() => {
-    enforcer = PlanEnforcer();
+    const { input, output } = toolCall('subagent', {});
+    assert.strictEqual(enforcer.onToolExecuteBefore(input, output), undefined);
   });
 
-  it('allows read-only tools (read, glob, grep) before todowrite', () => {
-    for (const tool of ['read', 'glob', 'grep']) {
-      assert.doesNotThrow(
-        () =>
-          enforcer.onToolExecuteBefore(
-            { tool, sessionID: 'test', callID: '1' },
-            { args: tool === 'read' ? { filePath: 'test.txt' } : { path: '.' } },
-          ),
-        `tool "${tool}" should not throw before todowrite`,
-      );
-    }
-  });
-
-  it('allows mutation tools (write, edit, shell) before todowrite', () => {
-    for (const tool of ['write', 'edit', 'shell']) {
-      assert.doesNotThrow(
-        () => enforcer.onToolExecuteBefore({ tool, sessionID: 'test', callID: '1' }, { args: {} }),
-        `tool "${tool}" should not throw before todowrite`,
-      );
-    }
-  });
-
-  it('still rejects a malformed plan once todowrite is called', () => {
-    const { input, output } = todowriteCall([{ content: 'no prefix here', status: 'pending' }]);
-    assert.throws(() => enforcer.onToolExecuteBefore(input, output), /ROLE_PREFIX_REQUIRED/);
-  });
-});
-
-describe('PlanEnforcer — Plan Reset', () => {
-  it('clears scope after all todos are resolved via todo.updated', async () => {
+  it('ignores non-delegation tools entirely', async () => {
     const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    // Scope is enforced while the plan has active items
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'package.json' } },
-        ),
-      /SCOPE_VIOLATION/,
-    );
-
-    await enforcer.onEvent({
-      type: 'todo.updated',
-      properties: { todos: [{ content: 'Coder: [scope:src/] work', status: 'completed' }] },
-    });
-
-    // After resolution, scope is cleared and tools run freely
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'package.json' } },
-      ),
-    );
-  });
-
-  it('preserves scope when there are still active items on chat message', async () => {
-    const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:.] still working', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    await enforcer.onEvent({ type: 'chat.message' });
-
-    await assert.doesNotReject(async () =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'data/scope-test.txt' } },
-      ),
-    );
+    const { input, output } = toolCall('edit', { filePath: 'src/foo.js' });
+    assert.strictEqual(enforcer.onToolExecuteBefore(input, output), undefined);
   });
 });
 
-describe('PlanEnforcer — Plan Reset (todo.updated full replacement)', () => {
-  it('treats todo.updated as a full replacement even when the list shrinks', async () => {
+describe('PlanEnforcer — Refactor gate (REFACTOR_REQUIRES_REVIEWER)', () => {
+  it('blocks task(refactor) before any reviewer ran', async () => {
     const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-      { content: 'Coder: [scope:src/] cleanup', status: 'pending' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    // Shorter list: only the resolved item remains → scope clears.
-    await enforcer.onEvent({
-      type: 'todo.updated',
-      properties: { todos: [{ content: 'Coder: [scope:src/] work', status: 'completed' }] },
-    });
-
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'package.json' } },
-      ),
+    const { input, output } = taskCall('refactor');
+    await assert.rejects(
+      async () => enforcer.onToolExecuteBefore(input, output),
+      /REFACTOR_REQUIRES_REVIEWER/,
     );
   });
-});
 
-describe('PlanEnforcer — Plan Reset (session.interrupt)', () => {
-  it('clears scope on session.interrupt', async () => {
+  it('blocks subagent({agent: refactor}) before a reviewer', async () => {
     const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'package.json' } },
-        ),
-      /SCOPE_VIOLATION/,
-    );
-
-    await enforcer.onEvent({ type: 'session.interrupt' });
-
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'package.json' } },
-      ),
-    );
-  });
-});
-
-describe('PlanEnforcer — Cross-Project Isolation (CROSS_PROJECT_VIOLATION)', () => {
-  let enforcer;
-  const workspaceRoot = path.resolve(__dirname, '..', '..');
-
-  beforeEach(() => {
-    enforcer = PlanEnforcer({ workspaceRoot });
-  });
-
-  function confirmScope(scopePath) {
-    const { input, output } = todowriteCall([
-      { content: `Coder: [scope:${scopePath}] work`, status: 'in_progress' },
-    ]);
-    return enforcer.onToolExecuteBefore(input, output);
-  }
-
-  it('blocks read of a sibling project when scope is another project', async () => {
-    await confirmScope('projects/bravo');
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'projects/alpha/src/index.js' } },
-        ),
-      /CROSS_PROJECT_VIOLATION/,
+    const { input, output } = toolCall('subagent', { agent: 'refactor' });
+    await assert.rejects(
+      async () => enforcer.onToolExecuteBefore(input, output),
+      /REFACTOR_REQUIRES_REVIEWER/,
     );
   });
 
-  it('blocks access to any project when scope does not include it', async () => {
-    await confirmScope('src/');
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'projects/alpha/README.md' } },
-        ),
-      /CROSS_PROJECT_VIOLATION/,
-    );
-  });
-
-  it('allows access inside the declared project scope', async () => {
-    await confirmScope('projects/alpha');
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'projects/alpha/src/index.js' } },
-      ),
-    );
-  });
-
-  it('enforces isolation for glob, grep and bash too', async () => {
-    await confirmScope('projects/bravo');
-    const cases = [
-      ['glob', { path: 'projects/alpha' }],
-      ['grep', { path: 'projects/alpha' }],
-      ['bash', { workdir: 'projects/alpha' }],
-    ];
-    for (const [tool, args] of cases) {
-      assert.throws(
-        () =>
-          enforcer.onToolExecuteBefore(
-            { tool, sessionID: 'test-session', callID: 'test-call' },
-            { args },
-          ),
-        /CROSS_PROJECT_VIOLATION/,
-        `tool "${tool}" should be blocked for sibling projects`,
-      );
-    }
-  });
-
-  it('allows any project when scope declares the projects/ root', async () => {
-    await confirmScope('projects');
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'projects/alpha/src/index.js' } },
-      ),
-    );
-  });
-
-  it('blocks .. traversal escaping the scoped project', async () => {
-    await confirmScope('projects/alpha');
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'projects/alpha/../bravo/src/index.js' } },
-        ),
-      /CROSS_PROJECT_VIOLATION/,
-    );
-  });
-
-  it('allows .. traversal that stays inside the scoped project', async () => {
-    await confirmScope('projects/alpha');
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'projects/alpha/src/../README.md' } },
-      ),
-    );
-  });
-
-  it('does not confuse a sibling whose name starts with the scoped project', async () => {
-    await confirmScope('projects/alpha');
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'projects/alpha2/README.md' } },
-        ),
-      /CROSS_PROJECT_VIOLATION/,
-    );
-  });
-
-  it('blocks backslash traversal attempts', { skip: process.platform !== 'win32' }, async () => {
-    await confirmScope('projects/alpha');
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'projects\\alpha\\..\\bravo\\src\\index.js' } },
-        ),
-      /VIOLATION/,
-    );
-  });
-});
-
-describe('PlanEnforcer — Scope Violation (tool coverage)', () => {
-  let enforcer;
-
-  beforeEach(() => {
-    enforcer = PlanEnforcer();
-  });
-
-  it('enforces scope for glob, grep, bash, shell and read-via-path', async () => {
-    const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-    const cases = [
-      ['glob', { path: 'src/' }, { path: 'package.json' }],
-      ['grep', { path: 'src/' }, { path: 'package.json' }],
-      ['bash', { workdir: 'src/' }, { workdir: 'lib/' }],
-      ['shell', { workdir: 'src/' }, { workdir: 'lib/' }],
-      ['read', { path: 'src/foo.js' }, { path: 'package.json' }],
-    ];
-    for (const [tool, inside, outside] of cases) {
-      assert.doesNotThrow(
-        () =>
-          enforcer.onToolExecuteBefore(
-            { tool, sessionID: 'test-session', callID: 'test-call' },
-            { args: inside },
-          ),
-        `tool "${tool}" should be allowed inside scope`,
-      );
-      assert.throws(
-        () =>
-          enforcer.onToolExecuteBefore(
-            { tool, sessionID: 'test-session', callID: 'test-call' },
-            { args: outside },
-          ),
-        /SCOPE_VIOLATION/,
-        `tool "${tool}" should be blocked outside scope`,
-      );
-    }
-  });
-
-  it('rejects read without a filePath while scope is active', async () => {
-    const { input: setupIn, output: setupOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(setupIn, setupOut);
-
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: {} },
-        ),
-      /SCOPE_VIOLATION/,
-    );
-  });
-});
-
-describe('PlanEnforcer — Delegation Gate (completion)', () => {
-  it('blocks Researcher completed without prior task(researcher)', async () => {
+  it('allows refactor after a reviewer ran in the same session', async () => {
     const enforcer = PlanEnforcer();
-    const { input, output } = todowriteCall([
-      { content: 'Researcher: [scope:.] research topic', status: 'completed' },
-    ]);
-    await assert.rejects(async () => enforcer.onToolExecuteBefore(input, output), /DELEGATE_FIRST/);
+    const { input: rIn, output: rOut } = taskCall('reviewer');
+    await enforcer.onToolExecuteBefore(rIn, rOut);
+    const { input: fIn, output: fOut } = taskCall('refactor');
+    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
   });
 
-  it('allows Researcher completed after task(researcher) delegation', async () => {
+  it('allows refactor after subagent reviewer', async () => {
     const enforcer = PlanEnforcer();
-    const { input: taskIn, output: taskOut } = taskCall('researcher');
-    await enforcer.onToolExecuteBefore(taskIn, taskOut);
+    const { input: rIn, output: rOut } = toolCall('subagent', { agent: 'reviewer' });
+    await enforcer.onToolExecuteBefore(rIn, rOut);
+    const { input: fIn, output: fOut } = toolCall('subagent', { agent: 'refactor' });
+    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
+  });
 
-    const { input, output } = todowriteCall([
-      { content: 'Researcher: [scope:.] research topic', status: 'completed' },
-    ]);
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
+  it('keeps the reviewer run per session, not per tool call', async () => {
+    const enforcer = PlanEnforcer();
+    const { input: rIn, output: rOut } = toolCall('subagent', { agent: 'reviewer' });
+    await enforcer.onToolExecuteBefore(rIn, rOut);
+    // A later refactor delegation in the same session still passes.
+    const { input: fIn, output: fOut } = taskCall('refactor');
+    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
+  });
+
+  it('still blocks refactor in a different session that never ran a reviewer', async () => {
+    const enforcer = PlanEnforcer();
+    const reviewer = {
+      input: { tool: 'subagent', sessionID: 'session-A', callID: 'c1' },
+      output: { args: { agent: 'reviewer' } },
+    };
+    const refactorB = {
+      input: { tool: 'subagent', sessionID: 'session-B', callID: 'c2' },
+      output: { args: { agent: 'refactor' } },
+    };
+    await enforcer.onToolExecuteBefore(reviewer.input, reviewer.output);
+    await assert.rejects(
+      async () => enforcer.onToolExecuteBefore(refactorB.input, refactorB.output),
+      /REFACTOR_REQUIRES_REVIEWER/,
+    );
   });
 });
 
@@ -699,80 +207,6 @@ describe('PlanEnforcer — custom valid subagent list', () => {
     await assert.rejects(
       async () => enforcer.onToolExecuteBefore(input, output),
       /INVALID_SUBAGENT_TYPE/,
-    );
-  });
-});
-
-describe('PlanEnforcer — todo.updated scope recomputation', () => {
-  it('recomputes scope from an active shrinking list', async () => {
-    const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-      { content: 'Coder: [scope:src/,lib/] cleanup', status: 'pending' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    // Scope covers src/ and lib/
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'lib/util.js' } },
-      ),
-    );
-
-    // Full replacement now declares only lib/ with an active item
-    await enforcer.onEvent({
-      type: 'todo.updated',
-      properties: {
-        todos: [{ content: 'Coder: [scope:lib/] work', status: 'in_progress' }],
-      },
-    });
-
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'lib/util.js' } },
-      ),
-    );
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'src/foo.js' } },
-        ),
-      /SCOPE_VIOLATION/,
-    );
-  });
-});
-
-describe('PlanEnforcer — wrapped event shapes', () => {
-  it('handles session.interrupt wrapped in event.event', async () => {
-    const enforcer = PlanEnforcer();
-
-    const { input: tdIn, output: tdOut } = todowriteCall([
-      { content: 'Coder: [scope:src/] work', status: 'in_progress' },
-    ]);
-    await enforcer.onToolExecuteBefore(tdIn, tdOut);
-
-    assert.throws(
-      () =>
-        enforcer.onToolExecuteBefore(
-          { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-          { args: { filePath: 'package.json' } },
-        ),
-      /SCOPE_VIOLATION/,
-    );
-
-    await enforcer.onEvent({
-      event: { type: 'session.interrupt', properties: {} },
-    });
-
-    assert.doesNotThrow(() =>
-      enforcer.onToolExecuteBefore(
-        { tool: 'read', sessionID: 'test-session', callID: 'test-call' },
-        { args: { filePath: 'package.json' } },
-      ),
     );
   });
 });

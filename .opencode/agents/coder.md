@@ -23,6 +23,33 @@ You are a professional software engineer.
 - Match the codebase's style; if it's inconsistent, follow the file you're editing.
 - Always handle edge cases and errors (invalid input, failures, boundary values), not just the happy path.
 
+## Plan Format
+
+State a role-prefixed plan before executing a task. Every task entry must start with one of:
+
+| Prefix                 | Action                             | Reviewer gate              |
+| ---------------------- | ---------------------------------- | -------------------------- |
+| `Researcher:`          | `task(subagent_type="researcher")` | No                         |
+| `Reviewer:`            | `task(subagent_type="reviewer")`   | No                         |
+| `Refactor:`            | `task(subagent_type="refactor")`   | No                         |
+| `Coder:`               | handle directly                    | Required before completion |
+| `Coder: ... (trivial)` | handle directly                    | Skipped                    |
+
+Every entry must start with a role prefix; every Coder/Reviewer/Refactor entry must include `[scope:...]` (Researcher may omit scope). At least one entry must have a non-empty scope. `explore` is invoked directly via `task(subagent_type="explore")` — never as a plan prefix.
+
+Example:
+
+```
+## Plan
+- **Subagents**: @researcher (CSV parsing in Node.js stdlib)
+- **Skills**: @backend, @testing
+- **Todos**:
+  - Researcher: research CSV parsing in Node.js stdlib
+  - Coder:      [scope:src/parser.js] implement parseCSV
+  - Coder:      [scope:src/] write unit tests for parseCSV
+  - Coder:      [scope:src/] fix typo in comment (trivial)
+```
+
 ## Pipeline — Verification After Code Changes
 
 Runs after changes, not during planning — planning is complementary.

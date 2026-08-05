@@ -195,11 +195,6 @@ function toolCall(tool, args = {}) {
   };
 }
 
-/** Create a todowrite tool call. */
-function todowriteCall(todos) {
-  return toolCall('todowrite', { todos });
-}
-
 /** Create a task delegation call. */
 function taskCall(subagentType) {
   return toolCall('task', { subagent_type: subagentType });
@@ -208,6 +203,11 @@ function taskCall(subagentType) {
 /** Create a subagent delegation call (uses agent param, matching the actual subagent tool). */
 function subagentCall(agent) {
   return toolCall('subagent', { agent });
+}
+
+/** Create an edit/write/patch call (records a change toward the review gate). */
+function editCall(tool, args = {}) {
+  return toolCall(tool, args);
 }
 
 module.exports = {
@@ -222,7 +222,7 @@ module.exports = {
   validateSkill,
   readFile,
   toolCall,
-  todowriteCall,
   taskCall,
   subagentCall,
+  editCall,
 };

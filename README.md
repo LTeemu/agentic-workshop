@@ -46,23 +46,24 @@ opencode2 api get /api/health
 
 ## Project structure
 
-| Path                        | Purpose                                                                                                                                                                                                                                                                           |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/server.js`             | Dashboard server (port 3000)                                                                                                                                                                                                                                                      |
-| `app/project-utils.js`      | Shared dependency/build infrastructure                                                                                                                                                                                                                                            |
-| `app/test-runner.js`        | Shared test execution logic                                                                                                                                                                                                                                                       |
-| `app/public/`               | Dashboard frontend (HTML/CSS/JS)                                                                                                                                                                                                                                                  |
-| `projects/`                 | Each subdirectory is a project                                                                                                                                                                                                                                                    |
-| `_backups/`                 | Auto-generated backups on project deletion                                                                                                                                                                                                                                        |
-| `tests/`                    | Test suites: `tests/agents/` (agent config & plugin), `tests/workshop/` (dashboard app), `tests/projects/` (cross-project runner) — `npm run test:*`                                                                                                                              |
-| `.active-project`           | Tracks which project is currently active                                                                                                                                                                                                                                          |
-| `.githooks/`                | Git hooks (format staged files with prettier + tests scoped to changed files: per-project suites, agent suite on agent/opencode paths or `tests/package.json`, workshop suite on `app/`/`tests/workshop/` paths — skipped when the agent suite already ran the full tests/ suite) |
-| `opencode.json`             | Loads `AGENTS.md` as the instruction file, registers agent files                                                                                                                                                                                                                  |
-| `AGENTS.md`                 | Task planning workflow, role-prefix delegation rules, project guidelines                                                                                                                                                                                                          |
-| `.opencode/agents/`         | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools                                                                                                    |
-| `.opencode/agents/coder.md` | Primary coding agent — includes the post-code verification pipeline (review → refactor → test → fix)                                                                                                                                                                              |
-| `.opencode/skills/`         | One file per skill — reusable domain instructions loaded on demand (e.g. backend, testing, database)                                                                                                                                                                              |
-| `.opencode/plugins/`        | `plan-enforcer.js` — validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls                                                                                                                                             |
+| Path                                       | Purpose                                                                                                                                                                                                                                                                           |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/server.js`                            | Dashboard server (port 3000)                                                                                                                                                                                                                                                      |
+| `app/project-utils.js`                     | Shared dependency/build infrastructure                                                                                                                                                                                                                                            |
+| `app/test-runner.js`                       | Shared test execution logic                                                                                                                                                                                                                                                       |
+| `app/public/`                              | Dashboard frontend (HTML/CSS/JS)                                                                                                                                                                                                                                                  |
+| `projects/`                                | Each subdirectory is a project                                                                                                                                                                                                                                                    |
+| `_backups/`                                | Auto-generated backups on project deletion                                                                                                                                                                                                                                        |
+| `tests/`                                   | Test suites: `tests/agents/` (agent config & plugin), `tests/workshop/` (dashboard app), `tests/projects/` (cross-project runner) — `npm run test:*`                                                                                                                              |
+| `.active-project`                          | Tracks which project is currently active                                                                                                                                                                                                                                          |
+| `.githooks/`                               | Git hooks (format staged files with prettier + tests scoped to changed files: per-project suites, agent suite on agent/opencode paths or `tests/package.json`, workshop suite on `app/`/`tests/workshop/` paths — skipped when the agent suite already ran the full tests/ suite) |
+| `opencode.json`                            | Reads `AGENTS.md`; registers agents, plugins, slash commands (`research`, `new-skill`)                                                                                                                                                                                            |
+| `AGENTS.md`                                | Shared instructions (scope-based reading, task classification, project guidelines) — role-prefix plan format lives in `coder.md`                                                                                                                                                  |
+| `.opencode/agents/`                        | One file per agent (`coder.md`, `explore.md`, `researcher.md`, `reviewer.md`, `refactor.md`; `general.md` exists but is disabled) — each defines an agent's behavior and tools                                                                                                    |
+| `.opencode/agents/coder.md`                | Primary coding agent — role-prefix plan format (`Researcher:` / `Reviewer:` / `Refactor:` / `Coder:` with `[scope:...]`) + post-code pipeline                                                                                                                                     |
+| `.opencode/skills/`                        | One file per skill — reusable domain instructions loaded on demand (e.g. backend, testing, database)                                                                                                                                                                              |
+| `.opencode/skills/opencode-skill-creator/` | Vendored opencode-skill-creator skill (v0.2.25) — overrides the plugin's auto-copied global copy                                                                                                                                                                                  |
+| `.opencode/plugins/`                       | `plan-enforcer.js` — gates subagent calls (valid types; `refactor` needs prior `reviewer`)                                                                                                                                                                                        |
 
 ## API
 
@@ -109,17 +110,12 @@ This is the intended way to explore before a plan exists — direct reads are un
 
 ### 2. Task planning
 
-Defined in `AGENTS.md`. The coder states a plan to the user, then calls `todowrite` with role-prefixed entries including `[scope:path,...]`. This unlocks all tools. The **plan-enforcer** plugin mechanically enforces:
+Defined in `.opencode/agents/coder.md`. The coder states a role-prefixed plan, then executes. The **plan-enforcer** plugin gates:
 
-| Gate                    | Rule                                                                                                                                         |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Role prefix required    | Every todowrite entry must start with `Researcher:` / `Reviewer:` / `Refactor:` / `Coder:`                                                   |
-| Scope required          | At least one entry must declare `[scope:...]`; Coder/Reviewer/Refactor entries always need one                                               |
-| Delegate first          | Non-Coder items (`Researcher:`, `Reviewer:`, `Refactor:`) can't start (or complete) until `task()` is called with the matching subagent type |
-| Pipeline required       | Non-trivial `Coder:` items can't complete until `task(subagent_type="reviewer")` was called                                                  |
-| Scope violation         | `read`/`glob`/`grep`/`bash`/`shell` restricted to declared scope paths                                                                       |
-| Cross-project isolation | No access to sibling projects under `projects/` unless that project is explicitly in scope                                                   |
-| Invalid subagent type   | `task()`/`subagent()` only accepts agent types registered in `.opencode/agents/` (mode `subagent`, not disabled)                             |
+| Gate                       | Rule                                                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Invalid subagent type      | `task()`/`subagent()` only accepts agent types registered in `.opencode/agents/` (mode `subagent`, not disabled) |
+| Refactor requires reviewer | a `refactor` delegation is blocked until a `reviewer` delegation ran in the session                              |
 
 ### 3. Execution
 
@@ -137,14 +133,14 @@ Subagents are read-only except **refactor**, which can edit files for structural
 Defined in `.opencode/agents/coder.md`. Runs after code changes:
 
 1. **Assess scope** — trivial changes (single-line fix, comment, rename, CSS) skip entirely
-2. **Review** — spawn `@reviewer` (enforced by plugin: non-trivial `Coder:` items can't complete without it)
+2. **Review** — spawn `@reviewer`; plugin blocks `refactor` until a `reviewer` ran
 3. **Refactor** — spawn `@refactor` if review flagged issues
 4. **Test** — runs tests if a test suite exists for the changed files
 5. **Fix** — if tests fail, fix and rerun
 
 ### How it's wired
 
-`opencode.json` sets **coder** as the default agent, loads `AGENTS.md` as the instruction file, and enables the **plan-enforcer** plugin. The instruction hierarchy on each task is: system prompt → `AGENTS.md` → per-agent file (e.g. `coder.md`).
+`opencode.json` sets **coder** as the default agent, reads `AGENTS.md`, and enables the **plan-enforcer** plugin plus the pinned **opencode-skill-creator** plugin (eval tools; `new-skill` command routes to it). Instruction hierarchy: system prompt → `AGENTS.md` → per-agent file (e.g. `coder.md`).
 
 Verify the plugin is loaded for this workspace:
 
@@ -156,12 +152,12 @@ The `location[directory]` query is required — without it the command lists plu
 
 Key files:
 
-| File                                 | Purpose                                                                                                          |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `AGENTS.md`                          | Task planning workflow, role-prefix rules, project guidelines                                                    |
-| `.opencode/agents/coder.md`          | Primary coding agent — handles `Coder:` tasks directly; includes post-code verification pipeline                 |
-| `.opencode/agents/explore.md`        | `@explore` — read-only codebase exploration (not a role prefix)                                                  |
-| `.opencode/agents/researcher.md`     | `@researcher` — web research, doc lookup (read-only)                                                             |
-| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only)                                                                    |
-| `.opencode/agents/refactor.md`       | `@refactor` — deduplication and cleanup (can edit)                                                               |
-| `.opencode/plugins/plan-enforcer.js` | Validates todowrite plans (role prefixes, scope, delegation, pipeline) and enforces declared scope on tool calls |
+| File                                 | Purpose                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                          | Shared instructions: scope-based reading, task classification, error handling, project guidelines                         |
+| `.opencode/agents/coder.md`          | Primary coding agent — role-prefix plan format, handles `Coder:` tasks directly; includes post-code verification pipeline |
+| `.opencode/agents/explore.md`        | `@explore` — read-only codebase exploration (not a role prefix)                                                           |
+| `.opencode/agents/researcher.md`     | `@researcher` — web research, doc lookup (read-only)                                                                      |
+| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only)                                                                             |
+| `.opencode/agents/refactor.md`       | `@refactor` — deduplication and cleanup (can edit)                                                                        |
+| `.opencode/plugins/plan-enforcer.js` | Gates subagent calls (valid agent types; `refactor` requires prior `reviewer`)                                            |
