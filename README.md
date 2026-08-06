@@ -103,7 +103,7 @@ This workspace is configured for [opencode](https://opencode.ai). The default ag
 Before committing to a plan, the coder can dispatch a read-only subagent for codebase exploration:
 
 - `task(subagent_type="researcher")` — unlocks read, websearch, webfetch
-- `task(subagent_type="reviewer")` — unlocks read, glob, grep, skill
+- `task(subagent_type="reviewer")` — unlocks read, glob, grep, skill, read-only git diff/show/rev-parse/log/status
 - `task(subagent_type="explore")` — not a role-prefixed entry; called directly via `task()` for fast file discovery
 
 This is the intended way to explore before a plan exists — direct reads are unrestricted, but delegating keeps the main agent focused.
@@ -126,7 +126,7 @@ The coder works through the task list:
 - `Reviewer:` entries — delegated via `task(subagent_type="reviewer")`
 - `Refactor:` entries — delegated via `task(subagent_type="refactor")`
 
-Subagents are read-only except **refactor**, which can edit files for structural changes.
+Subagents are read-only except **refactor**, which can edit files for structural changes; **reviewer** may additionally run read-only git commands (`git diff`/`show`/`rev-parse`/`log`/`status`) to scope its review to a baseline commit.
 
 ### 4. Pipeline (post-code verification)
 
@@ -158,6 +158,6 @@ Key files:
 | `.opencode/agents/coder.md`          | Primary coding agent — role-prefix plan format, handles `Coder:` tasks directly; includes post-code verification pipeline |
 | `.opencode/agents/explore.md`        | `@explore` — read-only codebase exploration (not a role prefix)                                                           |
 | `.opencode/agents/researcher.md`     | `@researcher` — web research, doc lookup (read-only)                                                                      |
-| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only)                                                                             |
+| `.opencode/agents/reviewer.md`       | `@reviewer` — code quality review (read-only; read-only git diff/log for scope)                                           |
 | `.opencode/agents/refactor.md`       | `@refactor` — deduplication and cleanup (can edit)                                                                        |
 | `.opencode/plugins/plan-enforcer.js` | Gates subagent calls (valid agent types; `refactor` requires prior `reviewer`)                                            |

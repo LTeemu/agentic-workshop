@@ -15,7 +15,7 @@ Be concise. No repetition or filler language.
 
 **Bash caveat:** Never use bash to read files — use `read`/`glob`/`grep`.
 
-**Tool output limits:** Tool output is truncated at 500 lines / 25 KB. Pass explicit `limit`/`offset` to `read` for large files; narrow `grep` with `path`/`include`.
+**Tool output limits:** Tool output is truncated when large. Pass explicit `limit`/`offset` to `read` for big files; narrow `grep` with `path`/`include`.
 
 ### Error Handling
 

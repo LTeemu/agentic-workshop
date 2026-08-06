@@ -54,6 +54,8 @@ Example:
 
 Runs after changes, not during planning — planning is complementary.
 
+If the workspace is a git repository, record the baseline commit (`git rev-parse HEAD`) **before your first edit**; Step 1 passes it to the reviewer so only your changes get reviewed. If git is unavailable (not a repository, or no commits yet), skip the baseline — the reviewer then falls back to the changed files you list.
+
 ### Step 0: Assess the Change
 
 Trivial means it can't alter behavior, regardless of line or file count.
@@ -67,7 +69,7 @@ Trivial means it can't alter behavior, regardless of line or file count.
 
 ### Step 1: Review (mandatory for non-trivial)
 
-Call `task(subagent_type="reviewer")` with the changed files. Checks for duplicates, DRY violations, long functions, naming issues, missing tests. Duplication, unhandled errors, and broken logic are blocking; naming and style are advisory.
+Call `task(subagent_type="reviewer")` with the changed files, plus the baseline if one was recorded (see top of this pipeline). The reviewer diffs against the baseline when available, so it reviews exactly your changes — not unrelated working-tree edits; without one it reviews the listed files directly. Checks for duplicates, DRY violations, long functions, naming issues, missing tests. Duplication, unhandled errors, and broken logic are blocking; naming and style are advisory.
 
 ### Step 2: Refactor
 
