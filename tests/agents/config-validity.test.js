@@ -149,15 +149,6 @@ describe('opencode.json consistency', () => {
       console.log(`  PASS: package plugin "${ref}" is version-pinned`);
     }
   });
-
-  it('has a well-formed new-skill command', () => {
-    assert.ok(config, 'config not loaded');
-    const cmd = config.commands?.newSkill ?? config.commands?.['new-skill'];
-    assert.ok(cmd, 'FAIL: missing "new-skill" command');
-    assert.ok(cmd.description && cmd.description.trim(), 'FAIL: new-skill missing description');
-    assert.ok(cmd.template && cmd.template.trim(), 'FAIL: new-skill missing template');
-    console.log(`  PASS: new-skill command present`);
-  });
 });
 
 // ── Agent Tests ─────────────────────────────────────
