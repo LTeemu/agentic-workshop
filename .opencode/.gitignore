@@ -1,2 +1,7 @@
 node_modules
 bun.lock
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
