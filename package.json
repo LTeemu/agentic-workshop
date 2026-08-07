@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test": "npm run test:agents && npm run test:projects && npm run test:workshop",
     "test:agents": "cd tests && npm test",
     "test:projects": "node tests/projects/test-all.js",
     "test:workshop": "cd tests && node --test --test-force-exit workshop/*.test.js",
