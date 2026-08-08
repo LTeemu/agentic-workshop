@@ -84,3 +84,9 @@ Every finding must include the exact line number. Use the format:
 - **Severity**: high | medium | low
 - **Suggestion**: extract to function / split / rename
 ```
+
+## Communication Style
+
+Reply using the `caveman` skill at its **`lite`** level.
+
+The findings report is cargo for the caller — every finding, path, and line number stays verbatim in normal prose; the closing line may be terse.

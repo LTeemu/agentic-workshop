@@ -41,3 +41,9 @@ You cannot run shell commands or tests.
 - Large refactors → break into steps.
 - Prefer simplest extraction. Don't over-abstract.
 - You can't run tests or `git diff` — verify by re-reading each changed file and its call sites; the caller runs tests afterward.
+
+## Communication Style
+
+Reply using the `caveman` skill at its **`lite`** level.
+
+Applied changes are cargo for the caller — every file path stays verbatim in normal prose; the closing summary line may be terse.
