@@ -6,7 +6,6 @@
   padding: 0;
 }
 
-/* Thin scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: #30363d transparent;
@@ -61,6 +60,14 @@ body {
     padding 0.2s ease;
   overflow: hidden;
   position: relative;
+}
+
+/* First paint must not animate: saved state (collapsed sidebar etc.) is
+   applied after the browser may already have painted the default layout.
+   `startup` is removed once all restores ran. */
+html.startup #sidebar,
+html.startup #sidebar * {
+  transition: none !important;
 }
 
 #sidebar-header {
@@ -408,8 +415,6 @@ body {
     opacity: 1;
   }
 }
-
-/* ── End Compact Sidebar ── */
 
 .project-item-actions {
   display: flex;
@@ -838,7 +843,7 @@ body {
 /* ── Log Panel ── */
 
 #log-panel {
-  border-top: 1px solid #30363d;
+  border-top: 1px solid #21262d;
   background: #0d1117;
   display: flex;
   flex-direction: column;
@@ -853,7 +858,9 @@ body {
   height: auto !important;
 }
 
-#log-panel.collapsed .resize-handle {
+/* The handle now sits above the toolbar, so it is hidden by the panel's
+   collapsed state via the parent rather than a descendant selector. */
+#preview-body:has(#log-panel.collapsed) > .resize-handle {
   display: none;
 }
 
@@ -868,7 +875,7 @@ body {
   position: relative;
   z-index: 1;
   touch-action: none;
-  background-color: #11151a;
+  background-color: #101419;
 }
 
 .resize-handle::after {
@@ -1377,4 +1384,143 @@ body {
   height: 100%;
   border: none;
   background: #0d1117;
+}
+
+/* ── Device Emulation ── */
+
+#device-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 10px;
+  /* Toolbar sits between the frame and the log panel: a top hairline
+     separates it from the frame, the panel's own border-top below. */
+  border-top: 1px solid #30363d;
+  background: #161b22;
+  flex-shrink: 0;
+}
+
+#device-presets {
+  display: flex;
+  gap: 4px;
+}
+
+.device-preset,
+#device-rotate {
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.device-preset:hover,
+#device-rotate:hover:not(:disabled) {
+  background: #30363d;
+}
+
+#device-rotate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.device-preset.active {
+  background: #30363d;
+  color: #58a6ff;
+  border-color: #58a6ff;
+}
+
+#device-size {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #8b949e;
+}
+
+#device-size input {
+  width: 56px;
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  text-align: right;
+}
+
+#device-size input:not(:disabled):focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+#device-size input:disabled {
+  opacity: 0.5;
+  /* Disabled inputs swallow no pointer events, so hover (and the tooltip)
+     falls through to the #device-size span that owns the lock explanation
+     and the not-allowed cursor. */
+  pointer-events: none;
+}
+
+/* The cursor must live here: the disabled inputs themselves never get
+   hovered. The rotate button keeps its own cursor when hovered directly. */
+#device-size:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+#device-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#preview-frame-container.emulated {
+  overflow: auto;
+}
+
+/* margin:auto centers the frame when it fits and keeps the start edge
+   reachable when it overflows (flex centering would clip the start). */
+#preview-frame-container.emulated #device-frame {
+  margin: auto;
+}
+
+#device-handles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.device-handle {
+  position: absolute;
+}
+
+.device-handle[data-edge='e'] {
+  top: 0;
+  bottom: 0;
+  right: -5px;
+  width: 10px;
+  cursor: ew-resize;
+}
+
+.device-handle[data-edge='s'] {
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 10px;
+  cursor: ns-resize;
+}
+
+.device-handle[data-edge='se'] {
+  right: -5px;
+  bottom: -5px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+}
+
+.device-handle:hover {
+  background: rgba(88, 166, 255, 0.3);
 }

@@ -7,6 +7,12 @@
     <title>Workshop</title>
     <link rel="stylesheet" href="/vendor/xterm/xterm.css" />
     <link rel="stylesheet" href="/style.css" />
+    <script>
+      // Mark the startup window so restored state (collapsed sidebar, log panel)
+      // applies without animating: the browser may paint the default layout
+      // before the end-of-body scripts add the saved-state classes.
+      document.documentElement.classList.add('startup');
+    </script>
   </head>
   <body>
     <div id="app">
@@ -66,14 +72,83 @@
               <div id="preview-notice" class="hidden">
                 <span id="preview-notice-text"></span>
               </div>
-              <iframe
-                id="preview-frame"
-                title="Project preview"
-                sandbox="allow-scripts allow-same-origin allow-forms"
-              ></iframe>
+              <div id="device-frame">
+                <iframe
+                  id="preview-frame"
+                  title="Project preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                ></iframe>
+                <div id="device-handles" class="hidden">
+                  <div class="device-handle" data-edge="e" aria-hidden="true"></div>
+                  <div class="device-handle" data-edge="s" aria-hidden="true"></div>
+                  <div class="device-handle" data-edge="se" aria-hidden="true"></div>
+                </div>
+              </div>
+            </div>
+            <div class="resize-handle"></div>
+            <div id="device-toolbar">
+              <div id="device-presets" role="group" aria-label="Preview size">
+                <button
+                  type="button"
+                  class="device-preset active"
+                  data-preset="fit"
+                  title="Fit — fill the preview pane, no fixed ratio"
+                >
+                  Fit
+                </button>
+                <button
+                  type="button"
+                  class="device-preset"
+                  data-preset="phone"
+                  title="Phone — locked aspect; portrait fills height, landscape fills width; 50-100% scale"
+                >
+                  Phone
+                </button>
+                <button
+                  type="button"
+                  class="device-preset"
+                  data-preset="tablet"
+                  title="Tablet — locked aspect; portrait fills height, landscape fills width; 50-100% scale"
+                >
+                  Tablet
+                </button>
+                <button
+                  type="button"
+                  class="device-preset"
+                  data-preset="custom"
+                  title="Custom — free resize. Drag the corner handles, type width/height, or rotate"
+                >
+                  Custom
+                </button>
+              </div>
+              <span id="device-size">
+                <button
+                  id="device-rotate"
+                  type="button"
+                  title="Rotate — swap width and height"
+                  aria-label="Rotate preview (swap width and height)"
+                >
+                  ⟳
+                </button>
+                <input
+                  id="device-width"
+                  type="number"
+                  min="200"
+                  max="4096"
+                  aria-label="Resize preview width"
+                />
+                <span aria-hidden="true">×</span>
+                <input
+                  id="device-height"
+                  type="number"
+                  min="200"
+                  max="4096"
+                  aria-label="Resize preview height"
+                />
+                <span aria-hidden="true">px</span>
+              </span>
             </div>
             <div id="log-panel" class="collapsed">
-              <div class="resize-handle"></div>
               <div id="log-panel-header">
                 <div id="log-panel-header-left">
                   <span id="project-url"></span>
@@ -171,6 +246,8 @@
     <script src="/vendor/xterm/xterm.js"></script>
     <script src="/vendor/xterm/xterm-addon-fit.js"></script>
     <script src="/status-utils.js"></script>
+    <script src="/resize-utils.js"></script>
+    <script src="/device-utils.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

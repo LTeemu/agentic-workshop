@@ -6,7 +6,7 @@ A local development sandbox for building and running small agentic coding projec
 
 ## Features
 
-- **Shared AI Agent Workspace**: Pre-configured [OpenCode V2](https://opencode.ai) setup with custom agents (`coder`, `explore`, `researcher`, `reviewer`, and `refactor`), reusable skills, workspace commands, a post-code verification pipeline, and the `plan-enforcer` plugin.
+- **Shared AI Agent Workspace**: Pre-configured OpenCode V2 setup with custom agents (`coder`, `explore`, `researcher`, `reviewer`, and `refactor`), reusable skills, workspace commands, a post-code verification pipeline, and the `plan-enforcer` plugin.
 - **Interactive Dashboard**: Live project management interface for starting, previewing, testing, and inspecting sandbox projects.
 - **Real-Time Agent Workflow**: The same agentic workflow applies to every project without requiring separate per-project agent configuration.
 - **Embedded Terminal**: In-browser shell with PowerShell support on Windows, `$SHELL` support on Unix, terminal output replay, and `opencode2` integration.
@@ -19,7 +19,7 @@ A live control panel for spinning up, previewing, and testing any project in the
 
 **Sidebar** — Lists all projects with type badges (`npm`, `static`, `Python`, etc.), running indicators, and active-project state. Click a project to start and preview it; click it again to stop it. The sidebar can be collapsed into compact mode, and its state is persisted. The per-project details panel shows the description, npm scripts with copy controls, dependencies, and development dependencies.
 
-**Live preview** — Displays the running project in a sandboxed iframe. The preview automatically reloads when files change and shows startup progress and error states in a central overlay. An **Open in Tab** action is available for external browsing.
+**Live preview** — Displays the running project in a sandboxed iframe. The preview automatically reloads when files change and shows startup progress and error states in a central overlay. A device-emulation toolbar switches the preview to fixed phone or tablet sizes, with a custom mode for drag-by-hand or typed dimensions — preset sizes lock the device aspect ratio — portrait fills the pane height, landscape fills the width, scalable down to half that axis — while custom sizes resize freely with the pane scrolling when needed; the chosen mode persists across sessions. An **Open in Tab** action is available for external browsing.
 
 **Log panel** — A collapsible and resizable panel with real-time log streaming over SSE. Output is color-coded by type (`stdout`, `stderr`, and `system`) and supports text filtering, an auto-scroll toggle, and clearing. The panel height persists across sessions.
 
