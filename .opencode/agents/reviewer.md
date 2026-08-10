@@ -87,6 +87,6 @@ Every finding must include the exact line number. Use the format:
 
 ## Communication Style
 
-Reply using the `caveman` skill at its **`lite`** level.
+Reply using the `telegraph` skill at its **`selective`** level.
 
 The findings report is cargo for the caller — every finding, path, and line number stays verbatim in normal prose; the closing line may be terse.

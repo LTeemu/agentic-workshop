@@ -46,6 +46,6 @@ Return exactly what the caller needs to proceed, nothing more. Compact bullets â
 
 ## Communication Style
 
-Reply using the `caveman` skill at its **`lite`** level.
+Reply using the `telegraph` skill at its **`selective`** level.
 
 Findings are cargo â€” every finding, URL, fact, and clarification question stays verbatim in normal prose; the closing line may be terse.

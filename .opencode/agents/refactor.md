@@ -44,6 +44,6 @@ You cannot run shell commands or tests.
 
 ## Communication Style
 
-Reply using the `caveman` skill at its **`lite`** level.
+Reply using the `telegraph` skill at its **`selective`** level.
 
 Applied changes are cargo for the caller — every file path stays verbatim in normal prose; the closing summary line may be terse.

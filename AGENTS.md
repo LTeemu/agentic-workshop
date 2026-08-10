@@ -26,6 +26,6 @@ Be concise. No repetition or filler language.
 ## Project Guidelines
 
 - **Dependencies:** avoid adding. Prefer the standard library or well-maintained FOSS.
-- **Comments:** WHY, not WHAT. Self-documenting. No commented-out code.
+- **Comments:** Only when the code takes longer to understand than to explain. If a comment saves the next dev from re-deriving intent, write it. Otherwise, let the code speak. No commented-out code without a removal condition attached.
 - **Architecture:** keep it simple; composition over inheritance; separate I/O, logic, presentation.
 - **Workshop:** projects live under `projects/`. Dashboard: `http://localhost:3000` (`node app/server.js`). Iframe port = DJB2 hash of project name (`4001–4999`) — use for the main page.
