@@ -165,6 +165,17 @@ function drawSmallMultiples() {
     const color = SENSOR_COLORS[type] || '#fff';
     const xScale = plotW / Math.max(readings.length - 1, 1);
 
+    // Shared geometry: map a reading index to its plot coordinates
+    const point = (i) => ({
+      x: Math.round(padding.left + i * xScale),
+      y: padding.top + plotH - ((readings[i].value - yMin) / (yMax - yMin)) * plotH,
+    });
+    const tracePath = (i) => {
+      const p = point(i);
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    };
+
     // Grid + Y-axis labels
     ctx.fillStyle = '#6e8b8f';
     ctx.font = '9px monospace';
@@ -214,12 +225,7 @@ function drawSmallMultiples() {
     ctx.shadowColor = color;
     ctx.shadowBlur = 6;
     ctx.beginPath();
-    for (let i = 0; i < readings.length; i++) {
-      const x = Math.round(padding.left + i * xScale);
-      const y = padding.top + plotH - ((readings[i].value - yMin) / (yMax - yMin)) * plotH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
+    for (let i = 0; i < readings.length; i++) tracePath(i);
     ctx.stroke();
     ctx.restore();
 
@@ -227,19 +233,13 @@ function drawSmallMultiples() {
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    for (let i = 0; i < readings.length; i++) {
-      const x = Math.round(padding.left + i * xScale);
-      const y = padding.top + plotH - ((readings[i].value - yMin) / (yMax - yMin)) * plotH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
+    for (let i = 0; i < readings.length; i++) tracePath(i);
     ctx.stroke();
 
     // Anomaly markers
     for (let i = 0; i < readings.length; i++) {
       if (!readings[i].anomaly) continue;
-      const x = Math.round(padding.left + i * xScale);
-      const y = padding.top + plotH - ((readings[i].value - yMin) / (yMax - yMin)) * plotH;
+      const { x, y } = point(i);
 
       ctx.beginPath();
       ctx.arc(x, y, 5, 0, Math.PI * 2);
