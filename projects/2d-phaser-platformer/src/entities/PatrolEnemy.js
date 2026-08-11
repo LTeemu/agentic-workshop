@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { Enemy } from './Enemy.js';
 import { ENEMY_JUMP } from '../config.js';
 import { obstacleDecision, shouldTurnForEdge } from '../logic/enemyDecision.js';
@@ -18,27 +17,9 @@ export class PatrolEnemy extends Enemy {
     this.patrolRight = patrolRight;
     this._patrolY = y; // fixed Y for patrol area indicator (does NOT override sensor offset)
     // ID label for the patrol area bar
-    this._areaLabel = scene.add
-      .text(0, 0, id, {
-        fontSize: '9px',
-        fontFamily: 'monospace',
-        color: '#ffcc44',
-        backgroundColor: '#00000088',
-        padding: { x: 2, y: 1 },
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(100);
+    this._areaLabel = this.createLabel(id, '#ffcc44', '#00000088');
     // ID label above the enemy sprite
-    this._enemyLabel = scene.add
-      .text(0, 0, id, {
-        fontSize: '9px',
-        fontFamily: 'monospace',
-        color: '#ffcc44',
-        backgroundColor: '#00000000',
-        padding: { x: 2, y: 1 },
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(100);
+    this._enemyLabel = this.createLabel(id, '#ffcc44');
     this._state = 'walk';
     this._stateTimer = 0;
 
@@ -149,10 +130,7 @@ export class PatrolEnemy extends Enemy {
     }
 
     // Keep walk animation
-    const animKey = sprite.anims.currentAnim?.key;
-    if (animKey !== 'enemy-walk') {
-      sprite.play('enemy-walk');
-    }
+    this.keepWalkAnimation();
   }
 
   destroy() {

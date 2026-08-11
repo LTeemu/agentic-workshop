@@ -16,16 +16,7 @@ export class FreeroamEnemy extends Enemy {
     this._state = 'walk';
     this._stateTimer = 0;
     // ID label above enemy sprite
-    this._enemyLabel = scene.add
-      .text(0, 0, id, {
-        fontSize: '9px',
-        fontFamily: 'monospace',
-        color: '#44ffcc',
-        backgroundColor: '#00000000',
-        padding: { x: 2, y: 1 },
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(100);
+    this._enemyLabel = this.createLabel(id, '#44ffcc');
     this.sprite.setVelocityX(this.speed);
     this.sprite.setFlipX(true);
     this.sprite.play('enemy-walk');
@@ -59,8 +50,7 @@ export class FreeroamEnemy extends Enemy {
           });
           if (decision === 'turn') {
             // 3+ tile wall — turn
-            sprite.setFlipX(!sprite.flipX);
-            sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
+            this.turnAround();
             break;
           }
           if (decision === 'jump') {
@@ -94,8 +84,7 @@ export class FreeroamEnemy extends Enemy {
           // wallAhead + clearanceBlocked → 3+ tile wall (jump failed)
           if (this.wallAhead && this.clearanceBlocked) {
             // Jump failed — turn around
-            sprite.setFlipX(!sprite.flipX);
-            sprite.setVelocityX(sprite.flipX ? this.speed : -this.speed);
+            this.turnAround();
           }
           this._state = 'walk';
         }
@@ -103,10 +92,7 @@ export class FreeroamEnemy extends Enemy {
     }
 
     // Keep walk animation
-    const animKey = sprite.anims.currentAnim?.key;
-    if (animKey !== 'enemy-walk') {
-      sprite.play('enemy-walk');
-    }
+    this.keepWalkAnimation();
   }
 
   destroy() {

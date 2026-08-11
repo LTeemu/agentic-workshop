@@ -113,7 +113,7 @@ export class Enemy {
       else set.delete(other.id);
     };
 
-    const onCollideStart = (event) => {
+    const onSensorPair = (event, delta) => {
       for (const pair of event.pairs) {
         const { bodyA, bodyB } = pair;
         if (bodyA === this.sensorLeft || bodyB === this.sensorLeft)
@@ -134,39 +134,13 @@ export class Enemy {
           track(pair, this.sensorDropRight, this._dropRight);
         if (bodyA === this.sensorGround || bodyB === this.sensorGround) {
           const other = bodyA === this.sensorGround ? bodyB : bodyA;
-          if (other.isStatic) this._groundContacts++;
+          if (other.isStatic) this._groundContacts += delta;
         }
       }
     };
 
-    const onCollideEnd = (event) => {
-      for (const pair of event.pairs) {
-        const { bodyA, bodyB } = pair;
-        if (bodyA === this.sensorLeft || bodyB === this.sensorLeft)
-          track(pair, this.sensorLeft, this._wallLeft);
-        if (bodyA === this.sensorRight || bodyB === this.sensorRight)
-          track(pair, this.sensorRight, this._wallRight);
-        if (bodyA === this.clearLeft || bodyB === this.clearLeft)
-          track(pair, this.clearLeft, this._clearLeft);
-        if (bodyA === this.clearRight || bodyB === this.clearRight)
-          track(pair, this.clearRight, this._clearRight);
-        if (bodyA === this.sensorStepLeft || bodyB === this.sensorStepLeft)
-          track(pair, this.sensorStepLeft, this._stepLeft);
-        if (bodyA === this.sensorStepRight || bodyB === this.sensorStepRight)
-          track(pair, this.sensorStepRight, this._stepRight);
-        if (bodyA === this.sensorDropLeft || bodyB === this.sensorDropLeft)
-          track(pair, this.sensorDropLeft, this._dropLeft);
-        if (bodyA === this.sensorDropRight || bodyB === this.sensorDropRight)
-          track(pair, this.sensorDropRight, this._dropRight);
-        if (bodyA === this.sensorGround || bodyB === this.sensorGround) {
-          const other = bodyA === this.sensorGround ? bodyB : bodyA;
-          if (other.isStatic) this._groundContacts--;
-        }
-      }
-    };
-
-    scene.matter.world.on('collisionstart', onCollideStart);
-    scene.matter.world.on('collisionend', onCollideEnd);
+    scene.matter.world.on('collisionstart', (event) => onSensorPair(event, 1));
+    scene.matter.world.on('collisionend', (event) => onSensorPair(event, -1));
 
     // ── Debug graphics ──
     this._debugGfx = scene.add.graphics().setDepth(100);
@@ -186,6 +160,34 @@ export class Enemy {
     const { sprite, speed } = this;
     sprite.setFlipX(!sprite.flipX);
     sprite.setVelocityX(sprite.flipX ? speed : -speed);
+  }
+
+  /** Keep the walk animation playing (subclasses call at the end of update) */
+  keepWalkAnimation() {
+    const animKey = this.sprite.anims.currentAnim?.key;
+    if (animKey !== 'enemy-walk') {
+      this.sprite.play('enemy-walk');
+    }
+  }
+
+  /**
+   * Create a small monospace ID label (origin centered, depth above sprites).
+   * @param {string} id
+   * @param {string} color
+   * @param {string} [backgroundColor='#00000000']
+   * @returns {Phaser.GameObjects.Text}
+   */
+  createLabel(id, color, backgroundColor = '#00000000') {
+    return this.scene.add
+      .text(0, 0, id, {
+        fontSize: '9px',
+        fontFamily: 'monospace',
+        color,
+        backgroundColor,
+        padding: { x: 2, y: 1 },
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(100);
   }
 
   get wallAhead() {
