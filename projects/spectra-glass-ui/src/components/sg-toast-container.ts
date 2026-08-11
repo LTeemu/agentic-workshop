@@ -1,17 +1,26 @@
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { destroyPortalEl } from '../lib/portal.js';
 
-export type ToastPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'bottom-right'
-  | 'bottom-left';
+export type ToastPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 const POSITION_STYLES: Record<ToastPosition, [string, string][]> = {
-  'top-right': [['top', '16px'], ['right', '16px']],
-  'top-left': [['top', '16px'], ['left', '16px']],
-  'bottom-right': [['bottom', '16px'], ['right', '16px']],
-  'bottom-left': [['bottom', '16px'], ['left', '16px']],
+  'top-right': [
+    ['top', '16px'],
+    ['right', '16px'],
+  ],
+  'top-left': [
+    ['top', '16px'],
+    ['left', '16px'],
+  ],
+  'bottom-right': [
+    ['bottom', '16px'],
+    ['right', '16px'],
+  ],
+  'bottom-left': [
+    ['bottom', '16px'],
+    ['left', '16px'],
+  ],
 };
 
 /**
@@ -66,8 +75,7 @@ export class SgToastContainer extends LitElement {
       this._portalEl.style.flexDirection = 'column';
       this._portalEl.style.gap = 'var(--sg-toast-container-gap, 12px)';
       this._portalEl.style.pointerEvents = 'none';
-      this._portalEl.style.fontFamily =
-        "var(--sg-font-family, 'Inter', -apple-system, sans-serif)";
+      this._portalEl.style.fontFamily = "var(--sg-font-family, 'Inter', -apple-system, sans-serif)";
       this.#applyPortalPosition();
       document.body.appendChild(this._portalEl);
     }
@@ -99,8 +107,7 @@ export class SgToastContainer extends LitElement {
     try {
       // Collect current light-DOM children that are sg-toast elements
       const toasts = Array.from(this.children).filter(
-        (c): c is HTMLElement =>
-          c instanceof HTMLElement && c.tagName === 'SG-TOAST',
+        (c): c is HTMLElement => c instanceof HTMLElement && c.tagName === 'SG-TOAST',
       );
       if (toasts.length === 0) return;
 
@@ -126,16 +133,8 @@ export class SgToastContainer extends LitElement {
 
   /** Remove the portal from the DOM. */
   #destroyPortal(): void {
-    if (this._portalEl) {
-      // Move children back to host
-      while (this._portalEl.firstChild) {
-        this.appendChild(this._portalEl.firstChild);
-      }
-      if (this._portalEl.parentNode) {
-        this._portalEl.parentNode.removeChild(this._portalEl);
-      }
-      this._portalEl = null;
-    }
+    destroyPortalEl(this._portalEl, this);
+    this._portalEl = null;
   }
 
   override render() {

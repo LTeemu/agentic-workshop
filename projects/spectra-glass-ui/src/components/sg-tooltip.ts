@@ -1,6 +1,7 @@
 import { LitElement, html, css, render, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { glassSurface } from '../styles/shared.js';
+import { createPortalEl, destroyPortalEl, trackViewportChange } from '../lib/portal.js';
 
 export type TooltipPosition = 'auto' | 'top' | 'bottom' | 'left' | 'right';
 
@@ -45,6 +46,9 @@ export class SgTooltip extends LitElement {
   /** Portal element appended to document.body. */
   private _portalEl: HTMLDivElement | null = null;
 
+  /** Disposes the scroll/resize viewport listeners while visible. */
+  private _disposeViewportTrack: (() => void) | null = null;
+
   constructor() {
     super();
     this.addEventListener('mouseenter', this.#handleMouseEnter);
@@ -55,23 +59,18 @@ export class SgTooltip extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    document.addEventListener('scroll', this.#onScroll, true);
-    window.addEventListener('resize', this.#onResize);
+    this._disposeViewportTrack = trackViewportChange(this.#onScroll);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._disposeViewportTrack?.();
+    this._disposeViewportTrack = null;
     this.#clearShowTimeout();
     this.#hide();
-    document.removeEventListener('scroll', this.#onScroll, true);
-    window.removeEventListener('resize', this.#onResize);
   }
 
   #onScroll = (): void => {
-    if (this._visible) this.#showPortal();
-  };
-
-  #onResize = (): void => {
     if (this._visible) this.#showPortal();
   };
 
@@ -104,7 +103,8 @@ export class SgTooltip extends LitElement {
 
     // Calculate position based on resolved direction
     let top: number, left: number;
-    let originX = '0', originY = '0';
+    let originX = '0',
+      originY = '0';
 
     switch (this._resolvedPos) {
       case 'top':
@@ -134,8 +134,10 @@ export class SgTooltip extends LitElement {
     }
 
     // Build slide direction for the entrance animation
-    const slideX = this._resolvedPos === 'left' ? '8px' : this._resolvedPos === 'right' ? '-8px' : '0';
-    const slideY = this._resolvedPos === 'top' ? '8px' : this._resolvedPos === 'bottom' ? '-8px' : '0';
+    const slideX =
+      this._resolvedPos === 'left' ? '8px' : this._resolvedPos === 'right' ? '-8px' : '0';
+    const slideY =
+      this._resolvedPos === 'top' ? '8px' : this._resolvedPos === 'bottom' ? '-8px' : '0';
 
     const portal = this.#ensurePortal();
     portal.style.top = `${top}px`;
@@ -152,7 +154,8 @@ export class SgTooltip extends LitElement {
     const rect = portal.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let dx = 0, dy = 0;
+    let dx = 0,
+      dy = 0;
     if (rect.right > vw) dx = vw - rect.right;
     if (rect.left < 0) dx = -rect.left;
     if (rect.bottom > vh) dy = vh - rect.bottom;
@@ -164,11 +167,10 @@ export class SgTooltip extends LitElement {
 
   #ensurePortal(): HTMLDivElement {
     if (!this._portalEl) {
-      this._portalEl = document.createElement('div');
-      this._portalEl.style.position = 'fixed';
-      this._portalEl.style.zIndex = '10000';
-      this._portalEl.style.pointerEvents = 'none';
-      this._portalEl.style.whiteSpace = 'nowrap';
+      this._portalEl = createPortalEl((el) => {
+        el.style.pointerEvents = 'none';
+        el.style.whiteSpace = 'nowrap';
+      });
     }
     return this._portalEl;
   }
@@ -188,15 +190,21 @@ export class SgTooltip extends LitElement {
           -webkit-backdrop-filter: var(--sg-glass-blur, blur(20px));
           border: 1px solid var(--sg-glass-border, rgba(255,255,255,0.12));
           animation: sg-tooltip-in 150ms ease forwards;
-          transform-origin: ${slideX === '0' ? 'center' : (slideX.startsWith('-') ? 'right' : 'left')} ${slideY === '0' ? 'center' : (slideY.startsWith('-') ? 'bottom' : 'top')};
+          transform-origin: ${slideX === '0' ? 'center' : slideX.startsWith('-') ? 'right' : 'left'} ${slideY === '0' ? 'center' : slideY.startsWith('-') ? 'bottom' : 'top'};
         "
         aria-hidden="false"
       >
         ${this.label}
         <style>
           @keyframes sg-tooltip-in {
-            from { opacity: 0; transform: translate(${slideX}, ${slideY}); }
-            to   { opacity: 1; transform: translate(0, 0); }
+            from {
+              opacity: 0;
+              transform: translate(${slideX}, ${slideY});
+            }
+            to {
+              opacity: 1;
+              transform: translate(0, 0);
+            }
           }
         </style>
       </div>
@@ -205,12 +213,7 @@ export class SgTooltip extends LitElement {
 
   /** Destroy the portal. */
   #hidePortal(): void {
-    if (this._portalEl) {
-      if (this._portalEl.parentNode) {
-        this._portalEl.parentNode.removeChild(this._portalEl);
-      }
-      render(null, this._portalEl);
-    }
+    destroyPortalEl(this._portalEl);
   }
 
   /* ---------- Show / hide lifecycle ---------- */

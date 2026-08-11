@@ -10,74 +10,67 @@ import 'spectra-glass-ui';
 // so .options, .tabs, .items etc. go through @property setters correctly.
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Assign props to an element by id (no-op when the element is missing). */
+function setProps(id: string, props: Record<string, unknown>): void {
+  const el = document.getElementById(id) as any;
+  if (!el) return;
+  for (const [key, value] of Object.entries(props)) el[key] = value;
+}
+
 // ── Select options ──
-const demoSelect = document.getElementById('demo-select') as any;
-if (demoSelect) {
-  demoSelect.options = [
+setProps('demo-select', {
+  options: [
     { value: 'react', label: 'React' },
     { value: 'vue', label: 'Vue' },
     { value: 'angular', label: 'Angular' },
     { value: 'svelte', label: 'Svelte' },
     { value: 'lit', label: 'Lit' },
-  ];
-}
+  ],
+});
 
-const demoSelectMulti = document.getElementById('demo-select-multi') as any;
-if (demoSelectMulti) {
-  demoSelectMulti.options = [
+setProps('demo-select-multi', {
+  options: [
     { value: 'ts', label: 'TypeScript' },
     { value: 'js', label: 'JavaScript' },
     { value: 'py', label: 'Python' },
     { value: 'rs', label: 'Rust' },
-  ];
-}
+  ],
+});
 
-const demoSelectAccent = document.getElementById('demo-select-accent') as any;
-if (demoSelectAccent) {
-  demoSelectAccent.options = [
+setProps('demo-select-accent', {
+  options: [
     { value: 'opt1', label: 'Option One' },
     { value: 'opt2', label: 'Option Two' },
     { value: 'opt3', label: 'Option Three' },
-  ];
-}
+  ],
+});
 
 // ── Tabs ──
-const demoTabs = document.getElementById('demo-tabs') as any;
-if (demoTabs) {
-  demoTabs.tabs = [
+setProps('demo-tabs', {
+  tabs: [
     { id: 'preview', label: 'Preview' },
     { id: 'code', label: 'Code' },
     { id: 'settings', label: 'Settings', disabled: true },
-  ];
-}
+  ],
+});
 
 // ── Breadcrumbs ──
-const demoBreadcrumb1 = document.getElementById('demo-breadcrumb-1') as any;
-if (demoBreadcrumb1) {
-  demoBreadcrumb1.items = [
+setProps('demo-breadcrumb-1', {
+  items: [
     { label: 'Home', href: '#' },
     { label: 'Products', href: '#' },
     { label: 'Category', href: '#' },
     { label: 'Item' },
-  ];
-}
+  ],
+});
 
-const demoBreadcrumb2 = document.getElementById('demo-breadcrumb-2') as any;
-if (demoBreadcrumb2) {
-  demoBreadcrumb2.items = [
-    { label: 'Dashboard', href: '#' },
-    { label: 'Settings' },
-  ];
-}
+setProps('demo-breadcrumb-2', {
+  items: [{ label: 'Dashboard', href: '#' }, { label: 'Settings' }],
+});
 
-const demoBreadcrumb3 = document.getElementById('demo-breadcrumb-3') as any;
-if (demoBreadcrumb3) {
-  demoBreadcrumb3.items = [
-    { label: 'Docs', href: '#' },
-    { label: 'API', href: '#' },
-    { label: 'Reference' },
-  ];
-}
+setProps('demo-breadcrumb-3', {
+  items: [{ label: 'Docs', href: '#' }, { label: 'API', href: '#' }, { label: 'Reference' }],
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Event wiring
@@ -133,9 +126,15 @@ function showToast(variant: string, message: string) {
 }
 
 infoBtn?.addEventListener('click', () => showToast('info', 'This is an informational message.'));
-successBtn?.addEventListener('click', () => showToast('success', 'Operation completed successfully!'));
-warningBtn?.addEventListener('click', () => showToast('warning', 'Please review your input before continuing.'));
-errorBtn?.addEventListener('click', () => showToast('error', 'Something went wrong. Please try again.'));
+successBtn?.addEventListener('click', () =>
+  showToast('success', 'Operation completed successfully!'),
+);
+warningBtn?.addEventListener('click', () =>
+  showToast('warning', 'Please review your input before continuing.'),
+);
+errorBtn?.addEventListener('click', () =>
+  showToast('error', 'Something went wrong. Please try again.'),
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Theme Switcher
@@ -241,9 +240,8 @@ function initThemeSwitcher(): void {
 // and cloned (shadow DOM) selects.
 document.addEventListener('change', (e: Event) => {
   const path = e.composedPath();
-  const select = path.find(
-    (el) => (el as Element)?.matches?.('.theme-switcher'),
-  ) as HTMLSelectElement | undefined;
+  const select = path.find((el) => (el as Element)?.matches?.('.theme-switcher')) as
+    HTMLSelectElement | undefined;
   if (select) {
     applyTheme(select.value);
   }

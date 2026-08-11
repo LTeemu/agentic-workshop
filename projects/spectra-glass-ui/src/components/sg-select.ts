@@ -1,7 +1,13 @@
 import { LitElement, html, css, render, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { focusRingCSS, glassSurface, smoothTransition } from '../styles/shared.js';
+import { createPortalEl, destroyPortalEl, trackViewportChange } from '../lib/portal.js';
+import {
+  focusRingCSS,
+  glassSurface,
+  smoothTransition,
+  spectralGradientCSS,
+} from '../styles/shared.js';
 import './sg-icon.js';
 
 export interface SelectOption {
@@ -92,21 +98,15 @@ export class SgSelect extends LitElement {
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      --sg-spectral-fallback: linear-gradient(
-        135deg,
-        rgba(212, 134, 159, 0.5),
-        rgba(196, 160, 80, 0.5),
-        rgba(127, 168, 141, 0.5),
-        rgba(122, 128, 192, 0.5)
-      );
-      background: var(
-        --sg-select-accent,
-        var(--sg-gradient-spectral, var(--sg-spectral-fallback))
-      );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      --sg-spectral-fallback: ${spectralGradientCSS};
+      background: var(--sg-select-accent, var(--sg-gradient-spectral, var(--sg-spectral-fallback)));
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
     }
@@ -210,14 +210,17 @@ export class SgSelect extends LitElement {
 
   private get _selectedValues(): string[] {
     if (!this.value) return [];
-    return this.value.split(',').map(v => v.trim()).filter(Boolean);
+    return this.value
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
   }
 
   private get _displayText(): string {
     const selected = this._selectedValues;
     if (selected.length === 0) return '';
-    const labels = selected.map(v => {
-      const opt = this.options.find(o => o.value === v);
+    const labels = selected.map((v) => {
+      const opt = this.options.find((o) => o.value === v);
       return opt ? opt.label : v;
     });
     return labels.join(', ');
@@ -237,6 +240,8 @@ export class SgSelect extends LitElement {
     super.disconnectedCallback();
     SgSelect._instances.delete(this);
     document.removeEventListener('click', this.#onDocumentClick);
+    this.#disposeViewportTrack?.();
+    this.#disposeViewportTrack = null;
     this.#destroyPortal();
     this._open = false;
   }
@@ -254,26 +259,12 @@ export class SgSelect extends LitElement {
     if (this._open) this.#repositionPortal();
   };
 
-  #onResize = (): void => {
-    if (this._open) this.#repositionPortal();
-  };
-
-  #addScrollListeners(): void {
-    document.addEventListener('scroll', this.#onScroll, true);
-    window.addEventListener('resize', this.#onResize);
-  }
-
-  #removeScrollListeners(): void {
-    document.removeEventListener('scroll', this.#onScroll, true);
-    window.removeEventListener('resize', this.#onResize);
-  }
+  #disposeViewportTrack: (() => void) | null = null;
 
   /** Create or reuse the portal element at document.body. */
   #ensurePortal(): HTMLDivElement {
     if (!this._portalEl) {
-      this._portalEl = document.createElement('div');
-      this._portalEl.style.position = 'fixed';
-      this._portalEl.style.zIndex = '10000';
+      this._portalEl = createPortalEl();
     }
     return this._portalEl;
   }
@@ -322,7 +313,9 @@ export class SgSelect extends LitElement {
               aria-selected=${selected ? 'true' : 'false'}
               data-index=${index}
               @click=${() => this._selectOption(option)}
-              @mouseenter=${() => { if (!option.disabled) this._highlightedIndex = index; }}
+              @mouseenter=${() => {
+                if (!option.disabled) this._highlightedIndex = index;
+              }}
               style="
                 padding: 10px 12px;
                 cursor: ${option.disabled ? 'not-allowed' : 'pointer'};
@@ -338,13 +331,25 @@ export class SgSelect extends LitElement {
                 color: ${selected ? 'var(--sg-text-primary, rgba(255,255,255,0.9))' : 'var(--sg-text-secondary, rgba(255,255,255,0.6))'};
               "
             >
-              ${selected ? html`
-                <span style="width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sg-spectral-color1,#d4869f);">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              ` : html`<span style="width:16px;height:16px;flex-shrink:0;"></span>`}
+              ${
+                selected
+                  ? html`
+                      <span
+                        style="width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sg-spectral-color1,#d4869f);"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path
+                            d="M2 6l3 3 5-5"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    `
+                  : html`<span style="width:16px;height:16px;flex-shrink:0;"></span>`
+              }
               <span>${option.label}</span>
             </div>
           `;
@@ -355,13 +360,8 @@ export class SgSelect extends LitElement {
 
   /** Destroy the portal element. */
   #destroyPortal(): void {
-    if (this._portalEl) {
-      if (this._portalEl.parentNode) {
-        this._portalEl.parentNode.removeChild(this._portalEl);
-      }
-      render(null, this._portalEl);
-      this._portalEl = null;
-    }
+    destroyPortalEl(this._portalEl);
+    this._portalEl = null;
   }
 
   private _openDropdown(): void {
@@ -377,7 +377,7 @@ export class SgSelect extends LitElement {
     this._open = true;
     this._highlightedIndex = -1;
     this.#renderPortal();
-    this.#addScrollListeners();
+    this.#disposeViewportTrack = trackViewportChange(this.#onScroll);
   }
 
   private _close(): void {
@@ -385,7 +385,8 @@ export class SgSelect extends LitElement {
     this._open = false;
     this._highlightedIndex = -1;
     this.#destroyPortal();
-    this.#removeScrollListeners();
+    this.#disposeViewportTrack?.();
+    this.#disposeViewportTrack = null;
     this.renderRoot.querySelector<HTMLElement>('.trigger')?.focus();
   }
 
@@ -423,7 +424,7 @@ export class SgSelect extends LitElement {
         detail: { value: this.value },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 
@@ -465,7 +466,10 @@ export class SgSelect extends LitElement {
 
   override updated(changed: Map<string, unknown>): void {
     // Re-render portal content when highlight or selection changes
-    if (this._open && (changed.has('_highlightedIndex') || changed.has('value') || changed.has('options'))) {
+    if (
+      this._open &&
+      (changed.has('_highlightedIndex') || changed.has('value') || changed.has('options'))
+    ) {
       this.#updatePortalContent();
     }
   }
@@ -473,7 +477,7 @@ export class SgSelect extends LitElement {
   private _highlightNext(): void {
     const enabledIndices = this.options
       .map((opt, i) => (opt.disabled ? -1 : i))
-      .filter(i => i >= 0);
+      .filter((i) => i >= 0);
     if (enabledIndices.length === 0) return;
 
     const currentIdx = enabledIndices.indexOf(this._highlightedIndex);
@@ -485,7 +489,7 @@ export class SgSelect extends LitElement {
   private _highlightPrevious(): void {
     const enabledIndices = this.options
       .map((opt, i) => (opt.disabled ? -1 : i))
-      .filter(i => i >= 0);
+      .filter((i) => i >= 0);
     if (enabledIndices.length === 0) return;
 
     const currentIdx = enabledIndices.indexOf(this._highlightedIndex);
@@ -557,15 +561,21 @@ export class SgSelect extends LitElement {
           ${hasValue ? this._displayText : this.placeholder}
         </span>
 
-        ${this.clearable && hasValue ? html`
-          <button
-            class="trigger__clear"
-            @click=${this.#handleClear}
-            aria-label="Clear selection"
-            tabindex="-1"
-            type="button"
-          >&times;</button>
-        ` : ''}
+        ${
+          this.clearable && hasValue
+            ? html`
+                <button
+                  class="trigger__clear"
+                  @click=${this.#handleClear}
+                  aria-label="Clear selection"
+                  tabindex="-1"
+                  type="button"
+                >
+                  &times;
+                </button>
+              `
+            : ''
+        }
 
         <span class=${chevronClasses}>
           <sg-icon name="chevron-down" size="sm"></sg-icon>

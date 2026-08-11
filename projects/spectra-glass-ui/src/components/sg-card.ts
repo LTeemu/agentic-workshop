@@ -1,6 +1,6 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { focusRingCSS } from '../styles/shared.js';
+import { focusRingCSS, spectralGradientCSS } from '../styles/shared.js';
 
 export type CardVariant = 'elevated' | 'outlined' | 'ghost';
 export type CardPadding = 'sm' | 'md' | 'lg';
@@ -44,11 +44,7 @@ export class SgCard extends LitElement {
       display: flex;
       flex-direction: column;
       border-radius: var(--sg-card-radius, var(--sg-radius-lg, 20px));
-      border: 1px solid
-        var(
-          --sg-card-border,
-          var(--sg-glass-border, rgba(255, 255, 255, 0.12))
-        );
+      border: 1px solid var(--sg-card-border, var(--sg-glass-border, rgba(255, 255, 255, 0.12)));
       background: var(--sg-card-bg, var(--sg-glass-bg, rgba(255, 255, 255, 0.08)));
       backdrop-filter: var(--sg-glass-blur, blur(20px));
       -webkit-backdrop-filter: var(--sg-glass-blur, blur(20px));
@@ -63,17 +59,11 @@ export class SgCard extends LitElement {
     /* ─── Variants ─── */
 
     .card--elevated {
-      box-shadow: var(
-        --sg-card-shadow,
-        var(--sg-glass-shadow, 0 4px 24px rgba(0, 0, 0, 0.12))
-      );
+      box-shadow: var(--sg-card-shadow, var(--sg-glass-shadow, 0 4px 24px rgba(0, 0, 0, 0.12)));
     }
 
     .card--elevated:hover {
-      border-color: var(
-        --sg-glass-border-hover,
-        rgba(255, 255, 255, 0.25)
-      );
+      border-color: var(--sg-glass-border-hover, rgba(255, 255, 255, 0.25));
       background: var(--sg-glass-bg-hover, rgba(255, 255, 255, 0.14));
       box-shadow:
         var(--sg-glass-shadow-lg, 0 8px 48px rgba(0, 0, 0, 0.18)),
@@ -87,10 +77,7 @@ export class SgCard extends LitElement {
     }
 
     .card--outlined:hover {
-      border-color: var(
-        --sg-glass-border-hover,
-        rgba(255, 255, 255, 0.25)
-      );
+      border-color: var(--sg-glass-border-hover, rgba(255, 255, 255, 0.25));
       box-shadow:
         0 0 20px rgba(218, 119, 242, 0.06),
         0 0 40px rgba(77, 171, 247, 0.04);
@@ -131,22 +118,16 @@ export class SgCard extends LitElement {
       padding: 1px;
 
       /* Separate stop-gap fallback to avoid one huge expression */
-      --sg-spectral-fallback: linear-gradient(
-        135deg,
-        rgba(212, 134, 159, 0.5),
-        rgba(196, 160, 80, 0.5),
-        rgba(127, 168, 141, 0.5),
-        rgba(122, 128, 192, 0.5)
-      );
-      background: var(
-        --sg-card-accent,
-        var(--sg-gradient-spectral, var(--sg-spectral-fallback))
-      );
+      --sg-spectral-fallback: ${spectralGradientCSS};
+      background: var(--sg-card-accent, var(--sg-gradient-spectral, var(--sg-spectral-fallback)));
 
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
     }
@@ -160,8 +141,7 @@ export class SgCard extends LitElement {
 
     .header {
       padding-bottom: 8px;
-      border-bottom: 1px solid
-        var(--sg-glass-border, rgba(255, 255, 255, 0.12));
+      border-bottom: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12));
       margin-bottom: 8px;
     }
 
@@ -177,8 +157,7 @@ export class SgCard extends LitElement {
 
     .footer {
       padding-top: 12px;
-      border-top: 1px solid
-        var(--sg-glass-border, rgba(255, 255, 255, 0.12));
+      border-top: 1px solid var(--sg-glass-border, rgba(255, 255, 255, 0.12));
       margin-top: 12px;
     }
 
@@ -249,16 +228,12 @@ export class SgCard extends LitElement {
   }
 
   #hasHeaderSlotted(): boolean {
-    const slot = this.shadowRoot?.querySelector(
-      'slot[name="header"]'
-    ) as HTMLSlotElement | null;
+    const slot = this.shadowRoot?.querySelector('slot[name="header"]') as HTMLSlotElement | null;
     return (slot?.assignedNodes().length ?? 0) > 0;
   }
 
   #hasFooterSlotted(): boolean {
-    const slot = this.shadowRoot?.querySelector(
-      'slot[name="footer"]'
-    ) as HTMLSlotElement | null;
+    const slot = this.shadowRoot?.querySelector('slot[name="footer"]') as HTMLSlotElement | null;
     return (slot?.assignedNodes().length ?? 0) > 0;
   }
 

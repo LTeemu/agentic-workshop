@@ -1,7 +1,12 @@
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { focusRing, smoothTransition } from '../styles/shared.js';
+import {
+  focusRing,
+  smoothTransition,
+  spectralGradientCSS,
+  spectralGradientAtCSS,
+} from '../styles/shared.js';
 
 /**
  * A glass-styled radio button with spectral gradient checked state.
@@ -46,10 +51,7 @@ export class SgRadio extends LitElement {
     }
 
     .radio--checked {
-      border-color: var(
-        --sg-gradient-spectral,
-        linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
-      );
+      border-color: var(--sg-gradient-spectral, ${spectralGradientCSS});
     }
 
     .radio::after {
@@ -67,10 +69,7 @@ export class SgRadio extends LitElement {
 
     .radio--checked::after {
       transform: translate(-50%, -50%) scale(1);
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(135deg, rgba(212, 134, 159, 1), rgba(196, 160, 80, 1), rgba(127, 168, 141, 1), rgba(122, 128, 192, 1))
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientAtCSS(1)});
     }
 
     .label {
@@ -155,7 +154,7 @@ export class SgRadio extends LitElement {
         detail: { checked: this.checked, value: this.value },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 }

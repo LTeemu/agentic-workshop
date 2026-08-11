@@ -1,5 +1,7 @@
 import { LitElement, html, css, render, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
+import { spectralGradientCSS } from '../styles/shared.js';
+import { destroyPortalEl } from '../lib/portal.js';
 
 /**
  * A glassmorphic modal dialog rendered in a portal (`document.body`)
@@ -68,7 +70,7 @@ export class SgDialog extends LitElement {
       padding: 1px;
       background: var(--sg-dialog-accent,
         var(--sg-gradient-spectral,
-          linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
+          ${spectralGradientCSS}
         ));
       -webkit-mask: linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
@@ -209,15 +211,10 @@ export class SgDialog extends LitElement {
   }
 
   #destroyPortal(): void {
-    if (this._portalEl) {
-      if (this._portalEl.parentNode) {
-        this._portalEl.parentNode.removeChild(this._portalEl);
-      }
-      render(null, this._portalEl);
-      this._portalEl = null;
-      // Nodes are now detached but kept alive via _savedSlotNodes
-      // — they'll be re-rendered into the portal on next open.
-    }
+    destroyPortalEl(this._portalEl);
+    this._portalEl = null;
+    // Nodes are now detached but kept alive via _savedSlotNodes
+    // — they'll be re-rendered into the portal on next open.
   }
 
   override disconnectedCallback(): void {
@@ -244,7 +241,9 @@ export class SgDialog extends LitElement {
     const accessibleTitle = this.#textContent(headerNodes) || this.title;
 
     return html`
-      <style>${SgDialog._portalCSS}</style>
+      <style>
+        ${SgDialog._portalCSS}
+      </style>
       <div
         class="backdrop backdrop--open"
         @click=${() => this.#handleBackdropClick()}
@@ -261,35 +260,27 @@ export class SgDialog extends LitElement {
         >
           <!-- Header -->
           <div class="header">
-            <h2 class="header__title">
-              ${headerNodes.length > 0 ? headerNodes : this.title}
-            </h2>
-            ${this.closable
-              ? html`
-                  <button
-                    class="header__close"
-                    @click=${() => this.#close()}
-                    aria-label="Close dialog"
-                  >
-                    &times;
-                  </button>
-                `
-              : ''}
+            <h2 class="header__title">${headerNodes.length > 0 ? headerNodes : this.title}</h2>
+            ${
+              this.closable
+                ? html`
+                    <button
+                      class="header__close"
+                      @click=${() => this.#close()}
+                      aria-label="Close dialog"
+                    >
+                      &times;
+                    </button>
+                  `
+                : ''
+            }
           </div>
 
           <!-- Body -->
-          <div class="body">
-            ${bodyNodes}
-          </div>
+          <div class="body">${bodyNodes}</div>
 
           <!-- Footer -->
-          ${hasFooter
-            ? html`
-                <div class="footer">
-                  ${footerNodes}
-                </div>
-              `
-            : ''}
+          ${hasFooter ? html` <div class="footer">${footerNodes}</div> ` : ''}
         </div>
       </div>
     `;
@@ -310,11 +301,14 @@ export class SgDialog extends LitElement {
     if (!slot) return [];
     const nodes = slot.assignedNodes({ flatten: true });
     // Filter out whitespace-only text nodes
-    return nodes.filter(n => n.nodeType !== 3 || (n.textContent ?? '').trim().length > 0);
+    return nodes.filter((n) => n.nodeType !== 3 || (n.textContent ?? '').trim().length > 0);
   }
 
   #textContent(nodes: Node[]): string {
-    return nodes.map(n => n.textContent ?? '').join(' ').trim();
+    return nodes
+      .map((n) => n.textContent ?? '')
+      .join(' ')
+      .trim();
   }
 
   // ── Focus management ──
@@ -323,9 +317,7 @@ export class SgDialog extends LitElement {
     if (!this._portalEl) return;
     const panel = this._portalEl.querySelector('.dialog');
     if (!panel) return;
-    const focusable = Array.from(
-      panel.querySelectorAll<HTMLElement>(SgDialog._FOCUSABLE)
-    );
+    const focusable = Array.from(panel.querySelectorAll<HTMLElement>(SgDialog._FOCUSABLE));
     if (focusable.length > 0) {
       focusable[0]!.focus();
     } else {
@@ -349,9 +341,7 @@ export class SgDialog extends LitElement {
     if (e.key === 'Tab' && this.open && this._portalEl) {
       const panel = this._portalEl.querySelector('.dialog');
       if (!panel) return;
-      const focusable = Array.from(
-        panel.querySelectorAll<HTMLElement>(SgDialog._FOCUSABLE)
-      );
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(SgDialog._FOCUSABLE));
       if (focusable.length < 2) return;
 
       const first = focusable[0]!;
@@ -373,9 +363,7 @@ export class SgDialog extends LitElement {
 
   #close(): void {
     this.open = false;
-    this.dispatchEvent(
-      new CustomEvent('close', { bubbles: true, composed: true })
-    );
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 }
 

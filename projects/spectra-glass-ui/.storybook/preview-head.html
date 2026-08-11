@@ -1,10 +1,14 @@
 <style>
-  /* Smooth page background so glass effect is visible */
+  /* Smooth page background so glass effect is visible.
+     Painted here (not via the backgrounds addon) so the first paint is dark:
+     the addon's decorator runs after the story renders and its globals are
+     overridden by persisted toolbar state, causing white flashes / white canvas. */
   html,
   body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   }
   .sb-show-main {
     padding: 2rem !important;

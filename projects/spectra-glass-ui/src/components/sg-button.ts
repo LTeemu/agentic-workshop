@@ -2,7 +2,7 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { focusRing, smoothTransition } from '../styles/shared.js';
+import { focusRing, smoothTransition, spectralGradientCSS } from '../styles/shared.js';
 import './sg-spinner.js';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
@@ -86,13 +86,7 @@ export class SgButton extends LitElement {
 
     .btn--primary {
       /* Dim spectral gradient (0.5 alpha) by default — matches badge aesthetic */
-      background: var(
-        --sg-button-primary-bg,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
-        )
-      );
+      background: var(--sg-button-primary-bg, var(--sg-gradient-spectral, ${spectralGradientCSS}));
       color: #fff;
       border-color: transparent;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
@@ -105,7 +99,7 @@ export class SgButton extends LitElement {
         --sg-button-glow-primary,
         0 0 6px rgba(218, 119, 242, 0.18),
         0 0 16px rgba(218, 119, 242, 0.25),
-        0 0 28px rgba(77, 171, 247, 0.10)
+        0 0 28px rgba(77, 171, 247, 0.1)
       );
     }
 
@@ -166,18 +160,15 @@ export class SgButton extends LitElement {
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      --sg-spectral-fb: linear-gradient(
-        135deg,
-        rgba(212, 134, 159, 0.5),
-        rgba(196, 160, 80, 0.5),
-        rgba(127, 168, 141, 0.5),
-        rgba(122, 128, 192, 0.5)
-      );
+      --sg-spectral-fb: ${spectralGradientCSS};
       background: var(--sg-gradient-spectral, var(--sg-spectral-fb));
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
       /* no z-index — ::after stacks above content by default */

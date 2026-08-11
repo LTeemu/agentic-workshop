@@ -2,6 +2,7 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import './sg-icon.js';
+import { spectralGradientAtCSS } from '../styles/shared.js';
 
 export type PaginationSize = 'sm' | 'md';
 
@@ -48,16 +49,7 @@ export class SgPagination extends LitElement {
     }
 
     .page-btn--active {
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(
-          135deg,
-          rgba(212, 134, 159, 0.8),
-          rgba(196, 160, 80, 0.8),
-          rgba(127, 168, 141, 0.8),
-          rgba(122, 128, 192, 0.8)
-        )
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientAtCSS(0.8)});
       color: #fff;
       border-color: transparent;
     }
@@ -83,7 +75,6 @@ export class SgPagination extends LitElement {
       font-size: 0.875rem;
       user-select: none;
     }
-
   `;
 
   @property({ type: Number })
@@ -140,7 +131,7 @@ export class SgPagination extends LitElement {
         detail: { page },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 
@@ -171,18 +162,20 @@ export class SgPagination extends LitElement {
 
     return html`
       <nav class="pagination" role="navigation" aria-label="Pagination">
-        ${this.showFirstLast
-          ? html`
-              <button
-                class=${this.current === 1 ? disabledBtn : btnClasses}
-                ?disabled=${this.current === 1}
-                @click=${() => this.#goTo(1)}
-                aria-label="First page"
-              >
-                ${chevronsLeft}
-              </button>
-            `
-          : ''}
+        ${
+          this.showFirstLast
+            ? html`
+                <button
+                  class=${this.current === 1 ? disabledBtn : btnClasses}
+                  ?disabled=${this.current === 1}
+                  @click=${() => this.#goTo(1)}
+                  aria-label="First page"
+                >
+                  ${chevronsLeft}
+                </button>
+              `
+            : ''
+        }
 
         <button
           class=${this.current === 1 ? disabledBtn : btnClasses}
@@ -193,7 +186,7 @@ export class SgPagination extends LitElement {
           ${chevronLeft}
         </button>
 
-        ${this.#pages.map(p => {
+        ${this.#pages.map((p) => {
           if (p === 'ellipsis') {
             return html`<span class="ellipsis">&hellip;</span>`;
           }
@@ -227,18 +220,20 @@ export class SgPagination extends LitElement {
           ${chevronRight}
         </button>
 
-        ${this.showFirstLast
-          ? html`
-              <button
-                class=${this.current === this.total ? disabledBtn : btnClasses}
-                ?disabled=${this.current === this.total}
-                @click=${() => this.#goTo(this.total)}
-                aria-label="Last page"
-              >
-                ${chevronsRight}
-              </button>
-            `
-          : ''}
+        ${
+          this.showFirstLast
+            ? html`
+                <button
+                  class=${this.current === this.total ? disabledBtn : btnClasses}
+                  ?disabled=${this.current === this.total}
+                  @click=${() => this.#goTo(this.total)}
+                  aria-label="Last page"
+                >
+                  ${chevronsRight}
+                </button>
+              `
+            : ''
+        }
       </nav>
     `;
   }

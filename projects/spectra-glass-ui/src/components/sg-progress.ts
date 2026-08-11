@@ -1,6 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { spectralGradientAtCSS } from '../styles/shared.js';
 
 export type ProgressVariant = 'default' | 'spectral';
 export type ProgressSize = 'sm' | 'md' | 'lg';
@@ -44,16 +45,7 @@ export class SgProgress extends LitElement {
     }
 
     .fill--spectral {
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(
-          135deg,
-          rgba(212, 134, 159, 0.8),
-          rgba(196, 160, 80, 0.8),
-          rgba(127, 168, 141, 0.8),
-          rgba(122, 128, 192, 0.8)
-        )
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientAtCSS(0.8)});
     }
 
     .fill--indeterminate {
@@ -121,14 +113,16 @@ export class SgProgress extends LitElement {
     });
 
     return html`
-      ${this.label || this.showValue
-        ? html`
-            <div class="label-row">
-              <span>${this.label}</span>
-              ${this.showValue ? html`<span>${pct}%</span>` : ''}
-            </div>
-          `
-        : ''}
+      ${
+        this.label || this.showValue
+          ? html`
+              <div class="label-row">
+                <span>${this.label}</span>
+                ${this.showValue ? html`<span>${pct}%</span>` : ''}
+              </div>
+            `
+          : ''
+      }
       <div
         class=${trackClasses}
         role="progressbar"

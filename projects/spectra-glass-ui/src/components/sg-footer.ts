@@ -1,6 +1,6 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { smoothTransition } from '../styles/shared.js';
+import { smoothTransition, spectralGradientAtCSS } from '../styles/shared.js';
 import './sg-divider.js';
 
 /**
@@ -36,15 +36,7 @@ export class SgFooter extends LitElement {
       left: 0;
       right: 0;
       height: 1px;
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(90deg,
-          rgba(212, 134, 159, 0.6),
-          rgba(196, 160, 80, 0.6),
-          rgba(127, 168, 141, 0.6),
-          rgba(122, 128, 192, 0.6)
-        )
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientAtCSS(0.6, 90)});
     }
 
     .inner {
@@ -172,11 +164,7 @@ export class SgFooter extends LitElement {
       <footer class="footer">
         <div class="inner">
           <div class="grid">
-            ${cols.map(
-              (i) => html`
-                <div class="column"><slot name="column-${i}"></slot></div>
-              `
-            )}
+            ${cols.map((i) => html` <div class="column"><slot name="column-${i}"></slot></div> `)}
           </div>
           <sg-divider variant="gradient" style="margin: 2.5rem 0 0;"></sg-divider>
           <div class="social"><slot name="social"></slot></div>

@@ -1,7 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { focusRing, smoothTransition } from '../styles/shared.js';
+import { focusRing, smoothTransition, spectralGradientCSS } from '../styles/shared.js';
 
 /**
  * A toggle switch with spectral gradient active track.
@@ -48,13 +48,7 @@ export class SgToggle extends LitElement {
     }
 
     .track--checked {
-      background: var(
-        --sg-toggle-active-bg,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
-        )
-      );
+      background: var(--sg-toggle-active-bg, var(--sg-gradient-spectral, ${spectralGradientCSS}));
       border-color: transparent;
     }
 
@@ -76,11 +70,7 @@ export class SgToggle extends LitElement {
 
     .track--checked .knob {
       transform: translateY(-50%)
-        translateX(
-          calc(
-            var(--sg-toggle-width, 44px) - var(--sg-toggle-knob-size, 18px) - 4px
-          )
-        );
+        translateX(calc(var(--sg-toggle-width, 44px) - var(--sg-toggle-knob-size, 18px) - 4px));
       background: #fff;
     }
 
@@ -111,9 +101,7 @@ export class SgToggle extends LitElement {
       'track--checked': this.checked,
     });
 
-    const labelEl = this.label
-      ? html`<span class="label">${this.label}</span>`
-      : '';
+    const labelEl = this.label ? html`<span class="label">${this.label}</span>` : '';
 
     return html`
       ${this.labelPosition === 'left' ? labelEl : ''}
@@ -152,7 +140,7 @@ export class SgToggle extends LitElement {
         detail: { checked: this.checked },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 }

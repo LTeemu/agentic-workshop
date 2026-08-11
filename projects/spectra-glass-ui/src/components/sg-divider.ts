@@ -1,14 +1,9 @@
 import { LitElement, html, css, unsafeCSS, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { spectralFade } from '../styles/shared.js';
 
-const SPECTRAL_FALLBACK = unsafeCSS(`linear-gradient(90deg,
-  transparent,
-  rgba(212, 134, 159, 0.5),
-  rgba(196, 160, 80, 0.5),
-  rgba(127, 168, 141, 0.5),
-  rgba(122, 128, 192, 0.5),
-  transparent)`);
+const SPECTRAL_FALLBACK = unsafeCSS(spectralFade());
 
 /**
  * A horizontal divider with optional centred label.
@@ -53,10 +48,7 @@ export class SgDivider extends LitElement {
     }
 
     .divider--gradient .divider__line {
-      background: var(
-        --sg-divider-gradient,
-        var(--sg-gradient-spectral, ${SPECTRAL_FALLBACK})
-      );
+      background: var(--sg-divider-gradient, var(--sg-gradient-spectral, ${SPECTRAL_FALLBACK}));
     }
 
     /* ─── Flex spacers (default: no visual role) ─── */
@@ -148,9 +140,7 @@ export class SgDivider extends LitElement {
       'divider--label-right': this.label && this.labelPosition === 'right',
     };
 
-    const labelEl = this.label
-      ? html`<span class="label">${this.label}</span>`
-      : '';
+    const labelEl = this.label ? html`<span class="label">${this.label}</span>` : '';
 
     return html`
       <div class=${classMap(classes)}>

@@ -1,6 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { spectralGradientAtCSS } from '../styles/shared.js';
 
 /**
  * Hero section with headline, subtitle, CTA buttons, and optional
@@ -115,10 +116,7 @@ export class SgHero extends LitElement {
     }
 
     .actions ::slotted([slot='cta-primary']) {
-      --sg-button-primary-bg: var(
-        --sg-gradient-spectral-strong,
-        linear-gradient(135deg, rgba(212, 134, 159, 0.75), rgba(196, 160, 80, 0.75), rgba(127, 168, 141, 0.75), rgba(122, 128, 192, 0.75))
-      );
+      --sg-button-primary-bg: var(--sg-gradient-spectral-strong, ${spectralGradientAtCSS(0.75)});
     }
   `;
 

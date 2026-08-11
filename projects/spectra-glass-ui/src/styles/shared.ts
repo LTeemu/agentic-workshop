@@ -7,6 +7,35 @@ import { css, unsafeCSS } from 'lit';
  * Use: `static override styles = css` ${focusRing} ${glassSurface} ... ``
  */
 
+/* ─── Spectral gradient (matches the --sg-gradient-spectral theme default) ───
+   Components use this as the var() fallback so the literal lives in one place.
+*/
+export const spectralGradient =
+  'linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))';
+
+/** CSSResult variant for interpolation into `css` templates. */
+export const spectralGradientCSS = unsafeCSS(spectralGradient);
+
+/** Spectral gradient variant with a custom alpha (and optional angle in degrees). */
+export function spectralGradientAt(alpha: number, angleDeg = 135): string {
+  return `linear-gradient(${angleDeg}deg, rgba(212, 134, 159, ${alpha}), rgba(196, 160, 80, ${alpha}), rgba(127, 168, 141, ${alpha}), rgba(122, 128, 192, ${alpha}))`;
+}
+
+/** CSSResult variant for interpolation into `css` templates. */
+export function spectralGradientAtCSS(alpha: number, angleDeg = 135): ReturnType<typeof unsafeCSS> {
+  return unsafeCSS(spectralGradientAt(alpha, angleDeg));
+}
+
+/** Spectral gradient with transparent bookends (soft fade edge), 90° by default. */
+export function spectralFade(alpha = 0.5, angleDeg = 90): string {
+  return `linear-gradient(${angleDeg}deg, transparent, rgba(212, 134, 159, ${alpha}), rgba(196, 160, 80, ${alpha}), rgba(127, 168, 141, ${alpha}), rgba(122, 128, 192, ${alpha}), transparent)`;
+}
+
+/** CSSResult variant for interpolation into `css` templates. */
+export function spectralFadeCSS(alpha = 0.5, angleDeg = 90): ReturnType<typeof unsafeCSS> {
+  return unsafeCSS(spectralFade(alpha, angleDeg));
+}
+
 /* ─── Gradient focus ring (keyboard-only) ───
    Apply on `:host`:
      :host { position: relative; outline: none; }
@@ -19,23 +48,14 @@ export const focusRing = css`
     inset: -3px;
     border-radius: inherit;
     padding: 2px;
-      background: var(
-        --sg-focus-ring,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(
-            135deg,
-            rgba(212, 134, 159, 0.5),
-            rgba(196, 160, 80, 0.5),
-            rgba(127, 168, 141, 0.5),
-            rgba(122, 128, 192, 0.5)
-          )
-        )
-      );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box,
+    background: var(--sg-focus-ring, var(--sg-gradient-spectral, ${spectralGradientCSS}));
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     mask-composite: exclude;
     pointer-events: none;
     z-index: 1;
@@ -82,23 +102,14 @@ export function focusRingCSS(radiusVar: string): ReturnType<typeof css> {
       inset: -3px;
       border-radius: calc(${unsafeCSS(radiusVar)} + 3px);
       padding: 2px;
-      background: var(
-        --sg-focus-ring,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(
-            135deg,
-            rgba(212, 134, 159, 0.5),
-            rgba(196, 160, 80, 0.5),
-            rgba(127, 168, 141, 0.5),
-            rgba(122, 128, 192, 0.5)
-          )
-        )
-      );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      background: var(--sg-focus-ring, var(--sg-gradient-spectral, ${spectralGradientCSS}));
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
       z-index: 1;

@@ -2,7 +2,12 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { live } from 'lit/directives/live.js';
-import { focusRingCSS, glassSurface, smoothTransition } from '../styles/shared.js';
+import {
+  focusRingCSS,
+  glassSurface,
+  smoothTransition,
+  spectralGradientCSS,
+} from '../styles/shared.js';
 
 export type TextareaVariant = 'outlined' | 'ghost';
 export type TextareaResize = 'none' | 'vertical' | 'both';
@@ -74,21 +79,18 @@ export class SgTextarea extends LitElement {
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      --sg-spectral-fallback: linear-gradient(
-        135deg,
-        rgba(212, 134, 159, 0.5),
-        rgba(196, 160, 80, 0.5),
-        rgba(127, 168, 141, 0.5),
-        rgba(122, 128, 192, 0.5)
-      );
+      --sg-spectral-fallback: ${spectralGradientCSS};
       background: var(
         --sg-textarea-accent,
         var(--sg-gradient-spectral, var(--sg-spectral-fallback))
       );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box,
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
     }
@@ -250,15 +252,21 @@ export class SgTextarea extends LitElement {
           aria-describedby=${this.error ? 'error-msg' : undefined}
         ></textarea>
 
-        ${this.clearable && this.value ? html`
-          <button
-            class="field__clear"
-            @click=${this.#handleClear}
-            aria-label="Clear textarea"
-            tabindex="-1"
-            type="button"
-          >&times;</button>
-        ` : ''}
+        ${
+          this.clearable && this.value
+            ? html`
+                <button
+                  class="field__clear"
+                  @click=${this.#handleClear}
+                  aria-label="Clear textarea"
+                  tabindex="-1"
+                  type="button"
+                >
+                  &times;
+                </button>
+              `
+            : ''
+        }
       </div>
 
       ${this.error ? html`<span class="error" id="error-msg" role="alert">${this.error}</span>` : ''}

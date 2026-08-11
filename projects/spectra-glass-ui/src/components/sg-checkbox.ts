@@ -1,7 +1,7 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { focusRing, smoothTransition } from '../styles/shared.js';
+import { focusRing, smoothTransition, spectralGradientCSS } from '../styles/shared.js';
 
 /**
  * A glass-styled checkbox with spectral gradient when checked.
@@ -63,16 +63,7 @@ export class SgCheckbox extends LitElement {
 
     .box--checked,
     .box--indeterminate {
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(
-          135deg,
-          rgba(212, 134, 159, 0.5),
-          rgba(196, 160, 80, 0.5),
-          rgba(127, 168, 141, 0.5),
-          rgba(122, 128, 192, 0.5)
-        )
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientCSS});
       border-color: transparent;
     }
 
@@ -130,13 +121,20 @@ export class SgCheckbox extends LitElement {
 
   static checkIcon: TemplateResult = html`
     <svg class="icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-      <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path
+        d="M2 6l3 3 5-5"
+        stroke="currentColor"
+        stroke-width="2"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
     </svg>
   `;
 
   static minusIcon: TemplateResult = html`
     <svg class="icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-      <path d="M2 6h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M2 6h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
     </svg>
   `;
 
@@ -161,15 +159,9 @@ export class SgCheckbox extends LitElement {
           aria-hidden="true"
         />
         <span class=${boxClasses}>
-          ${this.indeterminate
-            ? SgCheckbox.minusIcon
-            : this.checked
-              ? SgCheckbox.checkIcon
-              : ''}
+          ${this.indeterminate ? SgCheckbox.minusIcon : this.checked ? SgCheckbox.checkIcon : ''}
         </span>
-        ${this.label
-          ? html`<span class="label">${this.label}</span>`
-          : ''}
+        ${this.label ? html`<span class="label">${this.label}</span>` : ''}
       </div>
     `;
   }
@@ -197,7 +189,7 @@ export class SgCheckbox extends LitElement {
         detail: { checked: this.checked },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 }

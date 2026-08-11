@@ -2,6 +2,7 @@ import { LitElement, css, type TemplateResult } from 'lit';
 import { html, unsafeStatic } from 'lit/static-html.js';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { spectralFadeCSS } from '../styles/shared.js';
 
 type SectionPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 type SectionMaxWidth = 'sm' | 'md' | 'lg' | 'full';
@@ -78,21 +79,7 @@ export class SgSection extends LitElement {
       width: 100%;
       position: absolute;
       left: 0;
-      background: var(
-        --sg-section-accent,
-        var(
-          --sg-gradient-spectral,
-          linear-gradient(
-            90deg,
-            transparent,
-            rgba(212, 134, 159, 0.5),
-            rgba(196, 160, 80, 0.5),
-            rgba(127, 168, 141, 0.5),
-            rgba(122, 128, 192, 0.5),
-            transparent
-          )
-        )
-      );
+      background: var(--sg-section-accent, var(--sg-gradient-spectral, ${spectralFadeCSS()}));
     }
 
     .section--accent-top::before {

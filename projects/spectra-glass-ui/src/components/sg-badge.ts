@@ -1,14 +1,9 @@
 import { LitElement, html, css, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { spectralGradientCSS } from '../styles/shared.js';
 
-export type BadgeVariant =
-  | 'default'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
-  | 'spectral';
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'spectral';
 export type BadgeSize = 'sm' | 'md';
 
 /**
@@ -83,10 +78,7 @@ export class SgBadge extends LitElement {
     }
 
     .badge--spectral {
-      background: var(
-        --sg-gradient-spectral,
-        linear-gradient(135deg, rgba(212, 134, 159, 0.5), rgba(196, 160, 80, 0.5), rgba(127, 168, 141, 0.5), rgba(122, 128, 192, 0.5))
-      );
+      background: var(--sg-gradient-spectral, ${spectralGradientCSS});
       color: #fff;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }
@@ -172,27 +164,27 @@ export class SgBadge extends LitElement {
       <span class=${classes}>
         <span class="badge__dot"></span>
         <span><slot></slot></span>
-        ${this.removable
-          ? html`
-              <button
-                class="badge__dismiss"
-                @click=${this.#handleDismiss}
-                aria-label="Dismiss"
-                part="dismiss-button"
-              >
-                ×
-              </button>
-            `
-          : ''}
+        ${
+          this.removable
+            ? html`
+                <button
+                  class="badge__dismiss"
+                  @click=${this.#handleDismiss}
+                  aria-label="Dismiss"
+                  part="dismiss-button"
+                >
+                  ×
+                </button>
+              `
+            : ''
+        }
       </span>
     `;
   }
 
   #handleDismiss(e: MouseEvent): void {
     e.stopPropagation();
-    this.dispatchEvent(
-      new CustomEvent('dismiss', { bubbles: true, composed: true })
-    );
+    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true, composed: true }));
   }
 }
 
