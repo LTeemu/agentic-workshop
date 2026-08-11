@@ -184,13 +184,17 @@ function readFile(p) {
 
 // ── PlanEnforcer Test Helpers ────────────────────────
 
+/** Monotonic counter for callIDs — Date.now() can collide within one ms. */
+let callSeq = 0;
+
 /**
  * Create a minimal input/output pair for tool.execute.before.
  * Both input and output come from the same call — always destructure together.
  */
 function toolCall(tool, args = {}) {
+  callSeq += 1;
   return {
-    input: { tool, sessionID: 'test-session', callID: `call-${Date.now()}` },
+    input: { tool, sessionID: 'test-session', callID: `call-${callSeq}` },
     output: { args },
   };
 }
@@ -198,16 +202,6 @@ function toolCall(tool, args = {}) {
 /** Create a task delegation call. */
 function taskCall(subagentType) {
   return toolCall('task', { subagent_type: subagentType });
-}
-
-/** Create a subagent delegation call (uses agent param, matching the actual subagent tool). */
-function subagentCall(agent) {
-  return toolCall('subagent', { agent });
-}
-
-/** Create an edit/write/patch call (records a change toward the review gate). */
-function editCall(tool, args = {}) {
-  return toolCall(tool, args);
 }
 
 module.exports = {
@@ -223,6 +217,4 @@ module.exports = {
   readFile,
   toolCall,
   taskCall,
-  subagentCall,
-  editCall,
 };

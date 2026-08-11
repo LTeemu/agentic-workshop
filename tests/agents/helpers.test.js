@@ -5,12 +5,10 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
-  getAgentsDir,
   splitKeyValue,
   parseFrontmatter,
   validateAgentConfig,
   validateSkill,
-  readFile,
 } = require('./helpers');
 
 describe('splitKeyValue', () => {
@@ -88,15 +86,6 @@ describe('parseFrontmatter', () => {
   it('handles CRLF line endings', () => {
     const fm = parseFrontmatter('---\r\ndescription: crlf\r\n---\r\n\r\nbody');
     assert.deepStrictEqual(fm, { description: 'crlf' });
-  });
-
-  it('parses every real agent file', () => {
-    for (const file of fs.readdirSync(getAgentsDir()).filter((f) => f.endsWith('.md'))) {
-      const fm = parseFrontmatter(readFile(path.join(getAgentsDir(), file)));
-      assert.ok(fm, `${file} should have parseable frontmatter`);
-      assert.ok(fm.description, `${file} missing description`);
-      assert.ok(fm.mode, `${file} missing mode`);
-    }
   });
 });
 

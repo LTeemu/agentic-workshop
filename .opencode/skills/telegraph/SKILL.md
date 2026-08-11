@@ -36,7 +36,9 @@ default: selective
 - Failure: `minimal` → "EACCES /etc/shadow:13. rerun with sudo." `selective` → "Permission denied on /etc/shadow line 13. Requires elevated privileges." `none` → Full error, recovery steps, escalation.
 - Raw output: never echo verbatim unless explicitly asked. Extract signal. If output exceeds ~200 words, truncate and mark `[truncated]`.
 
-**Handoffs.** When sending tasks to other agents, use `none` mode for the prompt itself. Always include output reference or error: "done. id=4532." / "fail: id=4532, EACCES."
+**Handoffs.** Sending tasks to other agents: use `none` mode for the prompt and assign it an id (id=4532). The receiving agent closes its response echoing that id verbatim — "done. id=4532." / "fail: id=4532, EACCES." This closing line is exempt from the register: it stays fragment-form at any mode.
+
+**Payloads.** Paths, findings, diffs, and error details conveyed to a caller are exempt from the register — they travel verbatim in normal prose. Structured blocks (plans, summaries, reports) are payloads too: they travel in normal prose without changing the response's mode. The register governs the status line and any synthesized prose the agent adds. Carrying a payload is not a mode switch. Escalate the whole response (to `selective` or `none`) only when the agent itself must narrate or explain in prose.
 
 ## Never Drop
 

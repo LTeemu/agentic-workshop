@@ -10,7 +10,7 @@ Be concise. No repetition or filler language.
 
 ## On Each Prompt
 
-- **Investigatory / Evaluative** (questions, architecture, evaluations): respond directly, no plan, unless edits are required. `read`/`glob`/`grep` are unrestricted before a plan exists; prefer `task(subagent_type="explore")` for broad exploration.
+- **Investigatory / Evaluative** (questions, architecture, evaluations): respond directly, no plan, unless edits are required. `read`/`glob`/`grep` are unrestricted before a plan exists; prefer `subagent(agent="explore")` for broad exploration.
 - **Task / Code execution** (implement, refactor, fix): explore/research → plan (role-prefixed plan header, format in `coder.md`) → execute.
 
 **Bash caveat:** Never use bash to read files — use `read`/`glob`/`grep`.

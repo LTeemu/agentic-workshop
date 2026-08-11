@@ -170,7 +170,7 @@ The workspace configuration allows the same agentic workflow to be used across a
 The following commands are defined in `opencode.json`:
 
 - `/review` — Runs `@reviewer` against changed files.
-- `/clean` — Runs `@refactor` to remove duplication and perform structural cleanup.
+- `/clean` — Runs `@reviewer`, then `@refactor`, to remove duplication and perform structural cleanup.
 - `/research` — Runs `@researcher` to investigate documentation or web resources.
 
 ### Agent Roles
@@ -189,9 +189,9 @@ If a disabled `general.md` file exists, it is not available for normal agent or 
 
 Before planning, `@coder` may delegate read-only discovery:
 
-- `task(subagent_type="researcher")` — Provides access to read, web search, and web fetch tools.
-- `task(subagent_type="reviewer")` — Provides access to read, glob, grep, skill, and read-only Git commands.
-- `task(subagent_type="explore")` — Performs fast file discovery and is called directly rather than as a role-prefixed plan entry.
+- `subagent(agent="researcher")` — Provides access to read, web search, and web fetch tools.
+- `subagent(agent="reviewer")` — Provides access to read, glob, grep, skill, and read-only Git commands.
+- `subagent(agent="explore")` — Performs fast file discovery and is called directly rather than as a role-prefixed plan entry.
 
 This optional reconnaissance stage helps the coder understand the relevant code before committing to a plan.
 
@@ -208,7 +208,7 @@ Coder: implement the change [scope:app/server.js]
 Refactor: remove duplication after review [scope:app/]
 ```
 
-The `plan-enforcer` plugin validates this workflow and prevents unsupported subagent usage.
+The `plan-enforcer` plugin enforces the subagent validation gate described in "Plan Guardrails" below; review of plain coding work remains instruction-level rather than mechanically enforced.
 
 #### 3. Execution
 
@@ -231,12 +231,11 @@ These commands are used to scope reviews against a baseline commit.
 
 ### Plan Guardrails
 
-The `plan-enforcer` plugin (`.opencode/plugins/plan-enforcer.js`) enforces two structural rules:
+The `plan-enforcer` plugin (`.opencode/plugins/plan-enforcer.js`) enforces a structural rule:
 
 | Gate             | Rule                                                                                                     |
 | ---------------- | -------------------------------------------------------------------------------------------------------- |
 | Agent validation | `task()` and `subagent()` calls only accept registered, active agents with the appropriate subagent mode |
-| Reviewer gate    | `@refactor` cannot run until a `@reviewer` delegation has completed during the current session           |
 
 ### Verification Pipeline
 
@@ -329,7 +328,7 @@ The committed hooks under `.githooks/` provide local validation before commits:
 | `.opencode/agents/researcher.md`     | Web and documentation research                                                                              |
 | `.opencode/agents/reviewer.md`       | Read-only code review and Git-based change inspection                                                       |
 | `.opencode/agents/refactor.md`       | Deduplication and structural cleanup                                                                        |
-| `.opencode/plugins/plan-enforcer.js` | Validates subagent calls and enforces the reviewer-before-refactor gate                                     |
+| `.opencode/plugins/plan-enforcer.js` | Validates subagent calls                                                                                    |
 | `opencode.json`                      | Registers agents, skills, plugins, and workspace commands                                                   |
 
 ## Project Detection

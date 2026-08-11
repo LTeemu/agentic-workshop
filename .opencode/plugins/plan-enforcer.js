@@ -7,7 +7,6 @@
  *
  * Enforced at tool-call boundaries (abort via ctx.tool.hook("execute.before")):
  *   - INVALID_SUBAGENT_TYPE
- *   - REFACTOR_REQUIRES_REVIEWER
  *
  * Derives the valid subagent types from .opencode/agents/ so new agent files
  * take effect without editing the plugin.
@@ -37,6 +36,16 @@ function discoverSubagentTypes() {
   return types;
 }
 
+/** Register a tool hook; returns its disposer, or undefined if registration fails. */
+async function registerHook(ctx, name, handler) {
+  try {
+    return await ctx.tool.hook(name, handler);
+  } catch (err) {
+    console.error(`[plan-enforcer] Failed to register ${name} hook:`, err);
+    return undefined;
+  }
+}
+
 export default Plugin.define({
   id: 'plan-enforcer',
 
@@ -51,34 +60,30 @@ export default Plugin.define({
     if (!hasToolHook) {
       console.warn(
         '[plan-enforcer] WARNING: ctx.tool.hook is not available. ' +
-          'Subagent gates will NOT function.',
+          'The subagent gate will NOT function.',
       );
     }
 
-    // ── Tool hook (abort teeth) ──
-    let hookDisposer;
+    // ── Tool hook (abort teeth on "before") ──
+    let beforeDisposer;
     if (hasToolHook) {
-      try {
-        hookDisposer = await ctx.tool.hook('execute.before', async (event) => {
-          const input = {
-            tool: event.tool,
-            sessionID: event.sessionID,
-            callID: event.callID,
-          };
-          const output = { args: event.input || {} };
-          // Let errors propagate so OpenCode aborts the tool call
-          enforcer.onToolExecuteBefore(input, output);
-        });
-      } catch (err) {
-        console.error('[plan-enforcer] Failed to register tool hook:', err);
-      }
+      beforeDisposer = await registerHook(ctx, 'execute.before', async (event) => {
+        const input = {
+          tool: event.tool,
+          sessionID: event.sessionID,
+          callID: event.callID,
+        };
+        const output = { args: event.input || {} };
+        // Let errors propagate so OpenCode aborts the tool call
+        enforcer.onToolExecuteBefore(input, output);
+      });
     }
 
     // ── Cleanup ──
     return async () => {
-      if (hookDisposer && typeof hookDisposer.dispose === 'function') {
+      if (beforeDisposer && typeof beforeDisposer.dispose === 'function') {
         try {
-          await hookDisposer.dispose();
+          await beforeDisposer.dispose();
         } catch (err) {
           console.error('[plan-enforcer] Error disposing hook:', err);
         }

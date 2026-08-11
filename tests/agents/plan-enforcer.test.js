@@ -1,5 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const PLUGIN_PATH = path.resolve(
@@ -63,6 +65,28 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
     }
   });
 
+  it('accepts refactor without a prior reviewer (no gate)', async () => {
+    for (const call of [taskCall('refactor'), toolCall('subagent', { agent: 'refactor' })]) {
+      const enforcer = PlanEnforcer();
+      await assert.doesNotReject(
+        async () => enforcer.onToolExecuteBefore(call.input, call.output),
+        'refactor delegation should be accepted without a prior reviewer',
+      );
+    }
+  });
+
+  it('enforces INVALID_SUBAGENT_TYPE even without a callID', async () => {
+    const enforcer = PlanEnforcer();
+    const call = {
+      input: { tool: 'subagent', sessionID: 's1' },
+      output: { args: { agent: 'bogus' } },
+    };
+    await assert.rejects(
+      async () => enforcer.onToolExecuteBefore(call.input, call.output),
+      /INVALID_SUBAGENT_TYPE/,
+    );
+  });
+
   it('ignores delegation calls with no subagent type', async () => {
     const enforcer = PlanEnforcer();
     const { input, output } = toolCall('subagent', {});
@@ -73,68 +97,6 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
     const enforcer = PlanEnforcer();
     const { input, output } = toolCall('edit', { filePath: 'src/foo.js' });
     assert.strictEqual(enforcer.onToolExecuteBefore(input, output), undefined);
-  });
-});
-
-describe('PlanEnforcer — Refactor gate (REFACTOR_REQUIRES_REVIEWER)', () => {
-  it('blocks task(refactor) before any reviewer ran', async () => {
-    const enforcer = PlanEnforcer();
-    const { input, output } = taskCall('refactor');
-    await assert.rejects(
-      async () => enforcer.onToolExecuteBefore(input, output),
-      /REFACTOR_REQUIRES_REVIEWER/,
-    );
-  });
-
-  it('blocks subagent({agent: refactor}) before a reviewer', async () => {
-    const enforcer = PlanEnforcer();
-    const { input, output } = toolCall('subagent', { agent: 'refactor' });
-    await assert.rejects(
-      async () => enforcer.onToolExecuteBefore(input, output),
-      /REFACTOR_REQUIRES_REVIEWER/,
-    );
-  });
-
-  it('allows refactor after a reviewer ran in the same session', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: rIn, output: rOut } = taskCall('reviewer');
-    await enforcer.onToolExecuteBefore(rIn, rOut);
-    const { input: fIn, output: fOut } = taskCall('refactor');
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
-  });
-
-  it('allows refactor after subagent reviewer', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: rIn, output: rOut } = toolCall('subagent', { agent: 'reviewer' });
-    await enforcer.onToolExecuteBefore(rIn, rOut);
-    const { input: fIn, output: fOut } = toolCall('subagent', { agent: 'refactor' });
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
-  });
-
-  it('keeps the reviewer run per session, not per tool call', async () => {
-    const enforcer = PlanEnforcer();
-    const { input: rIn, output: rOut } = toolCall('subagent', { agent: 'reviewer' });
-    await enforcer.onToolExecuteBefore(rIn, rOut);
-    // A later refactor delegation in the same session still passes.
-    const { input: fIn, output: fOut } = taskCall('refactor');
-    await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(fIn, fOut));
-  });
-
-  it('still blocks refactor in a different session that never ran a reviewer', async () => {
-    const enforcer = PlanEnforcer();
-    const reviewer = {
-      input: { tool: 'subagent', sessionID: 'session-A', callID: 'c1' },
-      output: { args: { agent: 'reviewer' } },
-    };
-    const refactorB = {
-      input: { tool: 'subagent', sessionID: 'session-B', callID: 'c2' },
-      output: { args: { agent: 'refactor' } },
-    };
-    await enforcer.onToolExecuteBefore(reviewer.input, reviewer.output);
-    await assert.rejects(
-      async () => enforcer.onToolExecuteBefore(refactorB.input, refactorB.output),
-      /REFACTOR_REQUIRES_REVIEWER/,
-    );
   });
 });
 
@@ -197,6 +159,28 @@ describe('PlanEnforcer — loadValidSubagentTypes', () => {
       loadValidSubagentTypes(path.join(__dirname, 'no-such-agents-dir')),
       undefined,
     );
+  });
+
+  it('returns undefined when the directory yields no subagent types', () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-enforcer-'));
+    try {
+      assert.strictEqual(loadValidSubagentTypes(emptyDir), undefined);
+    } finally {
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to the default subagent list when derivation yields nothing', async () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-enforcer-'));
+    try {
+      const enforcer = PlanEnforcer({
+        validSubagentTypes: loadValidSubagentTypes(emptyDir),
+      });
+      const { input, output } = taskCall('explore');
+      await assert.doesNotReject(async () => enforcer.onToolExecuteBefore(input, output));
+    } finally {
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    }
   });
 });
 

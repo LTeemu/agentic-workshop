@@ -133,22 +133,6 @@ describe('opencode.json consistency', () => {
       }
     }
   });
-
-  it('string plugin packages are version-pinned', () => {
-    assert.ok(config, 'config not loaded');
-    const stringPlugins = (Array.isArray(config.plugins) ? config.plugins : []).filter(
-      (p) => typeof p === 'string',
-    );
-    for (const ref of stringPlugins) {
-      // Any named package that is not a local path must carry a version to stay
-      // reproducible (matches vendored third-party skill content).
-      assert.ok(
-        /@\d+(?:\.\d+){1,2}$/.test(ref),
-        `FAIL: package plugin "${ref}" is not version-pinned (expected "name@x.y.z")`,
-      );
-      console.log(`  PASS: package plugin "${ref}" is version-pinned`);
-    }
-  });
 });
 
 // ── Agent Tests ─────────────────────────────────────

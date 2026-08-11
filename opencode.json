@@ -8,8 +8,8 @@
       "template": "Run @reviewer on all changed files. Report all issues."
     },
     "clean": {
-      "description": "Refactor code to eliminate duplication",
-      "template": "Run @refactor on the codebase to find and eliminate duplicate code patterns."
+      "description": "Review then refactor duplicate code",
+      "template": "Run @reviewer on the codebase, then @refactor on the codebase to find and eliminate duplicate code patterns."
     },
     "research": {
       "description": "Research a topic using @researcher",

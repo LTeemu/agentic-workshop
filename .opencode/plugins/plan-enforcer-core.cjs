@@ -13,8 +13,6 @@
  * README in sync with this):
  *   - INVALID_SUBAGENT_TYPE: subagent/task tools must use a valid agent name
  *     (an agent file with mode: subagent, not disabled)
- *   - REFACTOR_REQUIRES_REVIEWER: a refactor subagent cannot be delegated
- *     before a reviewer subagent has run (review → refactor ordering)
  */
 
 const fs = require('fs');
@@ -25,14 +23,6 @@ const DEFAULT_SUBAGENT_TYPES = ['explore', 'researcher', 'reviewer', 'refactor']
 
 /** Tool names that delegate to a subagent (task is a V1 alias of subagent). */
 const DELEGATION_TOOLS = new Set(['subagent', 'task']);
-
-/**
- * Fallback key when a call carries no session identifier. The V2 tool hook
- * always supplies sessionID on execute.before, so this is only a defensive
- * arm; calls that reach it pool together (a reviewer in the pool un-does the
- * refactor gate for the pool).
- */
-const DEFAULT_SESSION = '__default__';
 
 /**
  * Matches YAML frontmatter delimited by --- lines.
@@ -71,7 +61,10 @@ function deriveValidSubagentTypes(agentFiles) {
 /**
  * Read an agents directory and derive the enabled subagent types
  * (mode: subagent, not disabled). Returns undefined when the directory
- * cannot be read — callers fall back to DEFAULT_SUBAGENT_TYPES.
+ * cannot be read OR yields no subagent types — callers fall back to
+ * DEFAULT_SUBAGENT_TYPES. An empty result is a misconfiguration, not a
+ * deliberate "no subagents" policy; degrading to the defaults keeps the
+ * workflow running instead of rejecting every delegation.
  */
 function loadValidSubagentTypes(agentsDir) {
   try {
@@ -82,7 +75,8 @@ function loadValidSubagentTypes(agentsDir) {
         name: path.basename(f, '.md'),
         content: fs.readFileSync(path.join(agentsDir, f), 'utf8'),
       }));
-    return deriveValidSubagentTypes(files);
+    const types = deriveValidSubagentTypes(files);
+    return types.length > 0 ? types : undefined;
   } catch {
     return undefined;
   }
@@ -95,31 +89,19 @@ function loadValidSubagentTypes(agentsDir) {
 function PlanEnforcer(options = {}) {
   const { validSubagentTypes = DEFAULT_SUBAGENT_TYPES } = options;
 
-  /** Sessions that have already had a reviewer run (satisfies the refactor gate). */
-  const reviewedSessions = new Set();
-
-  function handleDelegationTool(type, sessionID) {
+  function handleDelegationTool(type) {
     if (!validSubagentTypes.includes(type)) {
       throw new Error(`INVALID_SUBAGENT_TYPE: "${type}". Valid: ${validSubagentTypes.join(', ')}`);
-    }
-    if (type === 'reviewer') reviewedSessions.add(sessionID);
-    if (type === 'refactor' && !reviewedSessions.has(sessionID)) {
-      throw new Error(
-        'REFACTOR_REQUIRES_REVIEWER: Cannot delegate a refactor before a reviewer has ' +
-          'run in this session.\n' +
-          `  Pipeline requires review → refactor. Call subagent(agent="reviewer") first.`,
-      );
     }
     return { delegatedType: type };
   }
 
   function onToolExecuteBefore(input = {}, output = {}) {
     if (!DELEGATION_TOOLS.has(input.tool)) return undefined;
-    const sessionID = input.sessionID ?? output.sessionID ?? DEFAULT_SESSION;
     const args = output.args ?? input.args ?? {};
     const type = args.subagent_type ?? args.agent;
     if (!type) return undefined;
-    return handleDelegationTool(type, sessionID);
+    return handleDelegationTool(type);
   }
 
   return { onToolExecuteBefore };
