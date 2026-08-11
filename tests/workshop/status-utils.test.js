@@ -54,9 +54,11 @@ describe('reconcileStatus', () => {
     assert.strictEqual(reconcileStatus('running', 'running'), 'running');
   });
 
-  it('keeps error while the payload says running (liveness alert)', () => {
-    // A liveness-timeout red must not be wiped while the process is still up.
-    assert.strictEqual(reconcileStatus('error', 'running'), 'error');
+  it('recovers error to running once the payload confirms the process is alive', () => {
+    // A liveness-timeout red self-heals: the server keeps watching after the
+    // timeout and the payload confirms the process is still up, so the dot
+    // recovers instead of sticking red.
+    assert.strictEqual(reconcileStatus('error', 'running'), 'running');
   });
 
   it('downgrades running to stopped when the server confirms a stop', () => {

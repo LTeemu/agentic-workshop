@@ -26,8 +26,9 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const BACKUPS_DIR = path.join(ROOT, '_backups');
 
 const MAX_LOG_LINES = 500;
-const LIVENESS_TIMEOUT = 10000; // Max ms to wait for project to respond
+const LIVENESS_TIMEOUT = 30000; // Max ms to wait for project to respond (cold starts: first compile, deps, migrations)
 const LIVENESS_INTERVAL = 500; // Poll interval
+const RECOVERY_TIMEOUT = 60000; // How much longer to watch after a liveness timeout
 const GRACEFUL_TIMEOUT = 3000; // Max ms to wait for a child process to exit before force-kill
 
 const MIME = {
@@ -84,6 +85,32 @@ async function waitForLiveness(url, timeoutMs = LIVENESS_TIMEOUT, intervalMs = L
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   return false;
+}
+
+/**
+ * Keep polling after a liveness timeout: a slow cold start can still bind the
+ * port late. Broadcasts 'running' once the project finally responds, so a
+ * timed-out dot recovers to green instead of sticking red. Stops when the
+ * process exits or the recovery window expires.
+ * @param {string} name
+ * @param {string} url
+ * @param {() => boolean} isExited - true once the child process has exited
+ */
+async function watchLateLiveness(name, url, isExited) {
+  const start = Date.now();
+  while (!isExited() && Date.now() - start < RECOVERY_TIMEOUT) {
+    try {
+      const status = await httpGet(url);
+      if (status >= 200 && status < 500) {
+        pushLog(name, 'system', `Server is ready on ${url}`);
+        broadcastSSE({ type: 'project-status', project: name, status: 'running', url });
+        return;
+      }
+    } catch {
+      /* not ready yet */
+    }
+    await new Promise((r) => setTimeout(r, LIVENESS_INTERVAL));
+  }
 }
 
 /**
@@ -711,6 +738,9 @@ async function startProject(name, { autoStop = true } = {}) {
         } else {
           pushLog(name, 'system', `Server did not respond within timeout on ${url}`);
           broadcastSSE({ type: 'project-status', project: name, status: 'timeout', url });
+          // Keep watching: a late cold start may still come up. When it does,
+          // broadcast 'running' so the red dot recovers instead of sticking.
+          watchLateLiveness(name, url, () => processExited);
         }
       });
 

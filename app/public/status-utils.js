@@ -29,9 +29,11 @@
    * The payload can't distinguish a crash (red) from a clean stop (gray), so
    * SSE events stay authoritative while a project is alive — but once the
    * server confirms a project is stopped, transient alert states ('error',
-   * stale 'starting') resolve to gray instead of sticking forever; and a stale
+   * stale 'starting') resolve to gray instead of sticking forever; a stale
    * gray dot upgrades to 'running' once the payload confirms liveness (e.g.
-   * after an SSE reconnect blip).
+   * after an SSE reconnect blip); and a liveness-timeout red recovers to
+   * 'running' once the payload confirms the process is still alive (the
+   * server keeps watching and broadcasts the real 'running' when it responds).
    * @param {string|undefined} cur current dot status
    * @param {string} payload server-reported status (running/starting/stopped)
    */
@@ -44,6 +46,7 @@
     }
     if (cur === 'running' && payload === 'stopped') return 'stopped';
     if (cur === 'stopped' && payload === 'running') return 'running';
+    if (cur === 'error' && payload === 'running') return 'running';
     if (cur === 'error' && payload === 'stopped') return 'stopped';
     return cur;
   }

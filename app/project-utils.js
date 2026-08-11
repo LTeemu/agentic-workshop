@@ -46,6 +46,28 @@ function tryResolveBin(projectPath, script) {
 }
 
 /**
+ * Runs an npm command in the given project directory, streaming output to logs.
+ * @param {string} projectPath
+ * @param {string[]} args - npm arguments, e.g. ['install'] or ['run', 'build']
+ * @param {string} name - project name for log tagging
+ * @param {(name: string, stream: string, text: string) => void} logFn
+ * @param {string} label - command label for the error message, e.g. 'npm install'
+ * @returns {Promise<void>}
+ */
+function runNpmScript(projectPath, args, name, logFn, label) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('npm', args, { cwd: projectPath, stdio: 'pipe', shell: true });
+    child.stdout.on('data', (d) => logFn(name, 'stdout', d.toString()));
+    child.stderr.on('data', (d) => logFn(name, 'stderr', d.toString()));
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${label} exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
+/**
  * Runs `npm install` in the given project directory, streaming output to logs.
  * @param {string} projectPath
  * @param {string} name - project name for log tagging
@@ -53,16 +75,7 @@ function tryResolveBin(projectPath, script) {
  * @returns {Promise<void>}
  */
 function runNpmInstall(projectPath, name, logFn) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('npm', ['install'], { cwd: projectPath, stdio: 'pipe', shell: true });
-    child.stdout.on('data', (d) => logFn(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => logFn(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`npm install exited with code ${code}`));
-    });
-    child.on('error', reject);
-  });
+  return runNpmScript(projectPath, ['install'], name, logFn, 'npm install');
 }
 
 /**
@@ -73,16 +86,7 @@ function runNpmInstall(projectPath, name, logFn) {
  * @returns {Promise<void>}
  */
 function runNpmBuild(projectPath, name, logFn) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('npm', ['run', 'build'], { cwd: projectPath, stdio: 'pipe', shell: true });
-    child.stdout.on('data', (d) => logFn(name, 'stdout', d.toString()));
-    child.stderr.on('data', (d) => logFn(name, 'stderr', d.toString()));
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`npm run build exited with code ${code}`));
-    });
-    child.on('error', reject);
-  });
+  return runNpmScript(projectPath, ['run', 'build'], name, logFn, 'npm run build');
 }
 
 /**
