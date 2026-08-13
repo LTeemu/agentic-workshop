@@ -41,15 +41,14 @@ Clicking a story flies you **into the photograph**: the card artwork on the fron
 morphs into the article's hero image (View Transitions API shared element), and heading
 back flies you out of it again.
 
-Four styles, cycled with the `T` key or the mode button (top-right on desktop,
+Three styles, cycled with the `T` key or the mode button (top-right on desktop,
 under the date line on mobile):
 
 | Mode     | Effect                                               |
 | -------- | ---------------------------------------------------- |
 | `blinds` | Shutter: three vertical strips shut across (default) |
 | `wipe`   | Directional slide — follows your navigation flow     |
-| `slam`   | Old view drops back, new view punches in             |
-| `zoom`   | Camera push — the story artwork carries the travel   |
+| `drop`   | Old view drops back, new view drops in from below    |
 
 - Uses the **View Transitions API** where available, with a fallback shutter-curtain
   (Firefox) and instant swaps under `prefers-reduced-motion`.

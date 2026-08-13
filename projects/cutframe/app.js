@@ -11,7 +11,7 @@
   const modeBtns = Array.from(document.querySelectorAll('.modebox'));
   const modeLabels = Array.from(document.querySelectorAll('.modeLabel'));
 
-  const MODES = ['blinds', 'wipe', 'slam', 'zoom'];
+  const MODES = ['blinds', 'wipe', 'drop'];
   const STORE_KEY = 'cutframe-tx';
   const BASE_VIEWS = ['home', 'work', 'about', 'contact'];
 
@@ -68,9 +68,11 @@
   const isListing = (name) => name === 'home' || name === 'work';
 
   let last = null;
+  let hopFrom = null;
   let mode = 0;
   let navToken = 0;
   let sharedEl = null;
+  let sharedCard = null;
 
   function storeGet(key) {
     try {
@@ -127,38 +129,70 @@
     return document.querySelector(`.view[data-view="${viewName}"] [data-shared="${articleName}"]`);
   }
 
+  /** The framed figure wrapping a morph target — or the element itself. */
+  function asFigure(el) {
+    return el && (el.closest('figure') || el);
+  }
+
+  /** Center the fly-back morph target in the viewport. Runs after the view
+      toggle (so the card has layout) and before the new snapshot, so the
+      snapshot and the live page agree when the transition lands. */
+  function centerFlyBackCard(name) {
+    const fig = asFigure(cardShare(name, hopFrom));
+    if (!fig) return;
+    const box = fig.getBoundingClientRect();
+    window.scrollTo({ top: box.top - (innerHeight - box.height) / 2, behavior: 'instant' });
+  }
+
   /**
-   * Tag the story artwork frame that should morph across the transition so
+   * Tag the story artwork frames that should morph across the transition so
    * the reader flies INTO the framed picture (listing → article) and back
-   * OUT of it (article → listing). The shared element is the whole figure —
-   * border and all — so the frame travels with the artwork. Article-to-
-   * article hops morph hero to hero, which the CSS name on .hero-fig
-   * provides on its own.
+   * OUT of it (article → listing). The shared elements are the whole
+   * figures — border and all — so the frame travels with the artwork.
+   * Article-to-article hops get no morph partner, so the incoming hero
+   * flies in from the right instead (no off-screen start position).
    */
+  /** Name an element as shared transition artwork — returns it for tracking. */
+  function nameShared(el) {
+    el.style.viewTransitionName = 'article-cover';
+    return el;
+  }
+
   function armShared(target, source) {
     disarmShared();
-    let el = null;
-    if (isArticle(target) && isListing(source)) el = cardShare(source, target);
-    else if (isListing(target) && isArticle(source)) el = cardShare(target, source);
-    if (el) {
-      const frame = el.closest('figure') || el;
-      frame.style.viewTransitionName = 'article-cover';
-      sharedEl = frame;
-    }
+    if (!(isListing(target) || isListing(source))) return;
+    const heroName = isArticle(target) ? target : source;
+    const hero = document.querySelector(`.view[data-view="${heroName}"] .hero-fig`);
+    if (hero) sharedEl = nameShared(hero);
+    const listName = isListing(target) ? target : source;
+    const card = cardShare(listName, heroName);
+    if (card) sharedCard = nameShared(asFigure(card));
   }
 
   function disarmShared() {
-    if (sharedEl) {
-      sharedEl.style.removeProperty('view-transition-name');
-      sharedEl = null;
-    }
+    [sharedEl, sharedCard].forEach((el) => {
+      if (el) el.style.removeProperty('view-transition-name');
+    });
+    sharedEl = null;
+    sharedCard = null;
   }
 
   function activate(name, opts = {}) {
     const view = views.find((v) => v.dataset.view === name);
     if (!view) return false;
 
+    // New page: starts at the top of the paper. Runs for link clicks,
+    // back/forward and the fallback curtain alike; 'instant' overrides the
+    // global smooth scroll-behavior. The view-transition snapshot of the
+    // old page keeps its own scroll position, so the jump isn't visible.
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
     views.forEach((v) => v.classList.toggle('is-active', v === view));
+
+    // Flying back from a story, settle with the morph target centered
+    // instead of at the top; articles absent from the front page fall
+    // back to the top via the reset above.
+    if (isListing(name) && hopFrom && !isListing(hopFrom)) centerFlyBackCard(name);
     navLinks.forEach((a) =>
       a.classList.toggle('active', a.getAttribute('href') === canonicalPath(name)),
     );
@@ -245,6 +279,7 @@
   function go(name) {
     if (name === last) return;
     const dir = viewOrder.indexOf(name) >= viewOrder.indexOf(last) ? 'fwd' : 'back';
+    hopFrom = last;
     armShared(name, last);
     last = name;
     navigate(name, dir).catch(() => activate(name));
@@ -317,6 +352,10 @@
 
   splitChars();
   initMode();
+
+  // Every page change starts at the top of the paper — don't let the
+  // browser restore the previous scroll on back/forward either.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
   const initial = currentName();
   last = initial;

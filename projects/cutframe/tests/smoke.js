@@ -85,6 +85,11 @@ assert.ok(js.includes('focus: true'), 'app.js must hand focus to the new view he
 assert.ok(js.includes('navToken'), 'app.js must guard against overlapping fallback navigation');
 assert.ok(js.includes('history.pushState'), 'app.js must navigate with pushState');
 assert.ok(js.includes('popstate'), 'app.js must handle back/forward via popstate');
+assert.ok(js.includes('scrollRestoration'), 'app.js must control history scroll restoration');
+assert.ok(
+  js.includes("window.scrollTo({ top: 0, behavior: 'instant' })"),
+  'app.js must top the scroll on page change',
+);
 assert.ok(
   js.includes("history.replaceState(null, '', canonicalPath(initial))"),
   'app.js must normalize unknown paths on boot',
@@ -92,12 +97,26 @@ assert.ok(
 assert.ok(js.includes('startViewTransition'), 'app.js must use the View Transitions API');
 assert.ok(js.includes('localStorage'), 'app.js must persist the chosen mode');
 
-// The shared-artwork zoom ("fly into the image") must be wired
+// The shared-artwork fly-in ("into the photograph") must be wired
 assert.ok(
-  css.includes('view-transition-name: article-cover'),
-  'CSS must name the article artwork for the shared-element morph',
+  js.includes("viewTransitionName = 'article-cover'"),
+  'app.js must name the shared artwork frames per hop',
 );
 assert.ok(js.includes('armShared'), 'app.js must arm the shared artwork per navigation');
+assert.ok(js.includes('hopFrom'), 'app.js must track the hop origin to center the fly-back card');
+assert.ok(js.includes('asFigure'), 'app.js must resolve morph targets to their frame');
+assert.ok(
+  js.includes('(innerHeight - box.height) / 2'),
+  'app.js must center the fly-back card in the viewport',
+);
+assert.ok(
+  js.includes('!(isListing(target) || isListing(source))'),
+  'story-to-story hops must not arm a shared morph',
+);
+assert.ok(
+  !/\.hero-fig\s*\{[^}]*view-transition-name/.test(css),
+  'the hero must not carry a permanent morph name',
+);
 for (const [slug, art] of Object.entries({
   'night-drive': 'night-drive',
   'pulse-noise': 'pulse-noise',

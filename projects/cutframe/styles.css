@@ -803,9 +803,10 @@ body::after {
 }
 
 .hero-fig {
+  /* The shared-morph name (article-cover) is armed per hop in JS, and only
+     for listing hops — story-to-story navigation must not morph from an
+     off-screen hero. */
   max-width: 900px;
-  /* The whole framed picture (border included) morphs to/from the card */
-  view-transition-name: article-cover;
 }
 
 .hero-caption {
@@ -954,35 +955,6 @@ body::after {
   }
 }
 
-/* zoom — a camera dolly through the frame: the old view is pulled in
-   (scale-up, easing in), the new view starts at the same zoom and
-   settles back down. The shared artwork carries the travel between them. */
-html[data-tx^='zoom'] {
-  --tx-old: vt-old-zoom;
-  --tx-new: vt-new-zoom;
-}
-html[data-tx^='zoom'] ::view-transition-old(root) {
-  /* keep the accelerating camera push, ride the shared 340ms old-view clock */
-  animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
-}
-@keyframes vt-old-zoom {
-  to {
-    transform: scale(1.4);
-    opacity: 0.15;
-  }
-}
-@keyframes vt-new-zoom {
-  from {
-    /* Opaque throughout: a translucent moving raster would double-render
-       against the static live page (sidebar "disconnect" ghost). */
-    transform: scale(1.4);
-  }
-  80% {
-    /* Reach exact identity early and hold — no sub-pixel pop on drop. */
-    transform: scale(1);
-  }
-}
-
 /* Shared artwork: the card and hero morph into each other, so clicking a
    story feels like flying into the photograph (and back out of it).
    The morph ends exactly when the incoming page settles: 100ms delay +
@@ -1010,6 +982,11 @@ html[data-tx='wipe-fwd'] {
 html[data-tx='wipe-back'] {
   --tx-old: vt-old-pan-back;
   --tx-new: vt-new-wipe-back;
+}
+html[data-tx^='wipe'] ::view-transition-new(root) {
+  /* Like a drawer closing with over-travel: the slide carries a few
+     percent past the seam, then settles back into place. */
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.25, 1.15);
 }
 @keyframes vt-old-pan-fwd {
   to {
@@ -1044,25 +1021,47 @@ html[data-tx='wipe-back'] {
   }
 }
 
-/* slam — old falls back, new punches in */
-html[data-tx^='slam'] {
-  --tx-old: vt-old-slam;
-  --tx-new: vt-new-slam;
+/* drop — old falls back; the new view winds up below the fold, then
+   throws — accelerating into a dead stop. Opaque, no fade, just force.
+   Runs on its own compressed clock (80ms + 480ms) so the whole drop
+   lands ~100ms sooner than the other modes. */
+html[data-tx^='drop'] {
+  --tx-old: vt-old-drop;
+  --tx-new: vt-new-drop;
 }
-@keyframes vt-old-slam {
+html[data-tx^='drop'] ::view-transition-new(root) {
+  animation-delay: 80ms;
+  animation-duration: 480ms;
+}
+html[data-tx^='drop'] ::view-transition-group(article-cover),
+html[data-tx^='drop'] ::view-transition-image-pair(article-cover),
+html[data-tx^='drop'] ::view-transition-old(article-cover),
+html[data-tx^='drop'] ::view-transition-new(article-cover) {
+  /* Keep the framed artwork landing on the same beat as the drop. */
+  animation-duration: 560ms;
+}
+@keyframes vt-old-drop {
   to {
     transform: scale(0.97) translateY(-2%);
     opacity: 0.35;
   }
 }
-@keyframes vt-new-slam {
+@keyframes vt-new-drop {
   from {
-    transform: translateY(24%) scale(0.99);
-    opacity: 0.3;
+    /* Wind-up: circular ease-out — a long smooth glide that settles
+       into the coil, no snap before the throw. */
+    transform: translateY(100%);
+    animation-timing-function: cubic-bezier(0.075, 0.82, 0.165, 1);
+  }
+  22% {
+    /* ...then throw: circular ease-in-out — quick off the coil, a round
+       cruise through the middle, then a hard whip into the impact. */
+    transform: translateY(103%);
+    animation-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
   80% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
+    /* Exact identity early and held — the drop lands dead. */
+    transform: translateY(0);
   }
 }
 
