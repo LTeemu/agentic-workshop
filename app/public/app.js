@@ -1299,6 +1299,7 @@ const deviceWidthInput = document.getElementById('device-width');
 const deviceHeightInput = document.getElementById('device-height');
 const deviceRotate = document.getElementById('device-rotate');
 const deviceSize = document.getElementById('device-size');
+const deviceScale = document.getElementById('device-scale');
 const DEVICE_STATE_KEY = 'workshop-device-state';
 const CUSTOM_PAD = 24;
 const {
@@ -1328,6 +1329,14 @@ function persistDeviceState() {
   localStorage.setItem(DEVICE_STATE_KEY, JSON.stringify(deviceState));
 }
 
+// Fit renders the iframe at 100% of the frame; preset and custom set a
+// design-pixel size plus a zoom transform.
+function clearPreviewInlineStyles() {
+  previewFrame.style.width = '';
+  previewFrame.style.height = '';
+  previewFrame.style.transform = '';
+}
+
 function applyDeviceView() {
   const { mode } = deviceState;
   const emulated = mode !== 'fit';
@@ -1344,11 +1353,12 @@ function applyDeviceView() {
     const orient = btn.dataset.preset === mode ? deviceState.orientation : 'portrait';
     const dims = orient === 'landscape' ? { width: preset.height, height: preset.width } : preset;
     const label = btn.dataset.preset[0].toUpperCase() + btn.dataset.preset.slice(1);
-    btn.title = `${label} — locked to ${ratioLabel(dims.width, dims.height)}. Portrait fills height, landscape fills width. Scales 50-100%.`;
+    btn.title = `${label} — content at real device pixels (${dims.width}×${dims.height}); the % badge shows the current fit zoom.`;
   }
   if (!emulated) {
     deviceFrame.style.width = '';
     deviceFrame.style.height = '';
+    clearPreviewInlineStyles();
     deviceWidthInput.disabled = true;
     deviceHeightInput.disabled = true;
     deviceWidthInput.value = '';
@@ -1356,11 +1366,13 @@ function applyDeviceView() {
     // Hovering the disabled inputs falls through to the span; explain that
     // Fit is the no-size mode and Custom is where sizing happens.
     deviceSize.title = 'Fit fills the preview pane — use Custom to change size.';
+    deviceScale.classList.add('hidden');
     return;
   }
   if (presetMode) {
-    // Locked-ratio modes: inputs show the fixed device size; the rendered
-    // size is derived from the preset ratio and the fill factor instead.
+    // Locked-ratio modes: inputs show the fixed device size; the iframe
+    // renders at real device CSS pixels and is zoomed to fit the pane, so
+    // media queries and rem/px units resolve like they would on the device.
     const base = presetBase(deviceState);
     deviceWidthInput.value = base.width;
     deviceHeightInput.value = base.height;
@@ -1374,14 +1386,30 @@ function applyDeviceView() {
     const size = emulatedSize(deviceState, rect.width, rect.height);
     deviceFrame.style.width = size.width + 'px';
     deviceFrame.style.height = size.height + 'px';
+    previewFrame.style.width = base.width + 'px';
+    previewFrame.style.height = base.height + 'px';
+    previewFrame.style.transform = 'scale(' + size.scale + ')';
+    // Show the effective zoom: content renders at real device pixels, but is
+    // displayed at this scale to fit the pane (devtools shows the same).
+    deviceScale.textContent = Math.round(size.scale * 100) + '%';
+    deviceScale.classList.remove('hidden');
   } else {
+    // Custom: inputs are the design size; the iframe renders at that size and
+    // is zoomed down (fit-if-needed) so it never overflows the pane.
     deviceWidthInput.value = deviceState.width;
     deviceHeightInput.value = deviceState.height;
     deviceWidthInput.disabled = false;
     deviceHeightInput.disabled = false;
     deviceSize.title = '';
-    deviceFrame.style.width = deviceState.width + 'px';
-    deviceFrame.style.height = deviceState.height + 'px';
+    const rect = frameContainer.getBoundingClientRect();
+    const size = emulatedSize(deviceState, rect.width, rect.height);
+    deviceFrame.style.width = size.width + 'px';
+    deviceFrame.style.height = size.height + 'px';
+    previewFrame.style.width = deviceState.width + 'px';
+    previewFrame.style.height = deviceState.height + 'px';
+    previewFrame.style.transform = 'scale(' + size.scale + ')';
+    deviceScale.textContent = Math.round(size.scale * 100) + '%';
+    deviceScale.classList.remove('hidden');
   }
 }
 
@@ -1458,11 +1486,20 @@ function moveDeviceDrag(e) {
   const dx = e.clientX - drag.startX;
   const dy = e.clientY - drag.startY;
   if (drag.mode === 'custom') {
-    if (drag.edge !== 's') deviceState.width = clampDimension(drag.width + dx);
-    if (drag.edge !== 'e') deviceState.height = clampDimension(drag.height + dy);
-  } else {
+    // The visual edge tracks the pointer while the zoom is constant; once the
+    // frame exceeds the pane the edge pins at the pane edge while the design
+    // size and % badge keep updating (devtools-style cap at the viewport).
     const rect = frameContainer.getBoundingClientRect();
-    const axis = drag.orientation === 'landscape' ? rect.width : rect.height;
+    const fitted = emulatedSize(drag, rect.width, rect.height);
+    const inv = fitted.scale || 1;
+    if (drag.edge !== 's') deviceState.width = clampDimension(drag.width + dx / inv);
+    if (drag.edge !== 'e') deviceState.height = clampDimension(drag.height + dy / inv);
+  } else {
+    // The on-screen frame axis at fill=1 (contain-fit), so the handle tracks
+    // the pointer 1:1 even when the pane limits on the other axis.
+    const rect = frameContainer.getBoundingClientRect();
+    const fitted = emulatedSize({ ...drag, fill: 1 }, rect.width, rect.height);
+    const axis = drag.orientation === 'landscape' ? fitted.width : fitted.height;
     const delta = drag.orientation === 'landscape' ? dx : dy;
     deviceState.fill = clampFill(drag.fill + delta / (axis || 1));
   }

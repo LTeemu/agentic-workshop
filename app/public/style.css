@@ -1384,6 +1384,9 @@ html.startup #sidebar * {
   height: 100%;
   border: none;
   background: #0d1117;
+  /* Preset/custom emulation zooms the iframe from its top-left corner;
+     harmless when no transform is applied (fit only). */
+  transform-origin: top left;
 }
 
 /* ── Device Emulation ── */
@@ -1465,6 +1468,11 @@ html.startup #sidebar * {
   pointer-events: none;
 }
 
+/* Inherits size/color from #device-size; only the separator is its own. */
+#device-scale::before {
+  content: '· ';
+}
+
 /* The cursor must live here: the disabled inputs themselves never get
    hovered. The rotate button keeps its own cursor when hovered directly. */
 #device-size:has(input:disabled) {
@@ -1477,47 +1485,69 @@ html.startup #sidebar * {
   height: 100%;
 }
 
+/* No container scrollbars anywhere: presets and custom both contain-fit, so
+   the emulated frame never overflows the pane — the device's own iframe
+   scrollbars are the only scrollbars shown. */
 #preview-frame-container.emulated {
-  overflow: auto;
+  overflow: hidden;
 }
 
-/* margin:auto centers the frame when it fits and keeps the start edge
-   reachable when it overflows (flex centering would clip the start). */
+/* Flex + auto margins center the device on both axes when it fits and keep
+   the start edge reachable when it overflows (align-items centering would
+   clip the start; auto margins don't). */
+#preview-frame-container.emulated {
+  display: flex;
+}
+
 #preview-frame-container.emulated #device-frame {
+  /* flex-shrink:0 keeps the frame at its computed size (never squished by
+     flex); auto margins center it when it fits. The 1px box-shadow is a
+     device bezel so the outside-mounted grips below read as attached to the
+     device rather than floating in the pane. */
   margin: auto;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px #30363d;
 }
 
 #device-handles {
   position: absolute;
   inset: 0;
   z-index: 2;
+  /* Transparent to the pointer: wheel/click pass through to the iframe, so
+     the app scrolls itself and only the edge strips (pointer-events: auto)
+     capture drags. */
+  pointer-events: none;
 }
 
 .device-handle {
   position: absolute;
+  pointer-events: auto;
 }
 
+/* Grips mount OUTSIDE the screen edge so they never cover the app's own
+   scrollbars (which hug the iframe's right/bottom edges) — the thumbs stay
+   visible and draggable. */
 .device-handle[data-edge='e'] {
   top: 0;
   bottom: 0;
-  right: -5px;
-  width: 10px;
+  right: -8px;
+  width: 8px;
   cursor: ew-resize;
 }
 
 .device-handle[data-edge='s'] {
   left: 0;
   right: 0;
-  bottom: -5px;
-  height: 10px;
+  bottom: -8px;
+  height: 8px;
   cursor: ns-resize;
 }
 
 .device-handle[data-edge='se'] {
-  right: -5px;
-  bottom: -5px;
-  width: 16px;
-  height: 16px;
+  right: -8px;
+  bottom: -8px;
+  width: 8px;
+  height: 8px;
   cursor: nwse-resize;
 }
 

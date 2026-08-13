@@ -100,7 +100,7 @@
                   type="button"
                   class="device-preset"
                   data-preset="phone"
-                  title="Phone — locked aspect; portrait fills height, landscape fills width; 50-100% scale"
+                  title="Phone — content at real device pixels, zoomed to fit the pane"
                 >
                   Phone
                 </button>
@@ -108,7 +108,7 @@
                   type="button"
                   class="device-preset"
                   data-preset="tablet"
-                  title="Tablet — locked aspect; portrait fills height, landscape fills width; 50-100% scale"
+                  title="Tablet — content at real device pixels, zoomed to fit the pane"
                 >
                   Tablet
                 </button>
@@ -146,6 +146,7 @@
                   aria-label="Resize preview height"
                 />
                 <span aria-hidden="true">px</span>
+                <span id="device-scale" class="hidden"></span>
               </span>
             </div>
             <div id="log-panel" class="collapsed">

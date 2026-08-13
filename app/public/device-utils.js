@@ -13,13 +13,15 @@
   'use strict';
 
   const DEVICE_PRESETS = {
-    phone: { width: 390, height: 844 },
-    tablet: { width: 820, height: 1180 },
+    // Match Chrome DevTools' device list: iPhone SE (smallest phone) and
+    // iPad mini (smallest tablet).
+    phone: { width: 375, height: 667 },
+    tablet: { width: 768, height: 1024 },
   };
 
   const MIN_DEVICE_SIZE = 200;
   const MAX_DEVICE_SIZE = 4096;
-  const MIN_FILL = 0.5; // presets stay between 100% and half of the fill axis
+  const MIN_FILL = 0.5; // presets zoom between fully fitted and half of the fit
 
   /** Clamp a dimension to the allowed device-size range. */
   function clampDimension(value) {
@@ -76,33 +78,36 @@
   }
 
   /**
-   * Resolve the emulated frame size for a state against a container.
+   * Resolve the emulated frame layout for a state against a container.
    * - fit: null (frame fills the pane via CSS).
-   * - custom: the stored pixel size, unchanged by the container.
-   * - presets: lock the device aspect ratio. Portrait fills the container
-   *   height, landscape fills the width, scaled by the fill factor.
-   * A hidden/degenerate container reports the unscaled base size.
+   * - custom: the stored pixel size at true scale while it fits; zoomed down
+   *   to contain the pane only when it would overflow (the emulator never
+   *   scrolls — custom's px are a design size).
+   * - presets: render content at the real device CSS-pixel size, then zoom it
+   *   by `scale` so the device fits inside the container (contain), further
+   *   reduced by the fill factor. The returned width/height is the on-screen
+   *   size of the frame; callers apply `scale` to the device-sized content.
+   * A hidden/degenerate container reports the base size at scale 1.
+   * Return shapes: null for fit; { width, height, scale } for custom and
+   * presets (scale is the zoom applied to the design pixels).
    */
   function emulatedSize(state, containerWidth, containerHeight) {
     if (state.mode === 'fit') return null;
-    if (state.mode === 'custom') return { width: state.width, height: state.height };
-    const base = presetBase(state);
-    if (
+    const degenerate =
       !Number.isFinite(containerWidth) ||
       !Number.isFinite(containerHeight) ||
       containerWidth <= 0 ||
-      containerHeight <= 0
-    ) {
-      return { width: base.width, height: base.height };
+      containerHeight <= 0;
+    if (state.mode === 'custom') {
+      if (degenerate) return { width: state.width, height: state.height, scale: 1 };
+      const scale = Math.min(1, containerWidth / state.width, containerHeight / state.height);
+      return { width: state.width * scale, height: state.height * scale, scale };
     }
+    const base = presetBase(state);
+    if (degenerate) return { width: base.width, height: base.height, scale: 1 };
     const fill = clampFill(state.fill);
-    const aspect = base.width / base.height;
-    if (state.orientation === 'landscape') {
-      const width = containerWidth * fill;
-      return { width, height: width / aspect };
-    }
-    const height = containerHeight * fill;
-    return { width: height * aspect, height };
+    const scale = Math.min(containerWidth / base.width, containerHeight / base.height) * fill;
+    return { width: base.width * scale, height: base.height * scale, scale };
   }
 
   /**

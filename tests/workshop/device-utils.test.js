@@ -16,6 +16,9 @@ const {
   ratioLabel,
 } = require('../../app/public/device-utils');
 
+const phone = DEVICE_PRESETS.phone;
+const tablet = DEVICE_PRESETS.tablet;
+
 describe('clampDimension', () => {
   it('passes in-range values through', () => {
     assert.strictEqual(clampDimension(500), 500);
@@ -110,15 +113,15 @@ describe('normalizeState', () => {
 describe('presetBase', () => {
   it('returns portrait dimensions by default', () => {
     assert.deepStrictEqual(presetBase({ mode: 'phone', orientation: 'portrait' }), {
-      width: 390,
-      height: 844,
+      width: phone.width,
+      height: phone.height,
     });
   });
 
   it('swaps dimensions in landscape', () => {
     assert.deepStrictEqual(presetBase({ mode: 'phone', orientation: 'landscape' }), {
-      width: 844,
-      height: 390,
+      width: phone.height,
+      height: phone.width,
     });
   });
 });
@@ -128,33 +131,84 @@ describe('emulatedSize', () => {
     assert.strictEqual(emulatedSize({ mode: 'fit' }, 800, 600), null);
   });
 
-  it('returns stored pixel size for custom', () => {
+  it('keeps custom at true size while it fits', () => {
     assert.deepStrictEqual(emulatedSize({ mode: 'custom', width: 640, height: 480 }, 800, 600), {
       width: 640,
       height: 480,
+      scale: 1,
     });
   });
 
-  it('fills container height for portrait presets', () => {
+  it('zooms custom down to contain the pane when it exceeds it', () => {
+    assert.deepStrictEqual(emulatedSize({ mode: 'custom', width: 640, height: 480 }, 320, 240), {
+      width: 320,
+      height: 240,
+      scale: 0.5,
+    });
+    // Width-limited contain: height follows the ratio.
+    const narrow = emulatedSize({ mode: 'custom', width: 640, height: 480 }, 320, 400);
+    assert.ok(Math.abs(narrow.scale - 0.5) < 1e-9);
+    assert.ok(Math.abs(narrow.width - 320) < 1e-9);
+    assert.ok(Math.abs(narrow.height - 240) < 1e-9);
+  });
+
+  it('reports custom at scale 1 for a degenerate container', () => {
+    assert.deepStrictEqual(emulatedSize({ mode: 'custom', width: 640, height: 480 }, 0, 0), {
+      width: 640,
+      height: 480,
+      scale: 1,
+    });
+  });
+
+  it('contains custom by height when the pane is short', () => {
+    const size = emulatedSize({ mode: 'custom', width: 640, height: 480 }, 800, 200);
+    assert.ok(Math.abs(size.scale - 200 / 480) < 1e-9);
+    assert.ok(Math.abs(size.height - 200) < 1e-9);
+    assert.ok(Math.abs(size.width - (200 * 640) / 480) < 1e-9);
+  });
+
+  it('zooms portrait presets to fill container height', () => {
     const size = emulatedSize({ mode: 'phone', orientation: 'portrait', fill: 1 }, 800, 600);
-    assert.strictEqual(size.height, 600);
-    assert.ok(Math.abs(size.width - (600 * 390) / 844) < 1e-9);
+    assert.ok(Math.abs(size.height - 600) < 1e-9);
+    assert.ok(Math.abs(size.width - (600 * phone.width) / phone.height) < 1e-9);
+    assert.ok(Math.abs(size.scale - 600 / phone.height) < 1e-9);
   });
 
-  it('fills container width for landscape presets', () => {
+  it('zooms landscape presets to fill container width', () => {
+    // Landscape swaps the base to {width: tablet.height, height: tablet.width}.
     const size = emulatedSize({ mode: 'tablet', orientation: 'landscape', fill: 1 }, 800, 600);
-    assert.strictEqual(size.width, 800);
-    assert.ok(Math.abs(size.height - (800 * 820) / 1180) < 1e-9);
+    assert.ok(Math.abs(size.width - 800) < 1e-9);
+    assert.ok(Math.abs(size.height - (800 * tablet.width) / tablet.height) < 1e-9);
+    assert.ok(Math.abs(size.scale - 800 / tablet.height) < 1e-9);
   });
 
-  it('scales the fill axis by the fill factor', () => {
+  it('scales the zoom by the fill factor', () => {
     const size = emulatedSize({ mode: 'phone', orientation: 'portrait', fill: 0.5 }, 800, 600);
-    assert.strictEqual(size.height, 300);
+    assert.ok(Math.abs(size.height - 300) < 1e-9);
+    assert.ok(Math.abs(size.scale - (0.5 * 600) / phone.height) < 1e-9);
   });
 
-  it('reports the base size for a degenerate container', () => {
+  it('contains the device when the pane is narrower than its ratio', () => {
+    // The old fit-by-axis code overflowed here (height 800, width ~450);
+    // contain keeps the whole device visible.
+    const size = emulatedSize({ mode: 'phone', orientation: 'portrait', fill: 1 }, 300, 800);
+    assert.ok(Math.abs(size.width - 300) < 1e-9);
+    assert.ok(Math.abs(size.height - (300 * phone.height) / phone.width) < 1e-9);
+    assert.ok(size.width <= 300 && size.height <= 800);
+  });
+
+  it('contains landscape presets in a short pane', () => {
+    // Symmetric case: the old code filled the width (1200) and overflowed
+    // the 500px-tall pane; contain fits the height instead.
+    const size = emulatedSize({ mode: 'tablet', orientation: 'landscape', fill: 1 }, 1200, 500);
+    assert.ok(Math.abs(size.height - 500) < 1e-9);
+    assert.ok(Math.abs(size.width - (500 * tablet.height) / tablet.width) < 1e-9);
+    assert.ok(size.width <= 1200 && size.height <= 500);
+  });
+
+  it('reports the base size at scale 1 for a degenerate container', () => {
     const size = emulatedSize({ mode: 'phone', orientation: 'portrait', fill: 1 }, 0, -5);
-    assert.deepStrictEqual(size, { width: 390, height: 844 });
+    assert.deepStrictEqual(size, { width: phone.width, height: phone.height, scale: 1 });
   });
 });
 
