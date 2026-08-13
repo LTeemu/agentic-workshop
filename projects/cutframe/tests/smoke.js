@@ -26,6 +26,11 @@ const VIEWS = [
   'pulse-noise',
   'the-meridian',
   'static-bloom',
+  'chorus-line',
+  'last-print',
+  'reel-to-reel',
+  'the-courier',
+  'tide-line',
 ];
 
 assert.doesNotThrow(() => new Function(js), 'app.js must compile');
@@ -98,6 +103,11 @@ for (const [slug, art] of Object.entries({
   'pulse-noise': 'pulse-noise',
   'the-meridian': 'meridian',
   'static-bloom': 'static-bloom',
+  'chorus-line': 'chorus-line',
+  'last-print': 'last-print',
+  'reel-to-reel': 'reel-to-reel',
+  'the-courier': 'the-courier',
+  'tide-line': 'tide-line',
 })) {
   assert.ok(
     html.includes(`data-shared="${slug}"`),
@@ -108,6 +118,8 @@ for (const [slug, art] of Object.entries({
 assert.ok(
   new RegExp('class="art hero-svg"').test(html) &&
     (html.match(/class="art hero-svg"/g) || []).length >= 4,
+  // .hero-svg is a deliberate marker class (no CSS): the smoke test's hook
+  // for asserting every article has a morph-able hero artwork.
   'every article must have a hero artwork to morph to',
 );
 

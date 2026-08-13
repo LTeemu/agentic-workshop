@@ -29,6 +29,11 @@ SPA-fallback flag (as in `npx serve --single`).
 | `/pulse-noise`  | Article — Pulse / Noise (music video)      |
 | `/the-meridian` | Article — Meridian (brand film)            |
 | `/static-bloom` | Article — Static Bloom (short)             |
+| `/chorus-line`  | Article — Chorus Line (music video)        |
+| `/last-print`   | Article — Last Print (short)               |
+| `/reel-to-reel` | Article — Reel to Reel (brand film)        |
+| `/the-courier`  | Article — The Courier (short)              |
+| `/tide-line`    | Article — Tide Line (film)                 |
 
 ## Transitions
 

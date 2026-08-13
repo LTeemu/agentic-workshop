@@ -18,6 +18,7 @@
     serif;
   --font-mono: 'JetBrains Mono', 'Cascadia Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --nope: #d33f2f; /* the fake form's "no" state */
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
@@ -26,6 +27,9 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --strip-h: 44px;
+  /* One shared reveal clock: old view 340ms, new view 560ms + 100ms delay;
+     the shared artwork morph lands on the same beat (see .article-cover). */
+  --tx-cover-dur: 660ms;
 }
 
 * {
@@ -295,26 +299,34 @@ body::after {
 }
 
 .front-grid {
-  display: grid;
-  grid-template-columns: 7fr 5fr;
-  gap: var(--space-10) clamp(var(--space-6), 4vw, var(--space-12));
+  /* Masonry via CSS multi-column: the story cards balance into a staggered
+     two-column stack. The lead, sidebar and footer rows span both. */
+  column-count: 2;
+  column-gap: clamp(var(--space-6), 4vw, var(--space-12));
 }
-
-.front-col.stack {
-  display: grid;
-  gap: var(--space-10);
-  align-content: start;
+.front-grid > article {
+  break-inside: avoid;
+  margin: 0 0 var(--space-10);
+}
+/* The last story's bottom margin is multicol-flaky (trailing margin of a
+   balanced column) — the sidebar's own margins carry both gaps instead. */
+.front-grid > article:last-of-type {
+  margin-bottom: 0;
+}
+.front-col.lead,
+.front-col.side,
+.front-col.more {
+  column-span: all;
 }
 
 .front-col.side {
-  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-6);
+  margin: var(--space-10) 0;
 }
 
 .front-col.more {
-  grid-column: 1 / -1;
   text-align: center;
   border-top: 2px solid var(--ink);
   padding-top: var(--space-6);
@@ -347,18 +359,36 @@ body::after {
   text-decoration: none;
 }
 
-.card-fig {
+.card-fig,
+.index-fig,
+.hero-fig {
   margin: 0;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border: 1px solid var(--ink);
-  background: var(--ink);
+  background: var(--paper); /* the shared morph target: identical framed boxes */
+}
+.card-fig {
+  position: relative; /* for the crisp ::after frame overlay */
+}
+/* The ink frame is drawn above the artwork: the hover-zoom's antialiased
+   edge would otherwise bleed across the border while scaling. */
+.card-fig::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ink);
+  pointer-events: none;
 }
 
-.card-fig .art {
+.card-fig .art,
+.index-fig .art,
+.hero-fig .art {
   width: 100%;
   height: 100%;
   display: block;
+}
+.card-fig .art {
   transition: transform 520ms var(--ease-out);
 }
 
@@ -514,18 +544,6 @@ body::after {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   color: var(--muted);
-}
-
-.index-fig {
-  margin: 0;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border: 1px solid var(--ink);
-}
-.index-fig .art {
-  width: 100%;
-  height: 100%;
-  display: block;
 }
 
 .index-name {
@@ -708,13 +726,36 @@ body::after {
   cursor: pointer;
   transition: background 180ms ease;
 }
-.form-send:hover:not(:disabled) {
+.form-send:hover {
   background: var(--orange);
   border-color: var(--orange);
 }
-.form-send:disabled {
-  opacity: 0.55;
-  cursor: default;
+.form-send.is-nope {
+  background: var(--nope);
+  border-color: var(--nope);
+  color: var(--paper);
+}
+.nope-finger {
+  display: inline-block;
+  animation: nope-shake 420ms var(--ease-out);
+}
+@keyframes nope-shake {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-16deg);
+  }
+  40% {
+    transform: rotate(12deg);
+  }
+  60% {
+    transform: rotate(-10deg);
+  }
+  80% {
+    transform: rotate(6deg);
+  }
 }
 
 /* ============ Article pages ============ */
@@ -762,32 +803,19 @@ body::after {
 }
 
 .hero-fig {
-  margin: 0 0 var(--space-6);
   max-width: 900px;
-  border: 1px solid var(--ink);
-  background: var(--ink);
-}
-.hero-fig .art {
-  width: 100%;
-  height: 100%;
-  display: block;
-  aspect-ratio: 4 / 3;
-}
-
-/* The hero artwork morphs to/from the front-page card artwork */
-.hero-svg {
+  /* The whole framed picture (border included) morphs to/from the card */
   view-transition-name: article-cover;
 }
 
-.hero-fig figcaption {
+.hero-caption {
+  margin: 0 0 var(--space-6);
+  padding-top: 0.45rem;
   font-family: var(--font-mono);
   font-size: 0.66rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
-  background: var(--paper);
-  padding: 0.5rem 0.4rem;
-  border-top: 1px solid var(--hairline);
 }
 
 .article-grid {
@@ -926,35 +954,44 @@ body::after {
   }
 }
 
-/* zoom — a camera push; the story artwork carries the real travel */
+/* zoom — a camera dolly through the frame: the old view is pulled in
+   (scale-up, easing in), the new view starts at the same zoom and
+   settles back down. The shared artwork carries the travel between them. */
 html[data-tx^='zoom'] {
   --tx-old: vt-old-zoom;
   --tx-new: vt-new-zoom;
 }
-html[data-tx^='zoom'] ::view-transition-new(root) {
-  animation-duration: 300ms;
-  animation-delay: 0ms;
+html[data-tx^='zoom'] ::view-transition-old(root) {
+  /* keep the accelerating camera push, ride the shared 340ms old-view clock */
+  animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
 }
 @keyframes vt-old-zoom {
   to {
-    transform: scale(1.035);
-    opacity: 0;
+    transform: scale(1.4);
+    opacity: 0.15;
   }
 }
 @keyframes vt-new-zoom {
   from {
-    transform: scale(0.985);
-    opacity: 0;
+    /* Opaque throughout: a translucent moving raster would double-render
+       against the static live page (sidebar "disconnect" ghost). */
+    transform: scale(1.4);
+  }
+  80% {
+    /* Reach exact identity early and hold — no sub-pixel pop on drop. */
+    transform: scale(1);
   }
 }
 
 /* Shared artwork: the card and hero morph into each other, so clicking a
-   story feels like flying into the photograph (and back out of it). */
+   story feels like flying into the photograph (and back out of it).
+   The morph ends exactly when the incoming page settles: 100ms delay +
+   560ms reveal, shared across all modes via --tx-cover-dur. */
 ::view-transition-group(article-cover),
 ::view-transition-image-pair(article-cover),
 ::view-transition-old(article-cover),
 ::view-transition-new(article-cover) {
-  animation-duration: 480ms;
+  animation-duration: var(--tx-cover-dur, 660ms);
   animation-timing-function: var(--ease-out);
 }
 ::view-transition-group(article-cover) {
@@ -985,6 +1022,10 @@ html[data-tx='wipe-back'] {
     transform: translateX(100%);
     opacity: 0.85;
   }
+  80% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 @keyframes vt-old-pan-back {
   to {
@@ -996,6 +1037,10 @@ html[data-tx='wipe-back'] {
   from {
     transform: translateX(-100%);
     opacity: 0.85;
+  }
+  80% {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
@@ -1015,6 +1060,10 @@ html[data-tx^='slam'] {
     transform: translateY(24%) scale(0.99);
     opacity: 0.3;
   }
+  80% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 /* blinds — new shuts in as three vertical strips */
@@ -1032,7 +1081,7 @@ html[data-tx^='blinds'] {
   from {
     clip-path: inset(0 100% 0 0);
   }
-  to {
+  80% {
     clip-path: inset(0 0 0 0);
   }
 }
@@ -1106,7 +1155,8 @@ html[data-tx^='blinds'] {
   ::view-transition-old(*),
   ::view-transition-new(*),
   .curtain span,
-  .card-fig .art {
+  .card-fig .art,
+  .nope-finger {
     animation: none !important;
     transform: none !important;
   }
@@ -1119,11 +1169,10 @@ html[data-tx^='blinds'] {
 /* ============ Responsive ============ */
 
 @media (max-width: 920px) {
-  .front-grid {
-    grid-template-columns: 1fr;
-  }
-  .front-col.side {
-    grid-column: auto;
+  /* The lead keeps its banner scale in single-column widths; the rest of the
+     stories stay side by side (2-up) below it, as at larger sizes. */
+  .front-col.lead .card-title {
+    font-size: clamp(2.4rem, 7vw, 3.4rem);
   }
   .article-grid,
   .about-grid {

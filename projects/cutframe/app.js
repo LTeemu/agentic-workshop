@@ -24,6 +24,11 @@
     'pulse-noise': 'SC. 05 — PULSE / NOISE',
     'the-meridian': 'SC. 06 — MERIDIAN',
     'static-bloom': 'SC. 07 — STATIC BLOOM',
+    'chorus-line': 'SC. 08 — CHORUS LINE',
+    'last-print': 'SC. 09 — LAST PRINT',
+    'reel-to-reel': 'SC. 10 — REEL TO REEL',
+    'the-courier': 'SC. 11 — THE COURIER',
+    'tide-line': 'SC. 12 — TIDE LINE',
   };
   const TITLES = {
     home: 'Cutframe — The Daily Cut',
@@ -34,6 +39,11 @@
     'pulse-noise': 'Pulse / Noise — Cutframe',
     'the-meridian': 'The Meridian — Cutframe',
     'static-bloom': 'Static Bloom — Cutframe',
+    'chorus-line': 'Chorus Line — Cutframe',
+    'last-print': 'Last Print — Cutframe',
+    'reel-to-reel': 'Reel to Reel — Cutframe',
+    'the-courier': 'The Courier — Cutframe',
+    'tide-line': 'Tide Line — Cutframe',
   };
   const DESCRIPTIONS = {
     home: 'The Daily Cut — a newspaper front page from the Cutframe editing and motion studio.',
@@ -44,6 +54,12 @@
     'pulse-noise': 'Pulse / Noise — a music video cut on the beat of a boiler room.',
     'the-meridian': 'The Meridian — a brand film about noon, cut from twelve months of waiting.',
     'static-bloom': 'Static Bloom — a soft horror short about a flower and 60 hertz of snow.',
+    'chorus-line': 'Chorus Line — a music video cut from 240 takes of one held note.',
+    'last-print': 'Last Print — an 8-minute short about a photo lab on its final night.',
+    'reel-to-reel': 'Reel to Reel — a 60-second brand film with a single splice.',
+    'the-courier': 'The Courier — a 6-minute short about a messenger racing a deadline.',
+    'tide-line':
+      'Tide Line — an 11-minute film about a lighthouse keeper and the storm that arrives on time.',
   };
 
   const metaDesc = document.querySelector('meta[name="description"]');
@@ -112,10 +128,12 @@
   }
 
   /**
-   * Tag the story artwork that should morph across the transition so the
-   * reader flies INTO the image (listing → article) and back OUT of it
-   * (article → listing). Article-to-article hops morph hero to hero, which
-   * the CSS name on .hero-svg provides on its own.
+   * Tag the story artwork frame that should morph across the transition so
+   * the reader flies INTO the framed picture (listing → article) and back
+   * OUT of it (article → listing). The shared element is the whole figure —
+   * border and all — so the frame travels with the artwork. Article-to-
+   * article hops morph hero to hero, which the CSS name on .hero-fig
+   * provides on its own.
    */
   function armShared(target, source) {
     disarmShared();
@@ -123,8 +141,9 @@
     if (isArticle(target) && isListing(source)) el = cardShare(source, target);
     else if (isListing(target) && isArticle(source)) el = cardShare(target, source);
     if (el) {
-      el.style.viewTransitionName = 'article-cover';
-      sharedEl = el;
+      const frame = el.closest('figure') || el;
+      frame.style.viewTransitionName = 'article-cover';
+      sharedEl = frame;
     }
   }
 
@@ -156,10 +175,11 @@
     }
     if (name === 'contact') {
       // Re-arm the visual-only form on each visit.
+      clearTimeout(nopeTimer);
       const btn = contactForm && contactForm.querySelector('.form-send');
       if (btn) {
+        btn.classList.remove('is-nope');
         btn.textContent = 'Send telegram →';
-        btn.disabled = false;
       }
     }
     return true;
@@ -279,14 +299,19 @@
   modeBtns.forEach((b) => b.addEventListener('click', cycleMode));
 
   const contactForm = document.getElementById('contactForm');
+  let nopeTimer = null;
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
       e.preventDefault(); // visual-only form — nothing is sent anywhere
       const btn = contactForm.querySelector('.form-send');
-      if (btn) {
-        btn.textContent = 'Sent — cutting a reply';
-        btn.disabled = true;
-      }
+      if (!btn) return;
+      clearTimeout(nopeTimer);
+      btn.classList.add('is-nope');
+      btn.innerHTML = 'Nope <span class="nope-finger">☝️</span>';
+      nopeTimer = setTimeout(() => {
+        btn.classList.remove('is-nope');
+        btn.textContent = 'Send telegram →';
+      }, 800);
     });
   }
 
