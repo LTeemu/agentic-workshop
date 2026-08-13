@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cutframe — The Daily Cut</title>
+    <meta
+      name="description"
+      content="The Daily Cut — a newspaper front page from the Cutframe editing and motion studio."
+    />
+    <script>
+      // Mark JS availability before paint so views can be hidden without FOUC.
+      document.documentElement.classList.add('js');
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="paperhead">
+      <div class="paperhead-in">
+        <a class="wordmark" href="/" data-nav aria-label="Cutframe home"> cutframe<sup>®</sup> </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/" data-nav>Index</a>
+          <a href="/work" data-nav>Articles</a>
+          <a href="/about" data-nav>About</a>
+          <a href="/contact" data-nav>Contact</a>
+        </nav>
+        <button
+          type="button"
+          class="modebox modebox-top"
+          id="modeBtn"
+          aria-label="Change transition style"
+        >
+          <span id="modeLabel" class="modeLabel">blinds</span
+          ><span class="modebox-key" aria-hidden="true">T</span>
+        </button>
+      </div>
+      <div class="paperhead-date">
+        <span>Thursday, 13 August 2026</span>
+        <span>Berlin · 52.52°N 13.40°E</span>
+        <span>No. 001 — Free of charge</span>
+      </div>
+      <button type="button" class="modebox modebox-mobile" aria-label="Change transition style">
+        <span class="modeLabel">blinds</span><span class="modebox-key" aria-hidden="true">T</span>
+      </button>
+    </header>
+
+    <main id="main" class="stage" tabindex="-1">
+      <!-- HOME — front page -->
+      <section class="view view-home" data-view="home" aria-labelledby="home-title">
+        <header class="masthead">
+          <h1 id="home-title" class="masthead-title" tabindex="-1">Cutframe</h1>
+          <p class="masthead-tagline">The daily cut — an editing &amp; motion studio · est. 2026</p>
+        </header>
+
+        <div class="front-grid">
+          <article class="front-col lead">
+            <a
+              class="card card-lead"
+              href="/night-drive"
+              data-nav
+              aria-label="Open story: Night Drive"
+            >
+              <figure class="card-fig">
+                <svg
+                  class="art"
+                  viewBox="0 0 400 300"
+                  preserveAspectRatio="xMidYMid slice"
+                  data-shared="night-drive"
+                  aria-hidden="true"
+                >
+                  <use href="#art-night-drive" />
+                </svg>
+              </figure>
+              <div class="card-body">
+                <p class="kicker">Film — 2026 · 4 min</p>
+                <h2 class="card-title">Night Drive</h2>
+                <p class="card-deck">
+                  One motorway, one cassette, one headlight out. A short about the space between
+                  exits — and the people who never take them.
+                </p>
+                <span class="card-cta">Open story <span aria-hidden="true">→</span></span>
+              </div>
+            </a>
+          </article>
+
+          <div class="front-col stack">
+            <article>
+              <a class="card" href="/pulse-noise" data-nav aria-label="Open story: Pulse / Noise">
+                <figure class="card-fig">
+                  <svg
+                    class="art"
+                    viewBox="0 0 400 300"
+                    preserveAspectRatio="xMidYMid slice"
+                    data-shared="pulse-noise"
+                    aria-hidden="true"
+                  >
+                    <use href="#art-pulse-noise" />
+                  </svg>
+                </figure>
+                <div class="card-body">
+                  <p class="kicker">Music video — 2025 · 3 min</p>
+                  <h2 class="card-title">Pulse / Noise</h2>
+                  <p class="card-deck">
+                    A band recorded in a boiler room. We made the edit dance with the pipes.
+                  </p>
+                  <span class="card-cta">Open story <span aria-hidden="true">→</span></span>
+                </div>
+              </a>
+            </article>
+            <article>
+              <a class="card" href="/static-bloom" data-nav aria-label="Open story: Static Bloom">
+                <figure class="card-fig">
+                  <svg
+                    class="art"
+                    viewBox="0 0 400 300"
+                    preserveAspectRatio="xMidYMid slice"
+                    data-shared="static-bloom"
+                    aria-hidden="true"
+                  >
+                    <use href="#art-static-bloom" />
+                  </svg>
+                </figure>
+                <div class="card-body">
+                  <p class="kicker">Short — 2024 · 5 min</p>
+                  <h2 class="card-title">Static Bloom</h2>
+                  <p class="card-deck">
+                    A flower that only opens at the frequency of a dead channel. Horror, but soft.
+                  </p>
+                  <span class="card-cta">Open story <span aria-hidden="true">→</span></span>
+                </div>
+              </a>
+            </article>
+          </div>
+
+          <aside class="front-col side" aria-label="Sidebar">
+            <div class="sidebox quote">
+              <p class="sidebox-kicker">Editorial</p>
+              <p class="sidebox-big">“A cut is a decision.”</p>
+              <p class="sidebox-small">— The Cutframe Manual, rule no. 1</p>
+            </div>
+            <div class="sidebox">
+              <p class="sidebox-kicker">About the house</p>
+              <p class="sidebox-text">
+                Two editors, zero account managers, one very good espresso machine.
+              </p>
+              <a class="sidebox-link" href="/about" data-nav>Read the profile →</a>
+            </div>
+            <div class="sidebox ad">
+              <p class="sidebox-kicker">Classified</p>
+              <p class="sidebox-big">Wanted: one (1) inevitable cut</p>
+              <p class="sidebox-text">No previous edits required. Bring your own espresso.</p>
+              <a class="sidebox-link" href="/contact" data-nav>Apply by telegram →</a>
+            </div>
+          </aside>
+
+          <div class="front-col more">
+            <a class="more-link" href="/work" data-nav>
+              Browse all stories — 4 stories, 0 regrets <span aria-hidden="true">↓</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- WORK — the index -->
+      <section class="view view-work" data-view="work" aria-labelledby="work-title">
+        <header class="section-head">
+          <p class="kicker">The Index — all stories</p>
+          <h1 id="work-title" class="view-title split" tabindex="-1">All stories</h1>
+        </header>
+        <ol class="index-list">
+          <li class="index-item">
+            <a class="index-row" href="/night-drive" data-nav aria-label="Open story: Night Drive">
+              <span class="index-num">01</span>
+              <figure class="index-fig">
+                <svg
+                  class="art"
+                  viewBox="0 0 400 300"
+                  preserveAspectRatio="xMidYMid slice"
+                  data-shared="night-drive"
+                  aria-hidden="true"
+                >
+                  <use href="#art-night-drive" />
+                </svg>
+              </figure>
+              <span class="index-name split">Night Drive</span>
+              <span class="index-meta">Film · 2026 · 4 min</span>
+              <span class="index-arrow" aria-hidden="true">↗</span>
+            </a>
+          </li>
+          <li class="index-item">
+            <a
+              class="index-row"
+              href="/pulse-noise"
+              data-nav
+              aria-label="Open story: Pulse / Noise"
+            >
+              <span class="index-num">02</span>
+              <figure class="index-fig">
+                <svg
+                  class="art"
+                  viewBox="0 0 400 300"
+                  preserveAspectRatio="xMidYMid slice"
+                  data-shared="pulse-noise"
+                  aria-hidden="true"
+                >
+                  <use href="#art-pulse-noise" />
+                </svg>
+              </figure>
+              <span class="index-name split">Pulse / Noise</span>
+              <span class="index-meta">Music video · 2025 · 3 min</span>
+              <span class="index-arrow" aria-hidden="true">↗</span>
+            </a>
+          </li>
+          <li class="index-item">
+            <a class="index-row" href="/the-meridian" data-nav aria-label="Open story: Meridian">
+              <span class="index-num">03</span>
+              <figure class="index-fig">
+                <svg
+                  class="art"
+                  viewBox="0 0 400 300"
+                  preserveAspectRatio="xMidYMid slice"
+                  data-shared="the-meridian"
+                  aria-hidden="true"
+                >
+                  <use href="#art-meridian" />
+                </svg>
+              </figure>
+              <span class="index-name split">Meridian</span>
+              <span class="index-meta">Brand film · 2025 · 2 min</span>
+              <span class="index-arrow" aria-hidden="true">↗</span>
+            </a>
+          </li>
+          <li class="index-item">
+            <a
+              class="index-row"
+              href="/static-bloom"
+              data-nav
+              aria-label="Open story: Static Bloom"
+            >
+              <span class="index-num">04</span>
+              <figure class="index-fig">
+                <svg
+                  class="art"
+                  viewBox="0 0 400 300"
+                  preserveAspectRatio="xMidYMid slice"
+                  data-shared="static-bloom"
+                  aria-hidden="true"
+                >
+                  <use href="#art-static-bloom" />
+                </svg>
+              </figure>
+              <span class="index-name split">Static Bloom</span>
+              <span class="index-meta">Short · 2024 · 5 min</span>
+              <span class="index-arrow" aria-hidden="true">↗</span>
+            </a>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ABOUT — the house -->
+      <section class="view view-about" data-view="about" aria-labelledby="about-title">
+        <header class="section-head">
+          <p class="kicker">Feature — the house</p>
+          <h1 id="about-title" class="view-title split" tabindex="-1">About the house</h1>
+        </header>
+        <div class="about-grid">
+          <p class="about-statement dropcap">
+            Cutframe is a two-person edit house for films, music videos, and brand work. We believe
+            a cut is a decision, and every decision deserves to feel inevitable — nothing
+            decorative, nothing left on the floor. We keep scissors sharp, timelines tidy, and one
+            very good espresso machine.
+          </p>
+          <dl class="facts">
+            <div class="fact">
+              <dt>People</dt>
+              <dd>2 editors, 0 account managers</dd>
+            </div>
+            <div class="fact">
+              <dt>Tools</dt>
+              <dd>DaVinci, Premiere, Cinema 4D</dd>
+            </div>
+            <div class="fact">
+              <dt>Timezone</dt>
+              <dd>CET — replies within a cut</dd>
+            </div>
+            <div class="fact">
+              <dt>Status</dt>
+              <dd>Booking Q3 2026</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- CONTACT — classifieds -->
+      <section class="view view-contact" data-view="contact" aria-labelledby="contact-title">
+        <header class="section-head">
+          <p class="kicker">Classifieds</p>
+          <h1 id="contact-title" class="view-title split" tabindex="-1">Say hello</h1>
+        </header>
+        <a class="big-mail" href="mailto:hello@cutframe.example">hello@cutframe.example</a>
+        <p class="contact-note">Replies within a cut — usually the first one.</p>
+        <form class="contact-form" id="contactForm" novalidate>
+          <h2 class="form-title">Send a telegram</h2>
+          <div class="form-field">
+            <label for="cf-name">Name</label>
+            <input
+              id="cf-name"
+              name="name"
+              type="text"
+              autocomplete="name"
+              placeholder="Pen name or real one"
+            />
+          </div>
+          <div class="form-field">
+            <label for="cf-email">Return address</label>
+            <input
+              id="cf-email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@somewhere.example"
+            />
+          </div>
+          <div class="form-field">
+            <label for="cf-message">Message</label>
+            <textarea
+              id="cf-message"
+              name="message"
+              rows="4"
+              placeholder="Wire us the story — a cut, a still, a rumour."
+            ></textarea>
+          </div>
+          <button type="submit" class="form-send">
+            Send telegram <span aria-hidden="true">→</span>
+          </button>
+        </form>
+        <ul class="socials">
+          <li><a href="https://vimeo.com" rel="noopener" target="_blank">Vimeo ↗</a></li>
+          <li><a href="https://instagram.com" rel="noopener" target="_blank">Instagram ↗</a></li>
+        </ul>
+      </section>
+
+      <!-- ARTICLE — Night Drive -->
+      <section
+        class="view view-article"
+        data-view="night-drive"
+        aria-labelledby="night-drive-title"
+      >
+        <div class="article-top">
+          <a class="backlink" href="/" data-nav>← Front page</a>
+          <p class="kicker">Film · 2026 · 4 min</p>
+        </div>
+        <h1 id="night-drive-title" class="article-title split" tabindex="-1">Night Drive</h1>
+        <p class="article-deck">
+          One motorway, one cassette, one headlight out. A short about the space between exits — and
+          the people who never take them.
+        </p>
+        <figure class="hero-fig">
+          <svg
+            class="art hero-svg"
+            viewBox="0 0 400 300"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+          >
+            <use href="#art-night-drive" />
+          </svg>
+          <figcaption>Still 48:12 — the exit that never came.</figcaption>
+        </figure>
+        <div class="article-grid">
+          <div class="article-body">
+            <p class="dropcap">
+              The road south of the city is a long grey ribbon the film never lets us see end. We
+              sit in the passenger seat of a '92 sedan while the driver talks to a radio station
+              that stopped broadcasting in 2019. Every cut is a passing streetlight; every song
+              change is a small death.
+            </p>
+            <p>
+              We cut the picture to the beat of a single demo tape, then recut it against the hum of
+              the engine itself. The final version keeps both — the music bleeding into the motor,
+              the motor answering the music — until you can't tell which one is driving.
+            </p>
+            <blockquote class="pullquote">
+              “Nobody remembers the drive. Everybody remembers the song when it ended.”
+            </blockquote>
+            <p>
+              Night Drive premiered at a drive-in, obviously. The projector threw the road across
+              three screens while the audience sat in their own cars, engines idling, headlights
+              low. Nobody honked. That felt like applause.
+            </p>
+          </div>
+          <aside class="article-facts">
+            <dl>
+              <div class="fact">
+                <dt>Format</dt>
+                <dd>4K · 24 fps</dd>
+              </div>
+              <div class="fact">
+                <dt>Runtime</dt>
+                <dd>4 min 12 s</dd>
+              </div>
+              <div class="fact">
+                <dt>Cut</dt>
+                <dd>9 months, 41 versions</dd>
+              </div>
+              <div class="fact">
+                <dt>Status</dt>
+                <dd>Festival circuit 2026</dd>
+              </div>
+            </dl>
+            <p class="article-next-line">
+              <a class="next-link" href="/pulse-noise" data-nav>Next story: Pulse / Noise →</a>
+            </p>
+            <a class="backlink bottom" href="/" data-nav>← Back to the paper</a>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ARTICLE — Pulse / Noise -->
+      <section
+        class="view view-article"
+        data-view="pulse-noise"
+        aria-labelledby="pulse-noise-title"
+      >
+        <div class="article-top">
+          <a class="backlink" href="/" data-nav>← Front page</a>
+          <p class="kicker">Music video · 2025 · 3 min</p>
+        </div>
+        <h1 id="pulse-noise-title" class="article-title split" tabindex="-1">Pulse / Noise</h1>
+        <p class="article-deck">
+          A band recorded in a boiler room. We made the edit dance with the pipes.
+        </p>
+        <figure class="hero-fig">
+          <svg
+            class="art hero-svg"
+            viewBox="0 0 400 300"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+          >
+            <use href="#art-pulse-noise" />
+          </svg>
+          <figcaption>Still 01:03 — the pipes keep the time.</figcaption>
+        </figure>
+        <div class="article-grid">
+          <div class="article-body">
+            <p class="dropcap">
+              Some music videos try to look expensive. This one tries to sound loud. Shot on a
+              single afternoon in a working boiler room, the band plays facing the machines, and the
+              machines play back — valves hissing on the off-beat, steam timing the choruses.
+            </p>
+            <p>
+              The edit is 130 cuts in three minutes, which sounds frantic until you realise the
+              source footage was one locked-off camera. Every cut is a jump inside the frame: from a
+              drum skin to a pressure gauge, from the singer's mouth to the red-hot door of the
+              furnace.
+            </p>
+            <blockquote class="pullquote">
+              “When the music drops out, the boiler keeps the beat.”
+            </blockquote>
+            <p>
+              We finished the grade at 3 a.m. and played the film back on a phone at full volume.
+              The neighbours complained. The band called it the best review they'd ever had.
+            </p>
+          </div>
+          <aside class="article-facts">
+            <dl>
+              <div class="fact">
+                <dt>Format</dt>
+                <dd>4K · 120 fps source</dd>
+              </div>
+              <div class="fact">
+                <dt>Runtime</dt>
+                <dd>3 min 8 s</dd>
+              </div>
+              <div class="fact">
+                <dt>Cuts</dt>
+                <dd>130, all of them loud</dd>
+              </div>
+              <div class="fact">
+                <dt>Status</dt>
+                <dd>Vimeo staff pick</dd>
+              </div>
+            </dl>
+            <p class="article-next-line">
+              <a class="next-link" href="/the-meridian" data-nav>Next story: Meridian →</a>
+            </p>
+            <a class="backlink bottom" href="/" data-nav>← Back to the paper</a>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ARTICLE — Meridian -->
+      <section
+        class="view view-article"
+        data-view="the-meridian"
+        aria-labelledby="the-meridian-title"
+      >
+        <div class="article-top">
+          <a class="backlink" href="/" data-nav>← Front page</a>
+          <p class="kicker">Brand film · 2025 · 2 min</p>
+        </div>
+        <h1 id="the-meridian-title" class="article-title split" tabindex="-1">Meridian</h1>
+        <p class="article-deck">
+          A compass rose for a company that builds observatories. North is the client; the sun is
+          the schedule.
+        </p>
+        <figure class="hero-fig">
+          <svg
+            class="art hero-svg"
+            viewBox="0 0 400 300"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+          >
+            <use href="#art-meridian" />
+          </svg>
+          <figcaption>Still 00:58 — noon, arriving for the first of many times.</figcaption>
+        </figure>
+        <div class="article-grid">
+          <div class="article-body">
+            <p class="dropcap">
+              When the brief arrived it said, in full, "time, but for our brand". Meridian is the
+              answer: a two-minute film about noon — the moment the sun crosses the line, shadows
+              fold, and everything is briefly, perfectly aligned.
+            </p>
+            <p>
+              We shot one location, four seasons, and a single gold hour across twelve months of
+              waiting. The edit stitches the years together so noon arrives once and keeps arriving
+              — each cut a new shadow pointing the same way.
+            </p>
+            <blockquote class="pullquote">
+              “Every shadow is a sundial if you wait long enough.”
+            </blockquote>
+            <p>
+              The client's legal team asked if the sun was trademarked. We told them we'd check with
+              the copywriter. The film shipped with the sun uncredited, as requested.
+            </p>
+          </div>
+          <aside class="article-facts">
+            <dl>
+              <div class="fact">
+                <dt>Format</dt>
+                <dd>6K · anamorphic</dd>
+              </div>
+              <div class="fact">
+                <dt>Runtime</dt>
+                <dd>2 min 1 s</dd>
+              </div>
+              <div class="fact">
+                <dt>Locations</dt>
+                <dd>1</dd>
+              </div>
+              <div class="fact">
+                <dt>Wait</dt>
+                <dd>12 months for one hour</dd>
+              </div>
+            </dl>
+            <p class="article-next-line">
+              <a class="next-link" href="/static-bloom" data-nav>Next story: Static Bloom →</a>
+            </p>
+            <a class="backlink bottom" href="/" data-nav>← Back to the paper</a>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ARTICLE — Static Bloom -->
+      <section
+        class="view view-article"
+        data-view="static-bloom"
+        aria-labelledby="static-bloom-title"
+      >
+        <div class="article-top">
+          <a class="backlink" href="/" data-nav>← Front page</a>
+          <p class="kicker">Short · 2024 · 5 min</p>
+        </div>
+        <h1 id="static-bloom-title" class="article-title split" tabindex="-1">Static Bloom</h1>
+        <p class="article-deck">
+          A flower that only opens at the frequency of a dead channel. Horror, but soft.
+        </p>
+        <figure class="hero-fig">
+          <svg
+            class="art hero-svg"
+            viewBox="0 0 400 300"
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+          >
+            <use href="#art-static-bloom" />
+          </svg>
+          <figcaption>Still 03:31 — the hiss between channels.</figcaption>
+        </figure>
+        <div class="article-grid">
+          <div class="article-body">
+            <p class="dropcap">
+              Television static has a sound — sixty hertz of snow. Static Bloom is a five-minute
+              film about a flower that opens only when that sound plays, and a woman who keeps the
+              last working set in the city just to watch it. Once a night, for as long as the signal
+              holds.
+            </p>
+            <p>
+              We built the flower from paper and wire, then let the edit tear it apart and rebuild
+              it: every petal a cut, every cut a frame of noise. The horror isn't loud. It's the
+              hiss between channels.
+            </p>
+            <blockquote class="pullquote">
+              “The flower doesn't know the channel is dead. It just knows the frequency.”
+            </blockquote>
+            <p>
+              It screened at one festival, won a jury mention, and a reviewer wrote that the ending
+              "felt like holding a dial tone". We keep that review pinned above the timeline.
+            </p>
+          </div>
+          <aside class="article-facts">
+            <dl>
+              <div class="fact">
+                <dt>Format</dt>
+                <dd>4K · 24 fps</dd>
+              </div>
+              <div class="fact">
+                <dt>Runtime</dt>
+                <dd>5 min 4 s</dd>
+              </div>
+              <div class="fact">
+                <dt>Materials</dt>
+                <dd>Paper, wire, 60 Hz</dd>
+              </div>
+              <div class="fact">
+                <dt>Status</dt>
+                <dd>Jury mention, 2024</dd>
+              </div>
+            </dl>
+            <p class="article-next-line">
+              <a class="next-link" href="/night-drive" data-nav>Next story: Night Drive →</a>
+            </p>
+            <a class="backlink bottom" href="/" data-nav>← Back to the paper</a>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="strip">
+      <span>CUTFRAME® — THE DAILY CUT</span>
+      <span id="stripView">SC. 00 — FRONT PAGE</span>
+      <span>© 2026 CUTFRAME</span>
+    </footer>
+
+    <p id="live" class="sr-only" aria-live="polite"></p>
+
+    <!-- Curtain used by the no-View-Transitions fallback -->
+    <div class="curtain" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <!-- Shared artwork library: each article's "photo" lives here and is
+         <use>d on cards and heroes so the transition can morph between them. -->
+    <svg class="art-library" aria-hidden="true">
+      <defs>
+        <filter id="grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" />
+        </filter>
+      </defs>
+
+      <symbol id="art-night-drive" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#f2ecdd" />
+        <circle cx="110" cy="76" r="56" fill="#1d1d1b" />
+        <circle cx="110" cy="76" r="40" fill="#f2ecdd" />
+        <rect x="232" y="36" width="7" height="7" fill="#1d1d1b" />
+        <rect x="262" y="70" width="5" height="5" fill="#1d1d1b" />
+        <rect x="304" y="44" width="4" height="4" fill="#1d1d1b" />
+        <rect x="332" y="92" width="6" height="6" fill="#1d1d1b" />
+        <rect x="0" y="200" width="400" height="100" fill="#1d1d1b" />
+        <path d="M120 300 L280 300 L238 200 L162 200 Z" fill="#f2ecdd" />
+        <line
+          x1="200"
+          y1="204"
+          x2="200"
+          y2="292"
+          stroke="#1d1d1b"
+          stroke-width="5"
+          stroke-dasharray="20 20"
+        />
+        <circle cx="200" cy="200" r="11" fill="#f87801" />
+        <circle cx="200" cy="200" r="4" fill="#f2ecdd" />
+        <rect width="400" height="300" filter="url(#grain)" opacity="0.08" pointer-events="none" />
+      </symbol>
+
+      <symbol id="art-pulse-noise" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#f2ecdd" />
+        <rect x="0" y="0" width="400" height="10" fill="#1d1d1b" />
+        <rect x="0" y="290" width="400" height="10" fill="#1d1d1b" />
+        <g transform="translate(52 86)">
+          <circle cx="70" cy="64" r="64" fill="#1d1d1b" />
+          <circle cx="70" cy="64" r="44" fill="#f2ecdd" />
+          <circle cx="70" cy="64" r="30" fill="#1d1d1b" />
+          <circle cx="70" cy="64" r="9" fill="#ec8db6" />
+          <path d="M-2 12 L-34 2 L-34 120 L-2 110" fill="#1d1d1b" />
+        </g>
+        <g transform="translate(190 60)">
+          <rect x="0" y="0" width="10" height="40" fill="#f87801" />
+          <rect x="22" y="-18" width="10" height="76" fill="#ec8db6" />
+          <rect x="44" y="6" width="10" height="28" fill="#1d1d1b" />
+          <rect x="66" y="-30" width="10" height="100" fill="#f87801" />
+          <rect x="88" y="-6" width="10" height="52" fill="#ec8db6" />
+          <rect x="110" y="12" width="10" height="16" fill="#1d1d1b" />
+          <rect x="132" y="-24" width="10" height="88" fill="#f87801" />
+          <rect x="154" y="2" width="10" height="36" fill="#ec8db6" />
+        </g>
+        <g fill="#1d1d1b">
+          <rect x="20" y="150" width="6" height="26" />
+          <rect x="36" y="140" width="6" height="46" />
+          <rect x="52" y="156" width="6" height="20" />
+        </g>
+        <rect width="400" height="300" filter="url(#grain)" opacity="0.08" pointer-events="none" />
+      </symbol>
+
+      <symbol id="art-meridian" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#f2ecdd" />
+        <rect x="0" y="208" width="400" height="92" fill="#1d1d1b" />
+        <g stroke="#1d1d1b" stroke-width="2" fill="none">
+          <circle cx="200" cy="208" r="120" />
+          <circle cx="200" cy="208" r="170" opacity="0.5" />
+          <circle cx="200" cy="208" r="220" opacity="0.3" />
+        </g>
+        <circle cx="200" cy="208" r="72" fill="#f87801" />
+        <path d="M128 208 A72 72 0 0 1 272 208" fill="none" stroke="#f2ecdd" stroke-width="4" />
+        <line x1="0" y1="208" x2="400" y2="208" stroke="#1d1d1b" stroke-width="3" />
+        <line
+          x1="200"
+          y1="0"
+          x2="200"
+          y2="208"
+          stroke="#1d1d1b"
+          stroke-width="2"
+          stroke-dasharray="6 8"
+          opacity="0.7"
+        />
+        <g transform="translate(304 60) rotate(18)">
+          <path d="M0 0 L-26 -6 L-14 2 L-30 8 L0 0 L22 6 L10 2 L26 -4 Z" fill="#ec8db6" />
+        </g>
+        <rect width="400" height="300" filter="url(#grain)" opacity="0.08" pointer-events="none" />
+      </symbol>
+
+      <symbol id="art-static-bloom" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#f2ecdd" />
+        <g transform="translate(200 140)">
+          <circle r="86" fill="#ec8db6" />
+          <circle r="64" fill="#f2ecdd" />
+          <circle r="44" fill="#f87801" />
+          <circle r="24" fill="#1d1d1b" />
+          <circle r="8" fill="#f2ecdd" />
+          <g stroke="#1d1d1b" stroke-width="2" opacity="0.7">
+            <line x1="-110" y1="-70" x2="110" y2="-70" />
+            <line x1="-120" y1="30" x2="120" y2="30" />
+            <line x1="-60" y1="-100" x2="-60" y2="100" />
+            <line x1="70" y1="-100" x2="70" y2="100" />
+          </g>
+        </g>
+        <g fill="#1d1d1b">
+          <rect x="28" y="60" width="8" height="8" />
+          <rect x="52" y="96" width="5" height="5" />
+          <rect x="340" y="40" width="9" height="9" />
+          <rect x="318" y="80" width="5" height="5" />
+          <rect x="30" y="220" width="6" height="6" />
+          <rect x="356" y="210" width="7" height="7" />
+          <rect x="90" y="250" width="5" height="5" />
+          <rect x="280" y="250" width="6" height="6" />
+        </g>
+        <rect width="400" height="300" filter="url(#grain)" opacity="0.1" pointer-events="none" />
+      </symbol>
+    </svg>
+
+    <script src="app.js"></script>
+  </body>
+</html>
