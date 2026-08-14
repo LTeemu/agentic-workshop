@@ -7,40 +7,123 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:opsz@9..40&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=Instrument+Serif:ital@0;1&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   </head>
   <body>
-    <nav class="nav">
-      <div class="nav-brand">
-        <span class="nav-brand-icon">&#x1F3B6;</span>
-        <span class="nav-brand-text">Playlist Analyzer</span>
+    <script>
+      // Hide the page before first paint while the transition overlay covers
+      // it — only when arriving from another page of this site.
+      document.documentElement.classList.toggle(
+        'page-swap',
+        document.referrer && document.referrer.indexOf(location.origin) === 0,
+      );
+    </script>
+    <!-- Page transition: a wavy blob stroke draws around the screen, inflates
+         into a full-screen cover, then the slime curtain drops away (app.js +
+         style.css) -->
+    <div class="page-transition" id="pageTransition" aria-hidden="true">
+      <div class="page-transition__glob">
+        <svg
+          class="page-transition__svg"
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 1080 1080"
+          fill="none"
+          preserveAspectRatio="none"
+        >
+          <path
+            class="page-transition__path"
+            d="M540 20C700 -10 850 60 950 170C1050 280 1070 430 1060 580C1050 730 1010 900 880 1000C750 1100 560 1080 420 1050C280 1020 140 1080 60 950C-20 820 10 660 40 520C70 380 40 220 140 120C240 20 380 50 540 20Z"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <!-- Abstract layered slime waves on the square's top edge: three
+               full-width sine layers (painted above the svg box via
+               overflow: visible, clipped at the viewport by the overlay
+               while covered — zero leak), drifting at different speeds so
+               the crests shear past each other. The solid square sits
+               fully in front. Each layer sits in a wrapper that
+               counter-scales X (--wave-scale, set by app.js) so the wave
+               aspect ratio stays locked on any window shape; the path
+               data (5 repeated 1080-unit patterns) is generated in app.js
+               so shape and coverage are single-source. -->
+          <g class="page-transition__wave-layer">
+            <path class="page-transition__waves page-transition__waves--far" d="" />
+          </g>
+          <g class="page-transition__wave-layer">
+            <path class="page-transition__waves page-transition__waves--mid" d="" />
+          </g>
+          <g class="page-transition__wave-layer">
+            <path class="page-transition__waves page-transition__waves--front" d="" />
+          </g>
+          <!-- Full-bleed square: the solid front layer -->
+          <rect class="page-transition__fill" x="-5%" y="-5%" width="110%" height="110%" />
+        </svg>
+        <div class="page-transition__logo" aria-hidden="true">&#9835;</div>
       </div>
-      <ul class="nav-links">
+    </div>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark" aria-hidden="true">&#9835;</span>
+        <span class="brand-text">Playlist Analyzer</span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Sections">
+        <ul>
+          {% for link in nav_links %}
+          <li>
+            <a
+              href="{{ link.path }}"
+              class="nav-link{% if current_path == link.path %} active{% endif %}"
+            >
+              {{ link.label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </nav>
+
+      <button
+        class="menu-toggle"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label="Open menu"
+      >
+        <span class="menu-toggle-label">Menu</span>
+      </button>
+    </header>
+
+    <nav id="mobile-menu" class="mobile-menu" aria-hidden="true" aria-label="Sections">
+      <ol class="mobile-menu-list">
         {% for link in nav_links %}
         <li>
           <a
             href="{{ link.path }}"
-            class="nav-link{% if current_path == link.path %} active{% endif %}"
+            class="mobile-menu-link{% if current_path == link.path %} active{% endif %}"
           >
-            {{ link.label }}
+            <span class="mobile-menu-index">{{ "%02d" | format(loop.index) }}</span>
+            <span class="mobile-menu-label">{{ link.label }}</span>
           </a>
         </li>
         {% endfor %}
-      </ul>
+      </ol>
+      <p class="mobile-menu-foot">
+        Data from <code>{{ (data or {}).get('_meta', {}).get('source', 'N/A') }}</code>
+      </p>
     </nav>
 
     <main class="container">{% block content %}{% endblock %}</main>
 
     <footer class="footer">
-      <p>
-        Playlist Analyzer &mdash; data from
-        <code>{{ (data or {}).get('_meta', {}).get('source', 'N/A') }}</code> &mdash; {{ (data or
-        {}).get('basic_stats', {}).get('total_songs', 0) }} tracks
-      </p>
+      <span class="footer-meta">
+        data from <code>{{ (data or {}).get('_meta', {}).get('source', 'N/A') }}</code>
+        &middot; {{ (data or {}).get('basic_stats', {}).get('total_songs', 0) }} tracks
+      </span>
     </footer>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>

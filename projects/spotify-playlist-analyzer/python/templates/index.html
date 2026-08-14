@@ -1,41 +1,34 @@
 {% extends "layout.html" %} {% block title %}Overview — Spotify Playlist Analyzer{% endblock %} {%
 block content %} {% set stats = data.get('basic_stats', {}) %}
 
-<div class="page-header">
-  <h1>Your Playlist</h1>
-  {% if data.get('_meta', {}).get('limit_applied') %}
-  <p class="subtitle">
-    Analysis of <strong>{{ stats.get('total_songs', 0) }}</strong> songs
-    <span class="badge badge-warning">limited to {{ data['_meta']['limit_applied'] }} rows</span>
+<div class="hero reveal">
+  <h1 class="hero-title">
+    One playlist, <em>{{ "{:,}".format(stats.get('total_songs', 0)) }} tracks</em> deep.
+  </h1>
+  <p class="hero-lede">
+    An editorial read of your listening — the numbers, the sounds, and the songs that define it.
   </p>
-  {% endif %}
-</div>
-
-<!-- Vinyl Record Hero -->
-<div class="vinyl-hero">
-  <div class="vinyl-disc">
-    <div class="vinyl-grooves"></div>
-    <div class="vinyl-label">
-      <span class="vinyl-label-label">Playlist</span>
-      <span class="vinyl-label-title">{{ stats.get('total_songs', 0) }} Tracks</span>
-      <span class="vinyl-label-speed">33&frac13; RPM</span>
-    </div>
-  </div>
-  <div class="vinyl-stats">
-    <div class="vinyl-stat">
-      <span class="num"
+  <div class="hero-numbers">
+    <div class="hero-number">
+      <span class="hero-number-value"
         ><span class="count-target" data-count="{{ stats.get('total_songs', 0) }}">0</span></span
       >
-      tracks
+      <span class="hero-number-label">Tracks</span>
     </div>
-    <div class="vinyl-stat">
-      <span class="num"
+    <div class="hero-number">
+      <span class="hero-number-value"
         ><span class="count-target" data-count="{{ stats.get('unique_artists', 0) }}">0</span></span
       >
-      artists
+      <span class="hero-number-label">Artists</span>
     </div>
-    <div class="vinyl-stat">
-      <span class="num"
+    <div class="hero-number">
+      <span class="hero-number-value"
+        ><span class="count-target" data-count="{{ stats.get('unique_genres', 0) }}">0</span></span
+      >
+      <span class="hero-number-label">Genres</span>
+    </div>
+    <div class="hero-number">
+      <span class="hero-number-value"
         ><span
           class="count-target"
           data-count="{{ stats.get('total_duration_hrs', 0) }}"
@@ -43,7 +36,7 @@ block content %} {% set stats = data.get('basic_stats', {}) %}
           >0h</span
         ></span
       >
-      hours
+      <span class="hero-number-label">Hours of music</span>
     </div>
   </div>
 </div>
@@ -71,22 +64,49 @@ block content %} {% set stats = data.get('basic_stats', {}) %}
     </div>
     <div class="stat-label">{{ label }}</div>
   </div>
-  {% endmacro %} {{ stat_card('Tracks', stats.get('total_songs', 0)) }} {{ stat_card('Artists',
-  stats.get('unique_artists', 0)) }} {{ stat_card('Genres', stats.get('unique_genres', 0)) }} {{
-  stat_card('Albums', stats.get('unique_albums', 0)) }} {{ stat_card('Avg BPM', stats.get('avg_bpm',
-  '—')) }} {{ stat_card('Avg Energy', stats.get('avg_energy', '—')) }} {{ stat_card('Avg Dance',
-  stats.get('avg_dance', '—')) }} {{ stat_card('Avg Valence', stats.get('avg_valence', '—')) }} {{
-  stat_card('Avg Popularity', stats.get('avg_popularity', '—')) }} {{ stat_card('Avg Duration',
-  stats.get('avg_duration_sec', '—'), 's') }} {{ stat_card('Explicit', stats.get('explicit_count',
-  0)) }} {{ stat_card('Explicit %', stats.get('explicit_pct', 0), '%') }}
+  {% endmacro %} {% macro match_tags(match) %} {%- if match.genres -%}{% for g in
+  match.genres.split(',') if g.strip() -%}
+  <span class="tag">{{ g.strip().title() }}</span>
+  {%- endfor %}{%- endif -%} {%- if match.key -%}<span class="tag">{{ match.key }}</span>{%- endif
+  -%} {%- if match.camelot -%}<span class="tag">{{ match.camelot }}</span>{%- endif -%} {% endmacro
+  %} {{ stat_card('Albums', stats.get('unique_albums', 0)) }} {{ stat_card('Median BPM',
+  stats.get('avg_bpm', '—')) }} {{ stat_card('Median Energy', stats.get('avg_energy', '—')) }} {{
+  stat_card('Median Dance', stats.get('avg_dance', '—')) }} {{ stat_card('Median Valence',
+  stats.get('avg_valence', '—')) }} {{ stat_card('Median Popularity', stats.get('avg_popularity',
+  '—')) }} {{ stat_card('Median Duration', stats.get('avg_duration_sec', '—'), 's') }} {{
+  stat_card('Explicit', stats.get('explicit_count', 0)) }} {{ stat_card('Explicit %',
+  stats.get('explicit_pct', 0), '%') }}
 </div>
 
-{% set perfect = data.get('perfect_song', {}) %} {% set freq = perfect.get('freq', {}) %} {% set
-composite = perfect.get('composite', {}) %} {% set match = perfect.get('closest_match', {}) %} {%
-set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
+{% set genres = data.get('genres', {}).get('top_genres', []) %} {% if genres %}
+<section class="section reveal">
+  <h2>Top 8 Genres</h2>
+  <div class="preview-cards">
+    {% for g in genres[:8] %}
+    <div class="preview-card reveal-child" style="--i: {{ loop.index0 }}">
+      <div class="preview-card-name">{{ g.name.title() }}</div>
+      <div class="preview-card-count-line">
+        {{ g.count }} song{{ 's' if g.count != 1 }}
+        <span class="preview-card-pct-inline">{{ g.pct }}%</span>
+      </div>
+      <div class="preview-card-meta">
+        <div>{{ g.artist_count }} artist{{ 's' if g.artist_count != 1 }}</div>
+        {% if g.year_min and g.year_max %}
+        <div>
+          Added {{ g.year_min }}{% if g.year_min != g.year_max %}–{{ g.year_max }}{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %} {% set perfect = data.get('perfect_song', {}) %} {% set freq = perfect.get('freq', {})
+%} {% set composite = perfect.get('composite', {}) %} {% set match = perfect.get('closest_match',
+{}) %} {% set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
 <section class="section perfect-song reveal">
   <h2>The Perfect Track</h2>
-  <p class="subtitle">The most common audio feature values across your playlist</p>
+  <p class="subtitle">The typical audio feature values across your playlist</p>
   <div class="perfect-grid">
     {% for key, cfg in {'bpm': 'BPM', 'energy': 'Energy', 'dance': 'Dance', 'valence': 'Valence',
     'acousticness': 'Acoustic', 'popularity': 'Popularity'}.items() %} {% set p = freq.get(key, {})
@@ -115,7 +135,6 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
     </span>
   </div>
   {% endif %} {% if match %}
-  <div class="perfect-divider"></div>
   <div class="edge-cards">
     <div class="edge-card edge-closest">
       <h3 class="match-heading">Most representative</h3>
@@ -123,12 +142,7 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
         <div class="match-info">
           <span class="match-title">{{ match.song }}</span>
           <span class="match-artist">{{ match.artist }}</span>
-          <div class="match-tags">
-            {% if composite.genre and composite.genre != '—' %}<span class="tag"
-              >{{ composite.genre }}</span
-            >{% endif %} {% if match.key %}<span class="tag">{{ match.key }}</span>{% endif %} {% if
-            match.camelot %}<span class="tag">{{ match.camelot }}</span>{% endif %}
-          </div>
+          <div class="match-tags">{{ match_tags(match) }}</div>
         </div>
         <div class="match-stats">
           <div class="match-stat">
@@ -157,11 +171,7 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
         <div class="match-info">
           <span class="match-title">{{ furthest.song }}</span>
           <span class="match-artist">{{ furthest.artist }}</span>
-          <div class="match-tags">
-            {% if furthest.genres %}<span class="tag"
-              >{{ furthest.genres.split(',')[0].strip().title() }}</span
-            >{% endif %} {% if furthest.key %}<span class="tag">{{ furthest.key }}</span>{% endif %}
-          </div>
+          <div class="match-tags">{{ match_tags(furthest) }}</div>
         </div>
         <div class="match-stats">
           <div class="match-stat">
@@ -186,29 +196,6 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
     {% endif %}
   </div>
   {% endif %}
-</section>
-{% endif %} {% set genres = data.get('genres', {}).get('top_genres', []) %} {% if genres %}
-<section class="section reveal">
-  <h2>Top 8 Genres</h2>
-  <div class="preview-cards">
-    {% for g in genres[:8] %}
-    <div class="preview-card reveal-child" style="--i: {{ loop.index0 }}">
-      <div class="preview-card-name">{{ g.name }}</div>
-      <div class="preview-card-count-line">
-        {{ g.count }} song{{ 's' if g.count != 1 }}
-        <span class="preview-card-pct-inline">{{ g.pct }}%</span>
-      </div>
-      <div class="preview-card-meta">
-        <div>{{ g.artist_count }} artist{{ 's' if g.artist_count != 1 }}</div>
-        {% if g.year_min and g.year_max %}
-        <div>
-          Added {{ g.year_min }}{% if g.year_min != g.year_max %}–{{ g.year_max }}{% endif %}
-        </div>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
 </section>
 {% endif %} {% set artists = data.get('artists', {}).get('top_artists', []) %} {% if artists %}
 <section class="section reveal">
@@ -238,21 +225,27 @@ set furthest = perfect.get('furthest_match', {}) %} {% if freq %}
 data.get('artist_trends', {}).get('top_per_year', []) %} {% if gt_top and at_top %}
 <section class="section reveal">
   <h2>Year by Year</h2>
-  <p class="subtitle">Your top genre and artist for each year</p>
+  <p class="subtitle">Your top genre and artist for each year — the number is how many songs</p>
   <div class="year-summary">
     {% for g in gt_top %} {% set a = at_top | selectattr('year', 'equalto', g.year) | first %}
     <div class="year-row">
       <span class="year-row-year">{{ g.year }}</span>
-      <span class="year-row-item">
-        <span class="tag">{{ g.name }}</span>
-        <span class="year-row-count">{{ g.count }}</span>
-      </span>
-      {% if a %}
-      <span class="year-row-item">
-        <span class="tag">{{ a.name }}</span>
-        <span class="year-row-count">{{ a.count }}</span>
-      </span>
-      {% endif %}
+      <div class="year-items">
+        <span class="year-row-item">
+          <span class="tag">
+            <span class="year-tag-text">{{ g.name.title() }}</span>
+            <span class="year-row-count">{{ g.count }}</span>
+          </span>
+        </span>
+        {% if a %}
+        <span class="year-row-item">
+          <span class="tag">
+            <span class="year-tag-text">{{ a.name }}</span>
+            <span class="year-row-count">{{ a.count }}</span>
+          </span>
+        </span>
+        {% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>

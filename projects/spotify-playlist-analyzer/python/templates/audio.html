@@ -1,11 +1,11 @@
 {% extends "layout.html" %} {% block title %}Audio Features — Spotify Playlist Analyzer{% endblock
 %} {% block content %} {% set features = data.get('audio_features', {}) %} {% set feature_config = {
-'bpm': { 'label': 'BPM', 'color': '#d4a853' }, 'energy': { 'label': 'Energy', 'color': '#c9773a' },
-'dance': { 'label': 'Danceability', 'color': '#b8433a' }, 'valence': { 'label': 'Valence
-(Happiness)', 'color': '#8a8a3a' }, 'acousticness': { 'label': 'Acousticness', 'color': '#3a8a7a' },
-'instrumentalness': { 'label': 'Instrumentalness', 'color': '#7a4a8a' }, 'speechiness': { 'label':
-'Speechiness', 'color': '#8a5a3a' }, 'liveness': { 'label': 'Liveness', 'color': '#a07d3a' },
-'loudness': { 'label': 'Loudness (dB)', 'color': '#6a6a2a' }, } %}
+'bpm': { 'label': 'BPM', 'color': '#E2472B' }, 'energy': { 'label': 'Energy', 'color': '#C08A2D' },
+'dance': { 'label': 'Danceability', 'color': '#2E7D6B' }, 'valence': { 'label': 'Valence
+(Happiness)', 'color': '#B2557C' }, 'acousticness': { 'label': 'Acousticness', 'color': '#5A6FB5' },
+'instrumentalness': { 'label': 'Instrumentalness', 'color': '#8A6B2F' }, 'speechiness': { 'label':
+'Speechiness', 'color': '#4A8A52' }, 'liveness': { 'label': 'Liveness', 'color': '#9C5A2F' },
+'loudness': { 'label': 'Loudness', 'color': '#7A5AC9' }, } %}
 
 <div class="page-header">
   <h1>Audio Features</h1>
@@ -20,7 +20,7 @@
       {{ cfg.label }} {% if feat.get('unit') %}<span class="unit">({{ feat.unit }})</span>{% endif
       %}
     </h3>
-    <div class="chart-wrapper">
+    <div class="chart-wrapper chart-hist">
       <canvas id="chart_{{ key }}"></canvas>
     </div>
   </div>
@@ -68,9 +68,13 @@
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: AnalyzerCharts.plainTip(),
+          },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { beginAtZero: true, grid: { color: 'rgba(27,23,18,0.10)' }, ticks: { precision: 0 } },
             x: { grid: { display: false }, ticks: { maxRotation: 45 } }
           }
         }

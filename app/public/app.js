@@ -128,13 +128,19 @@ function setDotStatus(name, status) {
   }
 }
 
+/** Clear the preview iframe and its accent background (fresh chrome). */
+function clearPreviewFrame() {
+  previewFrame.src = '';
+  previewFrame.style.background = '';
+}
+
 /** Clear the preview pane for a stopped/failed active project. */
 function clearActivePreview(label, noticeText) {
   activeProject.url = null;
   openTabBtn.disabled = true;
   setStatus('stopped', label);
   projectUrlEl.textContent = '';
-  previewFrame.src = '';
+  clearPreviewFrame();
   if (noticeText) showNotice(noticeText);
 }
 
@@ -843,6 +849,18 @@ function fitTerminal() {
 // Keep the terminal sized to the panel (drag handle, collapse, window resize).
 window.ResizeUtils.watchResize(terminalContainer, fitTerminal, 150);
 
+// Projects report their accent via postMessage (the preview iframe is
+// cross-origin, so we can't read it). The iframe element paints it while
+// the frame is cleared mid-navigation — otherwise the dark default would
+// blink black between a project's cover transition and the next page.
+window.addEventListener('message', (e) => {
+  if (e.source !== previewFrame.contentWindow) return;
+  const data = e.data || {};
+  if (data.type === 'workshop-preview-accent' && typeof data.accent === 'string' && data.accent) {
+    previewFrame.style.background = data.accent;
+  }
+});
+
 async function selectProject(name, start = true) {
   // Clicking the already-running project — just reload the iframe
   if (start && activeProject && activeProject.name === name && activeProject.url) {
@@ -863,7 +881,7 @@ async function selectProject(name, start = true) {
   placeholder.classList.add('hidden');
   preview.classList.remove('hidden');
   projectUrlEl.textContent = '';
-  previewFrame.src = ''; // Clear old project content immediately
+  clearPreviewFrame(); // Clear old project content immediately
 
   // The server's autoStop stops only the previously-active project; background
   // projects keep running, so don't gray out the whole list.
@@ -954,7 +972,7 @@ function applySelectResult(name, result) {
     setDotStatus(name, result.neverStarted ? 'stopped' : 'error');
     activeProject.url = null;
     openTabBtn.disabled = true;
-    previewFrame.src = '';
+    clearPreviewFrame();
     showNotice(result.error || 'This project cannot be started');
   }
 }

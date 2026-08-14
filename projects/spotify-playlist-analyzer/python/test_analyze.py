@@ -142,6 +142,43 @@ def test_output_json_round_trip():
         Path(path).unlink(missing_ok=True)
 
 
+def _write_playlist_csv(rows):
+    header = ("#,Song,Artist,BPM,Camelot,Energy,Added At,Duration,Popularity,Genres,Album,"
+              "Album Date,Dance,Acoustic,Instrumental,Valence,Speech,Live,Loud (Db),Key,"
+              "Time Signature,Spotify Track Id,ISRC,Explicit")
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8")
+    with tmp:
+        tmp.write("\n".join([header, *rows]))
+    return tmp.name
+
+
+def test_run_dedupes_duplicate_track_ids():
+    """Duplicate Spotify Track Ids count once; id-less rows are never merged."""
+    row = ('{n},"{song}","{artist}",120,8A,80,2023-01-01,03:00,50,"pop","{album}",2022-01-01,'
+           '60,0,0,50,5,0,-5,C Major,4,{tid},ISRC{n},no')
+    rows = [
+        row.format(n=1, song="A", artist="X", album="A", tid="TID1"),
+        row.format(n=2, song="A", artist="X", album="A", tid="TID1"),  # exact duplicate
+        row.format(n=3, song="B", artist="Y", album="B", tid="TID2"),
+        row.format(n=4, song="C", artist="Z", album="C", tid=""),      # no track id
+        row.format(n=5, song="D", artist="W", album="D", tid=""),      # no track id
+    ]
+    path = _write_playlist_csv(rows)
+    try:
+        result = analyze.run(path, output_path=None)
+        # dup dropped (5 rows → 4); both id-less rows survive separately
+        assert result["basic_stats"]["total_songs"] == 4
+        assert result["_meta"]["songs_analyzed"] == 4
+        # limit window containing both copies of the dup → still deduped to 1
+        limited = analyze.run(path, output_path=None, limit=2)
+        assert limited["basic_stats"]["total_songs"] == 1
+        # limit window before the duplicate pair → nothing deduped
+        first = analyze.run(path, output_path=None, limit=1)
+        assert first["basic_stats"]["total_songs"] == 1
+    finally:
+        Path(path).unlink(missing_ok=True)
+
+
 # ---------------------------------------------------------------------------
 # Pure helper tests — deterministic, value-level
 # ---------------------------------------------------------------------------
@@ -184,6 +221,16 @@ def test_bucket_duplicates_collapsed():
     assert sum(b["counts"]) == 6
 
 
+def test_bucket_callable_fmt_negative_range():
+    # Negative ranges (e.g. dB) must not produce double-minus labels like "-8.0--7.0"
+    vals = pd.Series([-29.0, -8.0, -7.0, -6.0, -5.0, -3.0])
+    b = analyze._bucket(vals, fmt=lambda low, high: f"{low:.1f}–{high:.1f}")
+    assert len(b["buckets"]) == len(b["counts"])
+    assert sum(b["counts"]) == len(vals)
+    assert all("–" in label for label in b["buckets"])
+    assert all("--" not in label for label in b["buckets"])
+
+
 def test_detect_sep():
     with tempfile.TemporaryDirectory() as d:
         tab = Path(d) / "tab.csv"
@@ -216,6 +263,103 @@ def test_value_counts_to_records():
     assert len(records) == 3
     assert {r["key"] for r in records} == {"a", "b", "c"}
     assert sum(r["count"] for r in records) == 4
+
+
+def test_artist_order_and_max():
+    """Top artists are ranked by song count; top[0] is the true most-songs artist."""
+    artists = _run_example()["artists"]
+    top = artists["top_artists"]
+    counts = [a["count"] for a in top]
+    assert counts == sorted(counts, reverse=True)
+    assert top[0]["count"] == max(counts)
+
+
+def test_artist_count_consistency():
+    """Overview and Artists page must report the same unique-artist count."""
+    result = _run_example()
+    assert result["basic_stats"]["unique_artists"] == result["artists"]["total_unique_artists"]
+
+
+def test_perfect_song_no_nan_genres():
+    """Missing genres must serialize as '' — never the string 'nan' (deterministic frame)."""
+    df = pd.DataFrame({
+        "Song": ["Alpha", "Beta", "Gamma"],
+        "Artist": ["One", "Two", "Three"],
+        "Album": ["Album A", "Album B", "Album C"],
+        "Genres": ["rock", None, "jazz, blues"],
+        "BPM": [120, 90, 140],
+        "Energy": [80, 40, 60],
+        "Dance": [70, 50, 90],
+        "Valence": [60, 30, 80],
+        "Acoustic": [10, 90, 20],
+        "Popularity": [50, 60, 40],
+        "Key": [None, None, None],
+        "Camelot": [None, None, None],
+        "Time Signature": [4, 4, 4],
+        "Explicit": ["No", "No", "Yes"],
+        "Loud (db)": [-8.0, -12.0, -6.0],
+        "Instrumental": [0, 90, 5],
+        "Speech": [5, 3, 8],
+        "Live": [0, 10, 5],
+        "Added at": ["2023-01-01", "2023-01-02", "2023-01-03"],
+        "Album Date": ["2022-01-01", "2022-02-01", "2022-03-01"],
+        "Duration": ["3:00", "4:00", "5:00"],
+    })
+    perfect = analyze.perfect_song(df)
+    for match in (perfect["closest_match"], perfect["furthest_match"]):
+        assert isinstance(match["genres"], str)
+        assert match["genres"] not in ("nan", "None")
+        # missing Key/Camelot must not leak the string 'nan' either
+        assert match["key"] == ""
+        assert match["camelot"] == ""
+    # all-None Key/Camelot → composite falls back to em-dash
+    assert perfect["composite"]["key"] == "—"
+    assert perfect["composite"]["camelot"] == "—"
+
+
+def test_trends_other_includes_never_top_items():
+    """Items that never reach a year's top-N still count toward 'Other'."""
+    df = pd.DataFrame({
+        "Added at": ["2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04"],
+        "Genres": ["a", "b", "c", "d"],
+    })
+    res = analyze._trends(df, "Genres", "genres", top_n=2)
+    assert "c" not in res["genres"]
+    assert sum(res["series"]["Other"]) == 2
+
+
+def test_trends_other_catches_falling_out_item():
+    """An item in year-1 top-N that falls out of year-2's top-N lands in 'Other'."""
+    df = pd.DataFrame({
+        "Added at": [
+            "2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04",
+            "2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04",
+        ],
+        "Genres": ["a", "a", "b", "c", "a", "c", "c", "b"],
+    })
+    res = analyze._trends(df, "Genres", "genres", top_n=2)
+    assert res["series"]["A"] == [2, 1]
+    assert res["series"]["B"] == [1, 0]
+    assert res["series"]["C"] == [0, 2]
+    assert res["series"]["Other"] == [1, 1]
+
+
+def test_artist_trends_titled_names():
+    """top_per_year artist names are display-titled (idempotent check)."""
+    top_per_year = _run_example()["artist_trends"]["top_per_year"]
+    assert top_per_year
+    for entry in top_per_year:
+        name = entry["name"]
+        assert name == " ".join(w.capitalize() for w in name.split())
+
+
+def test_artist_pct_share_of_songs():
+    """Artist pct is that artist's share of all songs (within rounding tolerance)."""
+    result = _run_example()
+    total_songs = result["basic_stats"]["total_songs"]
+    assert total_songs > 0
+    for artist in result["artists"]["top_artists"]:
+        assert abs(artist["pct"] - artist["count"] / total_songs * 100) <= 0.1
 
 
 # ---------------------------------------------------------------------------

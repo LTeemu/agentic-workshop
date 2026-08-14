@@ -20,37 +20,59 @@ artist_trends.get('series', {}) %}
 {% if by_year %}
 <section class="section reveal">
   <h2>Songs Added by Year</h2>
-  <canvas id="byYearChart" height="100"></canvas>
+  <div class="chart-fixed"><canvas id="byYearChart" height="100"></canvas></div>
 </section>
 {% endif %} {% if by_month %}
 <section class="section reveal">
   <h2>Songs Added by Month</h2>
-  <canvas id="byMonthChart" height="120"></canvas>
+  <div class="chart-fixed"><canvas id="byMonthChart" height="120"></canvas></div>
 </section>
 {% endif %} {% if album_years %}
 <section class="section reveal">
   <h2>Songs by Release Year</h2>
-  <canvas id="albumYearChart" height="100"></canvas>
+  <div class="chart-fixed"><canvas id="albumYearChart" height="100"></canvas></div>
 </section>
 {% endif %} {% if gt_years %}
 <section class="section reveal">
   <h2>Genre Trends Over Time</h2>
-  <p class="subtitle">Genres by year added (top 15 per year, rest grouped as Other)</p>
-  <canvas id="genreTrendsChart" height="120"></canvas>
+  <p class="subtitle">Genres by year added (top 10 per year, rest grouped as Other)</p>
+  <div class="chart-fixed"><canvas id="genreTrendsChart" height="120"></canvas></div>
 </section>
 {% endif %} {% if at_years %}
 <section class="section reveal">
   <h2>Top Artists by Year</h2>
-  <p class="subtitle">Artists by year added (top 15 per year, rest grouped as Other)</p>
-  <canvas id="artistTrendsChart" height="120"></canvas>
+  <p class="subtitle">Artists by year added (top 10 per year, rest grouped as Other)</p>
+  <div class="chart-fixed"><canvas id="artistTrendsChart" height="120"></canvas></div>
 </section>
 {% endif %}
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    function makeTrendTooltip(otherSeries) {
+      return {
+        enabled: false,
+        external: AnalyzerCharts.externalTip(),
+        mode: 'index',
+        intersect: false,
+        filter: function (item, index, items) {
+          if (item.raw <= 0) return false;
+          var ranked = items
+            .filter(function (it) { return it.raw > 0; })
+            .sort(function (a, b) { return b.raw - a.raw; })
+            .slice(0, 10);
+          return ranked.indexOf(item) !== -1;
+        },
+        itemSort: function (a, b) { return b.raw - a.raw; },
+        afterBody: function (items) {
+          var other = otherSeries[items[0].dataIndex];
+          if (other > 0) return 'Other: ' + other + ' songs';
+          return '';
+        },
+      };
+    }
+
     const byYear = {{ by_year | tojson }};
     if (byYear.length) {
-      const amberColors = byYear.map((_, i) => `hsl(${25 + i * 25}, 55%, 42%)`);
       new Chart(document.getElementById('byYearChart'), {
         type: 'bar',
         data: {
@@ -58,15 +80,19 @@ artist_trends.get('series', {}) %}
           datasets: [{
             label: 'Songs Added',
             data: byYear.map(d => d.count),
-            backgroundColor: amberColors,
-            borderRadius: 3,
+            backgroundColor: AnalyzerCharts.bars(byYear.length),
+            borderRadius: 4,
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: AnalyzerCharts.plainTip(),
+          },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
             x: { grid: { display: false } }
           }
         }
@@ -82,8 +108,8 @@ artist_trends.get('series', {}) %}
           datasets: [{
             label: 'Songs Added',
             data: byMonth.map(d => d.count),
-            borderColor: '#d4a853',
-            backgroundColor: 'rgba(212,168,83,0.1)',
+            borderColor: '#E2472B',
+            backgroundColor: 'rgba(226,71,43,0.18)',
             fill: true,
             tension: 0.3,
             pointRadius: 3,
@@ -92,9 +118,13 @@ artist_trends.get('series', {}) %}
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: AnalyzerCharts.plainTip(),
+          },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
             x: { grid: { display: false }, ticks: { maxTicksLimit: 20, maxRotation: 45 } }
           }
         }
@@ -103,7 +133,6 @@ artist_trends.get('series', {}) %}
 
     const albumYears = {{ album_years | tojson }};
     if (albumYears.length) {
-      const forestColors = albumYears.map((_, i) => `hsl(${140 + i * 25}, 35%, 35%)`);
       new Chart(document.getElementById('albumYearChart'), {
         type: 'bar',
         data: {
@@ -111,15 +140,19 @@ artist_trends.get('series', {}) %}
           datasets: [{
             label: 'Songs',
             data: albumYears.map(d => d.count),
-            backgroundColor: forestColors,
-            borderRadius: 3,
+            backgroundColor: AnalyzerCharts.bars(albumYears.length),
+            borderRadius: 4,
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: AnalyzerCharts.plainTip(),
+          },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
             x: { grid: { display: false } }
           }
         }
@@ -130,13 +163,14 @@ artist_trends.get('series', {}) %}
     const gtGenres = {{ gt_genres | tojson }};
     const gtSeries = {{ gt_series | tojson }};
     if (gtYears.length) {
-      const datasets = gtGenres.map((g, i) => ({
-        label: g.charAt(0).toUpperCase() + g.slice(1),
-        data: gtSeries[g],
-        backgroundColor: g === 'Other'
-          ? '#555555'
-          : `hsl(${(i * 360 / gtGenres.length)}, ${55 + (i % 3) * 10}%, ${40 + (i % 3) * 8}%)`,
-      }));
+      const otherSeries = gtSeries['Other'] || [];
+      const datasets = gtGenres
+        .filter((g) => g !== 'Other')
+        .map((g, i) => ({
+          label: AnalyzerCharts.titleCase(g),
+          data: gtSeries[g],
+          backgroundColor: AnalyzerCharts.palette[i % AnalyzerCharts.palette.length],
+        }));
       new Chart(document.getElementById('genreTrendsChart'), {
         type: 'bar',
         data: {
@@ -145,26 +179,14 @@ artist_trends.get('series', {}) %}
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              filter: function (item) { return item.raw > 0; },
-              itemSort: function (a, b) {
-                var isOther = datasets.length - 1;
-                if (a.datasetIndex === isOther && b.datasetIndex !== isOther) return 1;
-                if (b.datasetIndex === isOther && a.datasetIndex !== isOther) return -1;
-                return b.raw - a.raw;
-              },
-              titleFont: { size: 14 },
-              bodyFont: { size: 13 },
-              padding: 10,
-            },
+            tooltip: makeTrendTooltip(otherSeries),
           },
           scales: {
             x: { stacked: true, grid: { display: false } },
-            y: { stacked: true, beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { stacked: true, beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
           }
         }
       });
@@ -174,13 +196,14 @@ artist_trends.get('series', {}) %}
     const atArtists = {{ at_artists | tojson }};
     const atSeries = {{ at_series | tojson }};
     if (atYears.length) {
-      const aDatasets = atArtists.map((a, i) => ({
-        label: a,
-        data: atSeries[a],
-        backgroundColor: a === 'Other'
-          ? '#555555'
-          : `hsl(${150 + (i * 30)}, ${50 + (i % 3) * 12}%, ${38 + (i % 3) * 8}%)`,
-      }));
+      const aOtherSeries = atSeries['Other'] || [];
+      const aDatasets = atArtists
+        .filter((a) => a !== 'Other')
+        .map((a, i) => ({
+          label: a,
+          data: atSeries[a],
+          backgroundColor: AnalyzerCharts.palette[i % AnalyzerCharts.palette.length],
+        }));
       new Chart(document.getElementById('artistTrendsChart'), {
         type: 'bar',
         data: {
@@ -189,26 +212,14 @@ artist_trends.get('series', {}) %}
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              filter: function (item) { return item.raw > 0; },
-              itemSort: function (a, b) {
-                var isOther = aDatasets.length - 1;
-                if (a.datasetIndex === isOther && b.datasetIndex !== isOther) return 1;
-                if (b.datasetIndex === isOther && a.datasetIndex !== isOther) return -1;
-                return b.raw - a.raw;
-              },
-              titleFont: { size: 14 },
-              bodyFont: { size: 13 },
-              padding: 10,
-            },
+            tooltip: makeTrendTooltip(aOtherSeries),
           },
           scales: {
             x: { stacked: true, grid: { display: false } },
-            y: { stacked: true, beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { stacked: true, beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
           }
         }
       });

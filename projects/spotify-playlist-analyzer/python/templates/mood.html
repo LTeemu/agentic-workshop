@@ -39,13 +39,40 @@ mood_data.get('valence_energy_scatter', []) %}
 <section class="section reveal">
   <h2>Valence vs Energy Scatter</h2>
   <p class="subtitle">Each dot is a song — hover for details</p>
-  <canvas id="scatterChart" height="80"></canvas>
+  <div class="chart-fixed"><canvas id="scatterChart" height="80"></canvas></div>
 </section>
 {% endif %}
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const quad = {{ quad | tojson }};
+    const quadValues = Object.values(quad);
+    const quadTotal = quadValues.length ? quadValues.reduce((a, b) => a + b, 0) : 0;
+    const centerTextPlugin = {
+      id: 'centerText',
+      afterDraw(chart, args, opts) {
+        const area = chart.chartArea;
+        if (!area) return;
+        const cx = (area.left + area.right) / 2;
+        const cy = (area.top + area.bottom) / 2;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (opts.title != null) {
+          ctx.font = '700 18px Archivo, sans-serif';
+          ctx.fillStyle = '#1B1712';
+          ctx.fillText(opts.title, cx, cy);
+        }
+        if (opts.subtitle) {
+          ctx.font = '600 11px "DM Sans", sans-serif';
+          ctx.fillStyle = 'rgba(27,23,18,0.55)';
+          ctx.fillText(opts.subtitle, cx, cy + (opts.title != null ? 14 : 0));
+        }
+        ctx.restore();
+      }
+    };
+
     if (Object.keys(quad).length) {
       const labels = {
         high_valence_high_energy: 'Happy & Energetic',
@@ -55,18 +82,33 @@ mood_data.get('valence_energy_scatter', []) %}
       };
       new Chart(document.getElementById('moodQuadrantChart'), {
         type: 'doughnut',
+        plugins: [centerTextPlugin],
         data: {
           labels: Object.keys(quad).map(k => labels[k] || k),
           datasets: [{
             data: Object.values(quad),
-            backgroundColor: ['#7a4a8a', '#5a3a6a', '#8a5a3a', '#3a5a6a'],
-            borderWidth: 0,
+            backgroundColor: ['#E2472B', '#C08A2D', '#B2557C', '#5A6FB5'],
+            borderWidth: 2,
+            borderColor: '#FCFAF4',
           }]
         },
         options: {
           responsive: true,
+          cutout: '60%',
+          rotation: -90,
           plugins: {
-            legend: { position: 'bottom' }
+            legend: { position: 'bottom' },
+            tooltip: {
+              enabled: false,
+              external: AnalyzerCharts.externalTip(),
+              callbacks: {
+                label: function (ctx) {
+                  const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  return `${ctx.parsed} songs — ${(ctx.parsed / t * 100).toFixed(1)}%`;
+                }
+              }
+            },
+            centerText: { title: quadTotal.toLocaleString(), subtitle: 'songs' }
           }
         }
       });
@@ -74,24 +116,36 @@ mood_data.get('valence_energy_scatter', []) %}
 
     const keyDist = {{ key_dist | tojson }};
     if (keyDist.length) {
-      const colors = keyDist.map((_, i) => `hsl(${(i * 360 / keyDist.length)}, 60%, 60%)`);
+      const keyTotal = keyDist.reduce((s, k) => s + k.count, 0);
       new Chart(document.getElementById('keyChart'), {
         type: 'bar',
         data: {
           labels: keyDist.map(k => k.key),
           datasets: [{
-            label: 'Count',
+            label: 'Songs',
             data: keyDist.map(k => k.count),
-            backgroundColor: colors,
+            backgroundColor: AnalyzerCharts.bars(keyDist.length),
             borderRadius: 4,
+            hoverBackgroundColor: '#E2472B',
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: false,
+              external: AnalyzerCharts.externalTip(),
+              callbacks: {
+                label: function (ctx) {
+                  return `${ctx.parsed.y} songs — ${(ctx.parsed.y / keyTotal * 100).toFixed(1)}%`;
+                }
+              }
+            }
+          },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
-            x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+            y: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true } }
           }
         }
       });
@@ -99,20 +153,39 @@ mood_data.get('valence_energy_scatter', []) %}
 
     const cam = {{ camelot | tojson }};
     if (cam.length) {
+      const camTotal = cam.reduce((s, c) => s + c.count, 0);
+      const camMax = Math.max(...cam.map(c => c.count));
       new Chart(document.getElementById('camelotChart'), {
         type: 'doughnut',
+        plugins: [centerTextPlugin],
         data: {
           labels: cam.map(c => c.camelot),
           datasets: [{
             data: cam.map(c => c.count),
-            backgroundColor: cam.map((_, i) => `hsl(${(i * 360 / cam.length)}, 55%, 55%)`),
-            borderWidth: 0,
+            backgroundColor: cam.map(c => {
+              const t = 0.35 + 0.55 * (c.count / camMax);
+              return `rgba(192, 138, 45, ${t.toFixed(2)})`;
+            }),
+            borderWidth: 2,
+            borderColor: '#FCFAF4',
           }]
         },
         options: {
           responsive: true,
+          cutout: '62%',
+          rotation: -90,
           plugins: {
-            legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } }
+            legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } },
+            tooltip: {
+              enabled: false,
+              external: AnalyzerCharts.externalTip(),
+              callbacks: {
+                label: function (ctx) {
+                  return `${ctx.parsed} songs — ${(ctx.parsed / camTotal * 100).toFixed(1)}%`;
+                }
+              }
+            },
+            centerText: { title: camTotal.toLocaleString(), subtitle: 'songs' }
           }
         }
       });
@@ -120,35 +193,84 @@ mood_data.get('valence_energy_scatter', []) %}
 
     const scat = {{ scatter | tojson }};
     if (scat.length) {
-      new Chart(document.getElementById('scatterChart'), {
+      var scatterChart = new Chart(document.getElementById('scatterChart'), {
         type: 'scatter',
         data: {
           datasets: [{
             label: 'Songs',
             data: scat.map(s => ({ x: s.valence, y: s.energy })),
-            backgroundColor: '#d4a853',
-            pointRadius: 3,
-            pointHoverRadius: 6,
+            backgroundColor: 'rgba(226, 71, 43, 0.45)',
+            pointRadius: window.innerWidth < 768 ? 2 : 3,
+            pointHoverRadius: window.innerWidth < 768 ? 7 : 8,
+            pointHitRadius: 12,
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
-            tooltip: {
-              callbacks: {
-                label: function (ctx) {
-                  const s = scat[ctx.dataIndex];
-                  return `${s.song} — ${s.artist} (${s.genre})`;
-                }
-              }
-            },
+            tooltip: { enabled: false },
             legend: { display: false }
           },
           scales: {
-            x: { title: { display: true, text: 'Valence (Sad → Happy)' }, min: 0, max: 100, grid: { color: '#2f2822' } },
-            y: { title: { display: true, text: 'Energy (Calm → Energetic)' }, min: 0, max: 100, grid: { color: '#2f2822' } }
+            x: { title: { display: true, text: 'Valence (Sad → Happy)' }, min: 0, max: 100, grid: { color: AnalyzerCharts.grid } },
+            y: { title: { display: true, text: 'Energy (Calm → Energetic)' }, min: 0, max: 100, grid: { color: AnalyzerCharts.grid } }
           }
         }
+      });
+
+      // Chart.js tooltip updates are unreliable on touch, so drive the
+      // full-width caption bar ourselves: 8 nearest songs on hover/tap,
+      // hide when leaving the chart or tapping outside it.
+      var scatterTip = null;
+      function getScatterTip() {
+        if (!scatterTip) {
+          scatterTip = document.createElement('div');
+          scatterTip.id = 'scatterTooltip';
+          scatterTip.className = 'scatter-tooltip';
+          scatterChart.canvas.parentNode.appendChild(scatterTip);
+        }
+        return scatterTip;
+      }
+      function updateScatterTip(text) {
+        var el = getScatterTip();
+        el.textContent = text;
+        el.classList.add('scatter-tooltip--visible');
+      }
+      function hideScatterTip() {
+        getScatterTip().classList.remove('scatter-tooltip--visible');
+      }
+      function nearestAt(evt) {
+        var rect = scatterCanvas.getBoundingClientRect();
+        var point = evt.touches ? evt.touches[0] : evt;
+        var px = point.clientX - rect.left;
+        var py = point.clientY - rect.top;
+        var vx = scatterChart.scales.x.getValueForPixel(px);
+        var vy = scatterChart.scales.y.getValueForPixel(py);
+        if (vx === null || vy === null || isNaN(vx) || isNaN(vy)) {
+          hideScatterTip();
+          return;
+        }
+        var scored = [];
+        for (var i = 0; i < scat.length; i++) {
+          var dx = scat[i].valence - vx;
+          var dy = scat[i].energy - vy;
+          scored.push([dx * dx + dy * dy, i]);
+        }
+        scored.sort(function (a, b) { return a[0] - b[0]; });
+        var lines = [];
+        for (var k = 0; k < Math.min(8, scored.length); k++) {
+          var s = scat[scored[k][1]];
+          lines.push(`${s.song} — ${s.artist}`);
+        }
+        updateScatterTip(lines.join('\n'));
+      }
+      var scatterCanvas = scatterChart.canvas;
+      scatterCanvas.addEventListener('mousemove', nearestAt);
+      scatterCanvas.addEventListener('mouseleave', hideScatterTip);
+      scatterCanvas.addEventListener('touchstart', nearestAt, { passive: true });
+      document.addEventListener('touchend', function (e) {
+        if (!scatterCanvas.contains(e.target)) hideScatterTip();
       });
     }
   });

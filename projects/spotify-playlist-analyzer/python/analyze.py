@@ -22,11 +22,19 @@ import pandas as pd
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _fmt_range(fmt, low, high):
+    """Format a bucket label; `fmt` may be a format string or a callable."""
+    return fmt(low, high) if callable(fmt) else fmt.format(low, high)
+
+
 def _bucket(values, n_buckets=10, fmt="{:.0f}-{:.0f}"):
     """Partition `values` into `n_buckets` quantile-based buckets.
     
     Uses qcut which creates buckets with roughly equal counts,
     avoiding edge cases with integer-heavy distributions.
+    `fmt` may be a "{:.0f}-{:.0f}"-style format string or a callable
+    (used for ranges like dB where a plain "-" separator would read
+    as "-8.0--7.0").
     """
     vals = values.dropna()
     if len(vals) == 0:
@@ -34,11 +42,11 @@ def _bucket(values, n_buckets=10, fmt="{:.0f}-{:.0f}"):
     if len(vals) < n_buckets:
         n_buckets = len(vals)
     if vals.nunique() < 2:
-        return {"buckets": [fmt.format(vals.iloc[0], vals.iloc[0])], "counts": [len(vals)]}
+        return {"buckets": [_fmt_range(fmt, vals.iloc[0], vals.iloc[0])], "counts": [len(vals)]}
     try:
         _, edges = pd.qcut(vals, q=n_buckets, retbins=True, duplicates="drop")
         n_actual = len(edges) - 1
-        buckets = [fmt.format(edges[i], edges[i + 1]) for i in range(n_actual)]
+        buckets = [_fmt_range(fmt, edges[i], edges[i + 1]) for i in range(n_actual)]
         # Ensure unique labels
         seen = set()
         unique_buckets = []
@@ -50,12 +58,12 @@ def _bucket(values, n_buckets=10, fmt="{:.0f}-{:.0f}"):
                 unique_buckets.append(label)
                 unique_edges.append(edges[i + 1])
         if len(unique_buckets) < 2:
-            return {"buckets": [fmt.format(vals.min(), vals.max())], "counts": [len(vals)]}
+            return {"buckets": [_fmt_range(fmt, vals.min(), vals.max())], "counts": [len(vals)]}
         labels = pd.cut(vals, bins=unique_edges, labels=unique_buckets, include_lowest=True)
         counts = labels.value_counts(sort=False).tolist()
         return {"buckets": unique_buckets, "counts": counts}
     except ValueError:
-        return {"buckets": [fmt.format(vals.min(), vals.max())], "counts": [len(vals)]}
+        return {"buckets": [_fmt_range(fmt, vals.min(), vals.max())], "counts": [len(vals)]}
 
 
 def _split_values(value, lower=True):
@@ -74,6 +82,28 @@ def _split_col(df, column, sep=","):
     return [p.strip().lower() for sublist in parts for p in sublist if p.strip()]
 
 
+def _artist_series(df):
+    """Per-row artist name lists (collab-separated, case preserved)."""
+    return df["Artist"].fillna("").apply(lambda x: _split_values(x, lower=False))
+
+
+def _artist_tokens(df, series=None):
+    """Every artist name across the playlist, flattened.
+
+    Single source of truth so the Overview ("unique artists") and the Artists
+    page ("total unique artists") never disagree. Accepts a precomputed
+    artist series (e.g. df["_artists"]) to avoid recomputing it.
+    """
+    if series is None:
+        series = _artist_series(df)
+    return [a for group in series for a in group]
+
+
+def _display_title(name):
+    """Capitalize each word without breaking apostrophes ("you're" → "You're")."""
+    return " ".join(w.capitalize() for w in name.split())
+
+
 # ---------------------------------------------------------------------------
 # Analysis modules
 # ---------------------------------------------------------------------------
@@ -84,7 +114,7 @@ def basic_stats(df):
     total_sec = int(df["Duration"].apply(_duration_to_sec).sum())
     return {
         "total_songs": int(len(df)),
-        "unique_artists": int(df["Artist"].nunique()),
+        "unique_artists": int(len(set(_artist_tokens(df)))),
         "unique_genres": int(len(set(_split_col(df, "Genres")))),
         "unique_albums": int(df["Album"].nunique()),
         "avg_bpm": round(float(df["BPM"].median()), 1),
@@ -127,8 +157,8 @@ def audio_features(df):
         b = _bucket(df[col])
         b["unit"] = unit
         result[key] = b
-    # Loudness uses db, different range
-    loud = _bucket(df["Loud (db)"], fmt="{:.1f}-{:.1f}")
+    # Loudness uses db, negative range — en dash avoids "-8.0--7.0" labels
+    loud = _bucket(df["Loud (db)"], fmt=lambda low, high: f"{low:.1f}–{high:.1f}")
     loud["unit"] = "dB"
     result["loudness"] = loud
     return result
@@ -220,23 +250,17 @@ def genres(df):
         if isinstance(b, int):
             cnt = int((genre_counts == b).sum())
             genres_per_song.append({"label": str(b), "count": cnt})
-
-            top_entry = genre_combo_counter.get(b, Counter()).most_common(1)
-            if top_entry:
-                genre_combo_info[str(b)] = {
-                    "name": top_entry[0][0],
-                    "count": top_entry[0][1],
-                }
+            genre_combo_info[str(b)] = [
+                {"name": name, "count": n}
+                for name, n in genre_combo_counter.get(b, Counter()).most_common(3)
+            ]
         else:
             cnt = int((genre_counts >= 6).sum())
             genres_per_song.append({"label": "6+", "count": cnt})
-
-            top_entry = genre_combo_counter.get(6, Counter()).most_common(1)
-            if top_entry:
-                genre_combo_info["6+"] = {
-                    "name": top_entry[0][0],
-                    "count": top_entry[0][1],
-                }
+            genre_combo_info["6+"] = [
+                {"name": name, "count": n}
+                for name, n in genre_combo_counter.get(6, Counter()).most_common(3)
+            ]
 
     return {
         "top_genres": top,
@@ -252,13 +276,8 @@ def artists(df):
 
     df = df.copy()
 
-    df["_artists"] = (
-        df["Artist"]
-        .fillna("")
-        .apply(lambda x: _split_values(x, lower=False))
-    )
-
-    all_artists = [a for group in df["_artists"] for a in group]
+    df["_artists"] = _artist_series(df)
+    all_artists = _artist_tokens(df, series=df["_artists"])
 
     if not all_artists:
         return {
@@ -274,7 +293,8 @@ def artists(df):
         {
             "name": name,
             "count": count,
-            "pct": round(count / len(all_artists) * 100, 1),
+            # Share of songs featuring the artist (not share of artist slots)
+            "pct": round(count / len(df) * 100, 1),
         }
         for name, count in counter.most_common(20)
     ]
@@ -332,14 +352,6 @@ def artists(df):
         else:
             t["peak_year"] = None
             t["peak_count"] = 0
-
-    top.sort(
-        key=lambda x: (
-            x["peak_year"] is None,
-            x["peak_year"] or 0,
-            -x["count"],
-        )
-    )
 
     freq_dist = Counter(counter.values())
     max_freq = max(freq_dist.keys(), default=0)
@@ -505,7 +517,7 @@ def albums(df):
     return {"top_albums": top[:20], "total_unique_albums": len(top)}
 
 
-def _trends(df, value_col, output_key, top_n=15, title_names=False):
+def _trends(df, value_col, output_key, top_n=10):
     """Build year-over-year trends for a multi-value column (Genres or Artist)."""
     required = {value_col, "Added at"}
     missing = required - set(df.columns)
@@ -520,13 +532,13 @@ def _trends(df, value_col, output_key, top_n=15, title_names=False):
     if df.empty:
         return {"years": [], output_key: [], "series": {}}
 
-    # Build year → counter
+    # Build year → display-titled counter
     year_counter = {}
     for _, row in df.iterrows():
         year = int(row["_year"])
         values = _split_values(row[value_col])
         for v in values:
-            year_counter.setdefault(year, Counter())[v] += 1
+            year_counter.setdefault(year, Counter())[_display_title(v)] += 1
 
     years = sorted(year_counter.keys())
 
@@ -538,17 +550,17 @@ def _trends(df, value_col, output_key, top_n=15, title_names=False):
 
     all_years_items = sorted(top_set)
 
-    # Build series: per-year, top N go in their slot, rest into Other
+    # Build series: single pass per year — top-N items go in their own slot,
+    # everything else (including items that never make any top-N) into Other
     series = {}
-    for year in years:
+    for idx, year in enumerate(years):
         counts = year_counter[year]
         top_for_year = {v for v, _ in counts.most_common(top_n)}
-        for item in all_years_items:
-            val = counts.get(item, 0)
-            if item in top_for_year and val > 0:
-                series.setdefault(item, [0] * len(years))[years.index(year)] = val
+        for item, val in counts.items():
+            if item in top_for_year:
+                series.setdefault(item, [0] * len(years))[idx] = val
             else:
-                series.setdefault("Other", [0] * len(years))[years.index(year)] += val
+                series.setdefault("Other", [0] * len(years))[idx] += val
 
     # Order by total count descending, Other always last
     item_order = sorted(
@@ -560,7 +572,7 @@ def _trends(df, value_col, output_key, top_n=15, title_names=False):
         ordered["Other"] = series["Other"]
 
     top_per_year = [
-        {"year": y, "name": year_counter[y].most_common(1)[0][0].title() if title_names else year_counter[y].most_common(1)[0][0],
+        {"year": y, "name": _display_title(year_counter[y].most_common(1)[0][0]),
          "count": year_counter[y].most_common(1)[0][1]}
         for y in years
     ]
@@ -573,18 +585,22 @@ def _trends(df, value_col, output_key, top_n=15, title_names=False):
     }
 
 
-def genre_trends(df, top_n=15):
+def genre_trends(df, top_n=10):
     """Genre distribution by year added — delegated to _trends()."""
-    return _trends(df, "Genres", "genres", top_n, title_names=True)
+    return _trends(df, "Genres", "genres", top_n)
 
 
-def artist_trends(df, top_n=15):
+def artist_trends(df, top_n=10):
     """Top artists by year added — delegated to _trends()."""
     return _trends(df, "Artist", "artists", top_n)
 
 
 def perfect_song(df):
-    """Build a 'perfect song' profile and find the real track closest to it."""
+    """Build a 'perfect song' profile from the playlist's typical (median) values."""
+    def typical_value(series):
+        """Median for the numeric profile; mode stays for categorical values."""
+        return float(series.median()) if not series.empty else None
+
     def most_common(series):
         return series.mode().iloc[0] if not series.mode().empty else None
 
@@ -604,10 +620,10 @@ def perfect_song(df):
         # Popularity=0 is treated as missing (many tracks default to 0 without data)
         if key == "popularity":
             vals = vals[vals > 0]
-        val = most_common(vals)
+        val = typical_value(vals)
         if val is not None:
             v = float(val)
-            freq[key] = {"value": round(v, 0), "unit": unit}
+            freq[key] = {"value": round(v, 1), "unit": unit}
             perf_target[key] = v
 
     # --- Find closest real song ---
@@ -651,18 +667,19 @@ def perfect_song(df):
     worst = scored.loc[worst_idx]
 
     def _song_info(row):
+        genres = row.get("Genres")
         return {
             "song": str(row.get("Song", "")),
-            "artist": str(row.get("Artist", "")),
-            "album": str(row.get("Album", "")),
+            "artist": "" if pd.isna(row.get("Artist", "")) else str(row.get("Artist", "")),
+            "album": "" if pd.isna(row.get("Album", "")) else str(row.get("Album", "")),
             "bpm": int(row.get("BPM", 0)) if pd.notna(row.get("BPM")) else None,
             "energy": int(row.get("Energy", 0)) if pd.notna(row.get("Energy")) else None,
             "dance": int(row.get("Dance", 0)) if pd.notna(row.get("Dance")) else None,
             "valence": int(row.get("Valence", 0)) if pd.notna(row.get("Valence")) else None,
-            "genres": str(row.get("Genres", "")),
+            "genres": "" if pd.isna(genres) else str(genres),
             "popularity": int(row.get("Popularity", 0)) if pd.notna(row.get("Popularity")) else None,
-            "key": str(row.get("Key", "")),
-            "camelot": str(row.get("Camelot", "")),
+            "key": "" if pd.isna(row.get("Key", "")) else str(row.get("Key", "")),
+            "camelot": "" if pd.isna(row.get("Camelot", "")) else str(row.get("Camelot", "")),
             "explicit": str(row.get("Explicit", "")),
         }
 
@@ -768,6 +785,15 @@ def run(csv_path, output_path, limit=None):
         raw = raw.drop(columns=["#"])
     df = raw.head(limit) if limit else raw
     df = df.copy()  # Avoid SettingWithCopyWarning
+
+    # Exports can list the same track twice (identical Spotify Track Id).
+    # Count each track once so page stats aren't inflated by duplicates.
+    # Rows without a track id are never deduped: a missing id does not mean
+    # "the same track", it means "id unknown".
+    if "Spotify Track Id" in df.columns:
+        ids = df["Spotify Track Id"]
+        key = ids.where(ids.notna(), "__no_id__" + df.index.astype(str))
+        df = df[~key.duplicated(keep="first")].reset_index(drop=True)
 
     print(f"Loaded {len(df)} songs from {csv_path}")
 

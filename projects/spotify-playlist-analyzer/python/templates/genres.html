@@ -31,40 +31,49 @@ genre_data.get('top_genres', []) %}
 {% if top %}
 <section class="section reveal">
   <h2>Genre Breakdown</h2>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Genre</th>
-        <th>Count</th>
-        <th>%</th>
-        <th>Artists</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for g in top %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ g.name }}</td>
-        <td>{{ g.count }}</td>
-        <td>{{ g.pct }}%</td>
-        <td>{{ g.artist_count }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Genre</th>
+            <th>Songs</th>
+            <th>%</th>
+            <th>Artists</th>
+            <th>Added</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in top %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="genre-name">{{ g.name.title() }}</td>
+            <td>{{ g.count }}</td>
+            <td>{{ g.pct }}%</td>
+            <td>{{ g.artist_count }}</td>
+            <td class="year-range">
+              {% if g.year_min and g.year_max %}{% if g.year_min == g.year_max %}{{ g.year_min }}{%
+              else %}{{ g.year_min }}–{{ g.year_max }}{% endif %}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
 <section class="section reveal">
   <h2>Artists per Genre</h2>
   <p class="subtitle">How many unique artists appear in each genre</p>
-  <canvas id="artistsPerGenreChart" height="120"></canvas>
+  <div class="chart-fixed"><canvas id="artistsPerGenreChart" height="120"></canvas></div>
 </section>
 
 <section class="section reveal">
   <h2>Genres per Song</h2>
   <p class="subtitle">How many genre tags each song has</p>
-  <canvas id="genresPerSongChart" height="80"></canvas>
+  <div class="chart-fixed"><canvas id="genresPerSongChart" height="80"></canvas></div>
 </section>
 {% else %}
 <div class="empty-state">
@@ -84,16 +93,20 @@ data.get('genres', {}).get('genre_combo_info', {}) %}
           datasets: [{
             label: 'Artists',
             data: slice.map(g => g.artist_count),
-            backgroundColor: slice.map((_, i) => `hsl(${165 + i * 15}, 42%, 40%)`),
-            borderRadius: 3,
+            backgroundColor: AnalyzerCharts.bars(slice.length),
+            borderRadius: 4,
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           indexAxis: 'y',
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: AnalyzerCharts.plainTip(),
+          },
           scales: {
-            x: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            x: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
             y: { grid: { display: false } }
           }
         }
@@ -110,19 +123,24 @@ data.get('genres', {}).get('genre_combo_info', {}) %}
           datasets: [{
             label: 'Songs',
             data: gps.map(d => d.count),
-            backgroundColor: ['#d4a853', '#c9773a', '#b8433a', '#8a8a3a', '#3a8a7a', '#7a4a8a'],
-            borderRadius: 3,
+            backgroundColor: AnalyzerCharts.bars(gps.length),
+            borderRadius: 4,
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             tooltip: {
-              titleFont: { size: 14 },
-              bodyFont: { size: 13 },
-              padding: 10,
+              // enabled:false suppresses the on-canvas tooltip (Chart.js would
+              // otherwise draw it on canvas even with external set)
+              enabled: false,
+              external: AnalyzerCharts.externalTip(),
               callbacks: {
+                // Bar labels are bare bucket numbers ("2", "6+") already shown
+                // on the axis — drop them from the tooltip title
+                title: function () { return ''; },
                 label: function (ctx) {
                   var total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
                   var pct = ((ctx.raw / total) * 100).toFixed(1);
@@ -131,16 +149,16 @@ data.get('genres', {}).get('genre_combo_info', {}) %}
                 afterBody: function (items) {
                   var key = items[0].label;
                   var info = gci[key];
-                  if (info) {
-                    return 'Most common: ' + info.name + ' (' + info.count + ' songs)';
-                  }
-                  return '';
+                  if (!info || info.length === 0) return '';
+                  return ['Most common combos:'].concat(info.map(function (c, i) {
+                    return (i + 1) + '. ' + c.name + ' (' + c.count + ')';
+                  }));
                 }
               }
             }
           },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#2f2822' }, ticks: { stepSize: 1 } },
+            y: { beginAtZero: true, grid: { color: AnalyzerCharts.grid }, ticks: { precision: 0 } },
             x: { grid: { display: false } }
           }
         }
