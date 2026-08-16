@@ -39,7 +39,7 @@ mood_data.get('valence_energy_scatter', []) %}
 <section class="section reveal">
   <h2>Valence vs Energy Scatter</h2>
   <p class="subtitle">Each dot is a song — hover for details</p>
-  <div class="chart-fixed"><canvas id="scatterChart" height="80"></canvas></div>
+  <div class="chart-fixed"><canvas id="scatterChart"></canvas></div>
 </section>
 {% endif %}
 
@@ -192,25 +192,60 @@ mood_data.get('valence_energy_scatter', []) %}
     }
 
     const scat = {{ scatter | tojson }};
+    // Hover vocabulary: the pixel-radius circle around the cursor defines both
+    // which songs are listed and which dots are highlighted. The highlight is
+    // painted by the hoverOverlay plugin on exactly the listed dots, so the
+    // big circles can never diverge from the tooltip content.
+    const scatterHitRadius = 12;
+    const scatterPointRadius = window.innerWidth < 768 ? 2 : 3;
+    const scatterHoverRadius = window.innerWidth < 768 ? 7 : 8;
     if (scat.length) {
-      var scatterChart = new Chart(document.getElementById('scatterChart'), {
+      // Paints the highlighted dots directly on the canvas — one source of
+      // truth (the listed indices). Chart.js's own hit scanning can't leak
+      // enlarged dots past the gate because it no longer drives the visuals.
+      var highlight = [];
+      var hoverOverlay = {
+        id: 'scatterHoverOverlay',
+        afterDatasetsDraw: function (chart) {
+          if (!highlight.length) return;
+          var xS = chart.scales.x;
+          var yS = chart.scales.y;
+          var ctx = chart.ctx;
+          ctx.save();
+          ctx.fillStyle = 'rgba(226, 71, 43, 0.85)';
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          for (var i = 0; i < highlight.length; i++) {
+            var p = scat[highlight[i]];
+            ctx.beginPath();
+            ctx.arc(xS.getPixelForValue(p.valence), yS.getPixelForValue(p.energy), scatterHoverRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      };
+      const scatterChart = new Chart(document.getElementById('scatterChart'), {
         type: 'scatter',
+        plugins: [hoverOverlay],
         data: {
           datasets: [{
             label: 'Songs',
             data: scat.map(s => ({ x: s.valence, y: s.energy })),
             backgroundColor: 'rgba(226, 71, 43, 0.45)',
-            pointRadius: window.innerWidth < 768 ? 2 : 3,
-            pointHoverRadius: window.innerWidth < 768 ? 7 : 8,
-            pointHitRadius: 12,
+            pointRadius: scatterPointRadius,
+            // Native hover kept invisible — the hoverOverlay plugin paints the
+            // highlight from the listed indices (single source of truth).
+            pointHoverRadius: scatterPointRadius,
+            pointHitRadius: scatterHitRadius,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            tooltip: { enabled: false },
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: { enabled: false }
           },
           scales: {
             x: { title: { display: true, text: 'Valence (Sad → Happy)' }, min: 0, max: 100, grid: { color: AnalyzerCharts.grid } },
@@ -219,56 +254,82 @@ mood_data.get('valence_energy_scatter', []) %}
         }
       });
 
-      // Chart.js tooltip updates are unreliable on touch, so drive the
-      // full-width caption bar ourselves: 8 nearest songs on hover/tap,
-      // hide when leaving the chart or tapping outside it.
+      // Chart.js only re-runs tooltip callbacks when the active element
+      // changes; with thousands of overlapping dots that makes the nearest
+      // list feel frozen. Drive the tooltip from mousemove instead so it
+      // tracks the cursor and updates continuously.
       var scatterTip = null;
+      var hoverKey = ''; // listed indices as a list-string; drives re-renders only on set change
       function getScatterTip() {
         if (!scatterTip) {
           scatterTip = document.createElement('div');
-          scatterTip.id = 'scatterTooltip';
-          scatterTip.className = 'scatter-tooltip';
+          scatterTip.className = 'chart-tip';
           scatterChart.canvas.parentNode.appendChild(scatterTip);
         }
         return scatterTip;
       }
-      function updateScatterTip(text) {
-        var el = getScatterTip();
-        el.textContent = text;
-        el.classList.add('scatter-tooltip--visible');
+      function resetScatterHover() {
+        if (!highlight.length) return;
+        highlight = [];
+        scatterChart.render();
       }
       function hideScatterTip() {
-        getScatterTip().classList.remove('scatter-tooltip--visible');
+        if (scatterTip) scatterTip.classList.remove('chart-tip--visible');
+        resetScatterHover();
       }
-      function nearestAt(evt) {
-        var rect = scatterCanvas.getBoundingClientRect();
-        var point = evt.touches ? evt.touches[0] : evt;
-        var px = point.clientX - rect.left;
-        var py = point.clientY - rect.top;
-        var vx = scatterChart.scales.x.getValueForPixel(px);
-        var vy = scatterChart.scales.y.getValueForPixel(py);
-        if (vx === null || vy === null || isNaN(vx) || isNaN(vy)) {
-          hideScatterTip();
-          return;
-        }
+      function nearestList(evt) {
+        var rect = scatterChart.canvas.getBoundingClientRect();
+        var pt = evt.touches ? evt.touches[0] : evt;
+        var px = pt.clientX - rect.left;
+        var py = pt.clientY - rect.top;
+        // Rank by on-screen pixel distance so "the circle" is literally the
+        // circle around the cursor; anything past the radius is out of range.
+        var xScale = scatterChart.scales.x;
+        var yScale = scatterChart.scales.y;
+        var maxDist2 = scatterHitRadius * scatterHitRadius;
         var scored = [];
         for (var i = 0; i < scat.length; i++) {
-          var dx = scat[i].valence - vx;
-          var dy = scat[i].energy - vy;
+          var dx = xScale.getPixelForValue(scat[i].valence) - px;
+          var dy = yScale.getPixelForValue(scat[i].energy) - py;
           scored.push([dx * dx + dy * dy, i]);
         }
         scored.sort(function (a, b) { return a[0] - b[0]; });
-        var lines = [];
-        for (var k = 0; k < Math.min(8, scored.length); k++) {
+        var html = '';
+        var shown = 0;
+        for (var k = 0; k < scored.length && shown < 8; k++) {
+          if (scored[k][0] > maxDist2) break; // sorted → rest are out of range
           var s = scat[scored[k][1]];
-          lines.push(`${s.song} — ${s.artist}`);
+          html +=
+            '<div class="chart-tip-row">(' +
+            AnalyzerCharts.tipEsc(Math.round(s.energy)) + 'E, ' +
+            AnalyzerCharts.tipEsc(Math.round(s.valence)) + 'V) ' +
+            AnalyzerCharts.tipEsc((s.artist || '').replace(/,/g, ', ')) + ' - ' +
+            AnalyzerCharts.tipEsc(s.song) +
+            '</div>';
+          shown++;
         }
-        updateScatterTip(lines.join('\n'));
+        if (!shown) {
+          hideScatterTip();
+          return;
+        }
+        // Highlight exactly the listed dots through the overlay (painted on the
+        // canvas), re-rendering only when the set changes — pure cursor
+        // movement within it just repositions the tip.
+        var key = '';
+        for (var l = 0; l < shown; l++) key += scored[l][1] + ',';
+        if (key !== hoverKey) {
+          hoverKey = key;
+          highlight = scored.slice(0, shown).map(function (p) { return p[1]; });
+          scatterChart.render();
+        }
+        var tip = getScatterTip();
+        tip.innerHTML = '<div class="chart-tip-inner">' + html + '</div>';
+        AnalyzerCharts.placeTip(tip, px, py);
       }
       var scatterCanvas = scatterChart.canvas;
-      scatterCanvas.addEventListener('mousemove', nearestAt);
+      scatterCanvas.addEventListener('mousemove', nearestList);
       scatterCanvas.addEventListener('mouseleave', hideScatterTip);
-      scatterCanvas.addEventListener('touchstart', nearestAt, { passive: true });
+      scatterCanvas.addEventListener('touchstart', nearestList, { passive: true });
       document.addEventListener('touchend', function (e) {
         if (!scatterCanvas.contains(e.target)) hideScatterTip();
       });

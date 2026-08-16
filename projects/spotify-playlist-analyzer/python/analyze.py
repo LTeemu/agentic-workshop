@@ -157,8 +157,9 @@ def audio_features(df):
         b = _bucket(df[col])
         b["unit"] = unit
         result[key] = b
-    # Loudness uses db, negative range — en dash avoids "-8.0--7.0" labels
-    loud = _bucket(df["Loud (db)"], fmt=lambda low, high: f"{low:.1f}–{high:.1f}")
+    # Loudness uses db, negative range — spaces around the en dash keep the
+    # minus signs from visually merging ("-8.0 – -7.0")
+    loud = _bucket(df["Loud (db)"], fmt=lambda low, high: f"{low:.1f} – {high:.1f}")
     loud["unit"] = "dB"
     result["loudness"] = loud
     return result

@@ -366,7 +366,7 @@ code {
   font-size: clamp(2.5rem, 11vw, 4.75rem);
   line-height: 0.98;
   letter-spacing: -0.03em;
-  margin: 18px 0 14px;
+  margin: 28px 0 22px;
 }
 
 .hero-title em {
@@ -457,7 +457,7 @@ code {
    ----------------------------------------------------------------------- */
 
 .section {
-  padding: 8px 0;
+  padding: 10px 0;
   margin-top: 32px;
 }
 
@@ -570,14 +570,11 @@ code {
 
 .chart-fixed canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
 }
 
-/* Tooltip surfaces — caption bar (scatter) and custom floating tooltip share
-   the chrome: absolute, layered, bordered, shadowed, fading. Show/hide is a
-   class toggle (--visible) so entrance motion can run in both directions. */
-.scatter-tooltip,
+/* Tooltip surface — custom floating tooltip: absolute, layered, bordered,
+   shadowed, fading. Show/hide is a class toggle (--visible) so entrance
+   motion can run in both directions. */
 .chart-tip {
   position: absolute;
   z-index: 10;
@@ -592,25 +589,6 @@ code {
     transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Full-width caption bar (scatter chart) */
-.scatter-tooltip {
-  left: 12px;
-  right: 12px;
-  bottom: 8px;
-  padding: 8px 14px;
-  font-weight: 600;
-  color: var(--ink);
-  background: rgba(252, 250, 244, 0.92);
-  line-height: 1.35;
-  white-space: pre-line;
-  transform: translateY(8px);
-}
-
-.scatter-tooltip--visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Custom floating tooltip — looks like Chart.js's default white tooltip but
    is a DOM element, so it wraps and is clamped to the chart wrapper instead
    of being clipped at the canvas edge. */
@@ -620,7 +598,11 @@ code {
   max-width: min(320px, calc(100% - 16px));
   max-height: calc(100% - 16px);
   padding: 8px 12px;
-  background: #fff;
+  /* Translucent so the cursor (and the dot under it) stays visible; the
+     backdrop blur keeps the text readable over the busy scatter. */
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   color: var(--ink);
   border-color: var(--line-soft);
   border-radius: 6px;
@@ -655,11 +637,19 @@ code {
   font-weight: 700;
   font-size: 13px;
   margin-bottom: 4px;
+  /* Single line — long titles cut off with an ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chart-tip-row {
   font-weight: 500;
   color: var(--ink-soft);
+  /* Single line per row — long song/artist text cuts off with an ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chart-tip-row:not(:last-child) {
@@ -682,7 +672,7 @@ code {
   position: absolute;
   width: 9px;
   height: 9px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.88);
   border-right: 1px solid var(--line-soft);
   border-bottom: 1px solid var(--line-soft);
   transform: rotate(45deg);
@@ -703,7 +693,6 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scatter-tooltip,
   .chart-tip {
     transition: none;
   }
@@ -1108,6 +1097,8 @@ html.page-swap .page-transition__logo {
 }
 
 .edge-card {
+  display: flex;
+  flex-direction: column;
   padding: 16px;
 }
 
@@ -1117,6 +1108,13 @@ html.page-swap .page-transition__logo {
 
 .edge-furthest {
   border-top: 3px solid var(--gold);
+}
+
+.match-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .match-heading {
@@ -1158,7 +1156,7 @@ html.page-swap .page-transition__logo {
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   border-top: 1px solid var(--line-soft);
-  margin-top: 14px;
+  margin-top: auto;
   padding-top: 12px;
 }
 
@@ -1468,11 +1466,6 @@ html.page-swap .page-transition__logo {
    ----------------------------------------------------------------------- */
 
 @media (min-width: 560px) {
-  .container {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-
   .preview-cards {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1485,10 +1478,6 @@ html.page-swap .page-transition__logo {
 }
 
 @media (min-width: 768px) {
-  .container {
-    padding: 40px 32px 88px;
-  }
-
   .desktop-nav ul {
     list-style: none;
     display: flex;
@@ -1564,10 +1553,6 @@ html.page-swap .page-transition__logo {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .section {
-    padding: 32px 0;
-  }
-
   .perfect-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1590,11 +1575,6 @@ html.page-swap .page-transition__logo {
 }
 
 @media (min-width: 1024px) {
-  .container {
-    padding-left: 40px;
-    padding-right: 40px;
-  }
-
   .site-header {
     padding: 0 32px;
   }

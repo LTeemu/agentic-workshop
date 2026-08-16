@@ -20,29 +20,29 @@ artist_trends.get('series', {}) %}
 {% if by_year %}
 <section class="section reveal">
   <h2>Songs Added by Year</h2>
-  <div class="chart-fixed"><canvas id="byYearChart" height="100"></canvas></div>
+  <div class="chart-fixed"><canvas id="byYearChart"></canvas></div>
 </section>
 {% endif %} {% if by_month %}
 <section class="section reveal">
   <h2>Songs Added by Month</h2>
-  <div class="chart-fixed"><canvas id="byMonthChart" height="120"></canvas></div>
+  <div class="chart-fixed"><canvas id="byMonthChart"></canvas></div>
 </section>
 {% endif %} {% if album_years %}
 <section class="section reveal">
   <h2>Songs by Release Year</h2>
-  <div class="chart-fixed"><canvas id="albumYearChart" height="100"></canvas></div>
+  <div class="chart-fixed"><canvas id="albumYearChart"></canvas></div>
 </section>
 {% endif %} {% if gt_years %}
 <section class="section reveal">
   <h2>Genre Trends Over Time</h2>
-  <p class="subtitle">Genres by year added (top 10 per year, rest grouped as Other)</p>
-  <div class="chart-fixed"><canvas id="genreTrendsChart" height="120"></canvas></div>
+  <p class="subtitle">Genres by year added (top 10 per year)</p>
+  <div class="chart-fixed"><canvas id="genreTrendsChart"></canvas></div>
 </section>
 {% endif %} {% if at_years %}
 <section class="section reveal">
   <h2>Top Artists by Year</h2>
-  <p class="subtitle">Artists by year added (top 10 per year, rest grouped as Other)</p>
-  <div class="chart-fixed"><canvas id="artistTrendsChart" height="120"></canvas></div>
+  <p class="subtitle">Artists by year added (top 10 per year)</p>
+  <div class="chart-fixed"><canvas id="artistTrendsChart"></canvas></div>
 </section>
 {% endif %}
 

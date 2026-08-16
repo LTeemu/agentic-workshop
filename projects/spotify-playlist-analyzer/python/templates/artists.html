@@ -74,14 +74,14 @@ top_albums = album_data.get('top_albums', []) %}
 <section class="section reveal">
   <h2>Songs per Artist</h2>
   <p class="subtitle">How many artists have N songs in your playlist</p>
-  <div class="chart-fixed"><canvas id="songsPerArtistChart" height="80"></canvas></div>
+  <div class="chart-fixed"><canvas id="songsPerArtistChart"></canvas></div>
 </section>
 {% endif %}
 
 <section class="section reveal">
   <h2>Artists Across Most Years</h2>
   <p class="subtitle">Top artists ranked by how many different years they appear in</p>
-  <div class="chart-fixed"><canvas id="artistYearCountChart" height="150"></canvas></div>
+  <div class="chart-fixed"><canvas id="artistYearCountChart"></canvas></div>
 </section>
 {% else %}
 <div class="empty-state">

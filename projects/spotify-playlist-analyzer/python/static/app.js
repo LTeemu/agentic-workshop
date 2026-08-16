@@ -5,19 +5,95 @@
 // -----------------------------------------------------------------------
 // Chart.js — Shared styling helpers (used by page template chart scripts)
 // -----------------------------------------------------------------------
+// Charts are constructed inside page scripts whose DOMContentLoaded handlers
+// run before this file's (it loads at the end of body), so every Chart.js
+// default below must be set here, at top level, to apply to first render.
+const COLORS = {
+  accent: '#E2472B',
+  accentDeep: '#B9341C',
+  gold: '#C08A2D',
+  goldDim: '#9A6F24',
+  rust: '#B2557C',
+  burntOrange: '#9C5A2F',
+  teal: '#2E7D6B',
+  tealDim: '#236052',
+  olive: '#8A6B2F',
+  plum: '#7A5AC9',
+  text: '#F3EEE3',
+  textMuted: '#5E5648',
+  border: 'rgba(27, 23, 18, 0.10)',
+  surface: '#1B1712',
+};
+
+if (window.Chart) {
+  // Render canvases at ≥2× the device pixel ratio so the charts stay crisp
+  // on any display and survive the dashboard's iframe downscaling.
+  Chart.defaults.devicePixelRatio = Math.max(window.devicePixelRatio || 1, 2);
+  // Match the site body font (--font-body); see the fonts.ready re-render
+  // below for webfont loading.
+  Chart.defaults.color = COLORS.textMuted;
+  Chart.defaults.borderColor = COLORS.border;
+  Chart.defaults.font.family = "'DM Sans', system-ui, -apple-system, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.plugins.legend.labels.boxWidth = 10;
+  Chart.defaults.plugins.legend.labels.padding = 14;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+  // Gradient fill for datasets without an explicit color (gold fade).
+  // Runs at beforeDatasetsUpdate (after layout), so chartArea exists and the
+  // mutated backgroundColor is picked up by the element styling that follows
+  // in the same update — a beforeDraw mutation would be too late.
+  const gradientPlugin = {
+    id: 'gradientFill',
+    beforeDatasetsUpdate: function (chart) {
+      const ctx = chart.ctx;
+      const chartArea = chart.chartArea;
+      if (!chartArea) return;
+
+      chart.data.datasets.forEach(function (dataset) {
+        if (dataset.backgroundColor != null) {
+          // Only datasets without an explicit color get the default gradient
+          return;
+        }
+
+        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        gradient.addColorStop(0, COLORS.gold);
+        gradient.addColorStop(1, COLORS.goldDim);
+        dataset.backgroundColor = gradient;
+      });
+    },
+  };
+  Chart.register(gradientPlugin);
+
+  // Canvas text drawn before the webfont loads falls back to the system
+  // font; once DM Sans is ready, re-render every chart so labels match.
+  // render() (not resize()) — resize is a no-op when the canvas size is
+  // unchanged, and this runs after layout, so only a forced redraw picks
+  // up the newly loaded font.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      Object.values(Chart.instances || {}).forEach(function (c) {
+        c.render();
+      });
+    });
+  }
+}
+
 window.AnalyzerCharts = {
-  grid: 'rgba(27, 23, 18, 0.10)',
+  grid: COLORS.border,
+  // Theme palette for categorical series — shared shades reference COLORS
+  // (the two scope-specific accents below stay local)
   palette: [
-    '#E2472B',
-    '#C08A2D',
-    '#2E7D6B',
-    '#B2557C',
+    COLORS.accent,
+    COLORS.gold,
+    COLORS.teal,
+    COLORS.rust,
     '#5A6FB5',
-    '#9C5A2F',
-    '#7A5AC9',
-    '#8A6B2F',
+    COLORS.burntOrange,
+    COLORS.plum,
+    COLORS.olive,
     '#4A8A52',
-    '#5E5648',
+    COLORS.textMuted,
   ],
   // Cycle the theme palette so categories stay distinguishable
   bars: function (n) {
@@ -33,6 +109,51 @@ window.AnalyzerCharts = {
   plainTip: function () {
     return { enabled: false, external: this.externalTip() };
   },
+  // Escape text for the custom tooltip DOM — shared by externalTip and any
+  // page script that builds .chart-tip content (e.g. the scatter list).
+  tipEsc: function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  },
+  // Float an existing .chart-tip element relative to a caret position.
+  // Anchored to its wrapper; the viewport clamp keeps it visible on screen.
+  placeTip: function (el, cx, cy) {
+    var wrap = el.parentNode;
+    var wrapW = wrap.clientWidth;
+    var tw = el.offsetWidth;
+    var th = el.offsetHeight;
+    var gap = 10;
+    var x = Math.max(8, Math.min(cx - tw / 2, wrapW - tw - 8));
+    // Decide above/below by which side of the VIEWPORT has more room for the
+    // tip — the wrapper's middle can sit above or below the screen's middle
+    // when the chart is low/high on the page — then fall back to the other
+    // side when the preferred one doesn't actually fit on screen.
+    var wrapRect = wrap.getBoundingClientRect();
+    var vpTop = wrapRect.top + cy;
+    var above = vpTop > window.innerHeight / 2;
+    var y = above ? cy - th - gap : cy + gap;
+    if (above && vpTop - th - gap < 8) {
+      above = false;
+      y = cy + gap;
+    } else if (!above && vpTop + gap + th > window.innerHeight - 8) {
+      above = true;
+      y = cy - th - gap;
+    }
+    // X stays inside the wrapper; Y is free to leave it (the wrapper is only
+    // 340px tall) — the viewport clamp below is what keeps the tip visible.
+    var vp = 8;
+    var vx = Math.max(vp, Math.min(wrapRect.left + x, window.innerWidth - tw - vp));
+    var vy = Math.max(vp, Math.min(wrapRect.top + y, window.innerHeight - th - vp));
+    x = vx - wrapRect.left;
+    y = vy - wrapRect.top;
+    el.style.left = Math.round(x) + 'px';
+    el.style.top = Math.round(y) + 'px';
+    el.classList.toggle('chart-tip--above', above);
+    el.classList.toggle('chart-tip--below', !above);
+    el.style.setProperty('--caret-x', Math.round(cx - x) + 'px');
+    el.classList.add('chart-tip--visible');
+  },
   // Custom tooltip styled like Chart.js's default white tooltip, but rendered
   // as a DOM element (docs: external custom tooltips) so text wraps and the
   // box is clamped to the chart wrapper instead of being clipped at the
@@ -41,11 +162,6 @@ window.AnalyzerCharts = {
   // canvas whenever enabled, regardless of external).
   externalTip: function () {
     var el = null;
-    function esc(s) {
-      return String(s).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
     return function (ctx) {
       var t = ctx.tooltip;
       if (!el) {
@@ -66,11 +182,14 @@ window.AnalyzerCharts = {
           return l;
         });
         if (titleLines.length) {
-          html += '<div class="chart-tip-title">' + esc(titleLines.join(' ')) + '</div>';
+          html +=
+            '<div class="chart-tip-title">' +
+            AnalyzerCharts.tipEsc(titleLines.join(' ')) +
+            '</div>';
         }
       }
       t.beforeBody.forEach(function (l) {
-        if (l) html += '<div class="chart-tip-row">' + esc(l) + '</div>';
+        if (l) html += '<div class="chart-tip-row">' + AnalyzerCharts.tipEsc(l) + '</div>';
       });
       t.body.forEach(function (b, i) {
         var swatch = '';
@@ -78,44 +197,32 @@ window.AnalyzerCharts = {
         if (color && color.backgroundColor) {
           swatch =
             '<span class="chart-tip-swatch" style="background:' +
-            esc(color.backgroundColor) +
+            AnalyzerCharts.tipEsc(color.backgroundColor) +
             ';border-color:' +
-            esc(color.borderColor || 'transparent') +
+            AnalyzerCharts.tipEsc(color.borderColor || 'transparent') +
             '"></span>';
         }
         b.lines.forEach(function (l) {
-          if (l) html += '<div class="chart-tip-row">' + swatch + esc(l) + '</div>';
+          if (l)
+            html += '<div class="chart-tip-row">' + swatch + AnalyzerCharts.tipEsc(l) + '</div>';
         });
       });
       t.afterBody.forEach(function (l) {
         String(l)
           .split('\n')
           .forEach(function (seg) {
-            if (seg) html += '<div class="chart-tip-row">' + esc(seg) + '</div>';
+            if (seg) html += '<div class="chart-tip-row">' + AnalyzerCharts.tipEsc(seg) + '</div>';
           });
       });
       el.innerHTML = html + '</div>';
 
-      // Float above the caret, centered; flip below when no room above, and
-      // clamp inside the wrapper so it never overflows the chart container.
+      // Shared positioning: float above the caret, clamped to the wrapper
       var wrap = ctx.chart.canvas.parentNode;
-      var wrapW = wrap.clientWidth;
-      var wrapH = wrap.clientHeight;
-      var tw = el.offsetWidth;
-      var th = el.offsetHeight;
-      var gap = 10;
-      var cx = t.caretX == null ? wrapW / 2 : t.caretX;
-      var cy = t.caretY == null ? wrapH / 2 : t.caretY;
-      var x = Math.max(8, Math.min(cx - tw / 2, wrapW - tw - 8));
-      var above = cy - th - gap >= 8;
-      var y = above ? cy - th - gap : cy + gap;
-      y = Math.max(8, Math.min(y, wrapH - th - 8));
-      el.style.left = Math.round(x) + 'px';
-      el.style.top = Math.round(y) + 'px';
-      el.classList.toggle('chart-tip--above', above);
-      el.classList.toggle('chart-tip--below', !above);
-      el.style.setProperty('--caret-x', Math.round(cx - x) + 'px');
-      el.classList.add('chart-tip--visible');
+      AnalyzerCharts.placeTip(
+        el,
+        t.caretX == null ? wrap.clientWidth / 2 : t.caretX,
+        t.caretY == null ? wrap.clientHeight / 2 : t.caretY,
+      );
     };
   },
 };
@@ -257,66 +364,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (scroller) updateTableEdges(wrap, scroller);
     });
   });
-
-  // -----------------------------------------------------------------------
-  // Chart.js — Color palette reference
-  // -----------------------------------------------------------------------
-  const COLORS = {
-    accent: '#E2472B',
-    accentDeep: '#B9341C',
-    gold: '#C08A2D',
-    goldDim: '#9A6F24',
-    rust: '#B2557C',
-    burntOrange: '#9C5A2F',
-    teal: '#2E7D6B',
-    tealDim: '#236052',
-    olive: '#8A6B2F',
-    plum: '#7A5AC9',
-    text: '#F3EEE3',
-    textMuted: '#5E5648',
-    border: 'rgba(27, 23, 18, 0.10)',
-    surface: '#1B1712',
-  };
-
-  // -----------------------------------------------------------------------
-  // Chart.js — Gradient fill plugin
-  // -----------------------------------------------------------------------
-  const gradientPlugin = {
-    id: 'gradientFill',
-    beforeDraw: function (chart) {
-      const ctx = chart.ctx;
-      const chartArea = chart.chartArea;
-      if (!chartArea) return;
-
-      chart.data.datasets.forEach(function (dataset, i) {
-        const meta = chart.getDatasetMeta(i);
-        if (!meta || !meta.data || meta.data.length === 0) return;
-
-        if (dataset.backgroundColor != null) {
-          // Only datasets without an explicit color get the default gradient
-          return;
-        }
-
-        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        gradient.addColorStop(0, COLORS.gold);
-        gradient.addColorStop(1, COLORS.goldDim);
-        dataset.backgroundColor = gradient;
-      });
-    },
-  };
-
-  Chart.register(gradientPlugin);
-
-  // -----------------------------------------------------------------------
-  // Chart.js — Default styling (light paper theme)
-  // -----------------------------------------------------------------------
-  Chart.defaults.color = COLORS.textMuted;
-  Chart.defaults.borderColor = COLORS.border;
-  Chart.defaults.font.family = "system-ui, -apple-system, 'DM Sans', 'Segoe UI', sans-serif";
-  Chart.defaults.font.size = 12;
-  Chart.defaults.plugins.legend.labels.boxWidth = 10;
-  Chart.defaults.plugins.legend.labels.padding = 14;
-  Chart.defaults.plugins.legend.labels.usePointStyle = true;
 });
 
 // -----------------------------------------------------------------------
