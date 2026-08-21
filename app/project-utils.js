@@ -1,9 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-
-const ROOT = path.resolve(__dirname, '..');
-const PROJECTS_DIR = path.join(ROOT, 'projects');
+const { ROOT, PROJECTS_DIR } = require('./constants');
 
 /**
  * Returns the list of project directories under PROJECTS_DIR.
@@ -282,4 +280,5 @@ module.exports = {
   getFileDependencies,
   ensureDependencies,
   PROJECTS_DIR,
+  ROOT,
 };

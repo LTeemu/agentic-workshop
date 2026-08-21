@@ -917,6 +917,7 @@ html.startup #sidebar * {
   flex-shrink: 0;
   gap: 4px 8px;
   flex-wrap: wrap;
+  min-height: 35px;
 }
 
 #log-panel-header-left,

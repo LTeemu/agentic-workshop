@@ -97,25 +97,37 @@ The `location[directory]` query parameter is required. Without it, OpenCode chec
 
 ## Project Structure
 
-| Path                   | Purpose                                                                |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `app/server.js`        | Dashboard Express server on port 3000                                  |
-| `app/project-utils.js` | Shared project discovery, dependency, build, and run-command utilities |
-| `app/test-runner.js`   | Shared test execution logic                                            |
-| `app/public/`          | Dashboard frontend single-page application                             |
-| `projects/`            | Each subdirectory contains a sandbox project                           |
-| `_backups/`            | Automatic backups created when projects are deleted                    |
-| `tests/`               | Workshop test suites                                                   |
-| `tests/agents/`        | Agent configuration and plugin tests                                   |
-| `tests/workshop/`      | Dashboard application tests                                            |
-| `tests/projects/`      | Cross-project test-runner tests                                        |
-| `.active-project`      | State file tracking the currently active project                       |
-| `.githooks/`           | Git hooks for formatting and scoped test validation                    |
-| `opencode.json`        | OpenCode workspace configuration                                       |
-| `AGENTS.md`            | Shared instructions, scope rules, and task execution guidelines        |
-| `.opencode/agents/`    | Agent definitions                                                      |
-| `.opencode/skills/`    | Reusable domain-specific skills loaded on demand                       |
-| `.opencode/plugins/`   | Workspace plugins, including `plan-enforcer.js`                        |
+| Path                          | Purpose                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `app/server.js`               | HTTP server + bootstrap (~75 LOC), serves `public/` and delegates `/api/*` |
+| `app/constants.js`            | Shared constants (`ROOT`, `PORT`, `MIME`, `ARTIFACT_DIRS`)                 |
+| `app/project-manager.js`      | Core state + lifecycle orchestration (`startProject`, `stopActive`)        |
+| `app/api-handler.js`          | All API route handlers (dispatched per resource)                           |
+| `app/execution/detect.js`     | `detectRun`, `describeProject`, `startStaticServer`                        |
+| `app/execution/npm-runner.js` | npm-specific: `ensureDependencies`, build output, `dev` fallback           |
+| `app/services/platform.js`    | OS ops: `killPortOwner`, `killProcessTree`, `backupProject`                |
+| `app/services/liveness.js`    | `httpGet`, `waitForLiveness`, `watchLateLiveness`                          |
+| `app/services/watcher.js`     | File watchers (`watchProjectsDir`, `watchProject`, `isIgnoredPath`)        |
+| `app/services/sse.js`         | SSE clients, `broadcastSSE`, `startSSE`                                    |
+| `app/services/logger.js`      | `projectLogs`, `pushLog`, `MAX_LOG_LINES`                                  |
+| `app/project-utils.js`        | Shared project discovery, dependency, build, and run-command utilities     |
+| `app/test-runner.js`          | Shared test execution logic                                                |
+| `app/terminal.js`             | Terminal PTY sessions (`node-pty`)                                         |
+| `app/colors.js`               | Terminal color helpers                                                     |
+| `app/public/`                 | Dashboard frontend single-page application                                 |
+| `projects/`                   | Each subdirectory contains a sandbox project                               |
+| `_backups/`                   | Automatic backups created when projects are deleted                        |
+| `tests/`                      | Workshop test suites                                                       |
+| `tests/agents/`               | Agent configuration and plugin tests                                       |
+| `tests/workshop/`             | Dashboard application tests                                                |
+| `tests/projects/`             | Cross-project test-runner tests                                            |
+| `.active-project`             | State file tracking the currently active project                           |
+| `.githooks/`                  | Git hooks for formatting and scoped test validation                        |
+| `opencode.json`               | OpenCode workspace configuration                                           |
+| `AGENTS.md`                   | Shared instructions, scope rules, and task execution guidelines            |
+| `.opencode/agents/`           | Agent definitions                                                          |
+| `.opencode/skills/`           | Reusable domain-specific skills loaded on demand                           |
+| `.opencode/plugins/`          | Workspace plugins, including `plan-enforcer.js`                            |
 
 The `.opencode/agents/` directory contains:
 
