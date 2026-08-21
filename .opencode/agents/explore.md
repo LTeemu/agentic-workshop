@@ -1,7 +1,7 @@
 ---
 description: Local codebase exploration — finds files, searches patterns, and explains how code works. No web access. Use when you need to understand existing code, not external docs.
 mode: subagent
-model: opencode/deepseek-v4-flash-free#high
+model: opencode/nemotron-3.5-lightning-free
 permissions:
   - action: edit
     resource: '*'

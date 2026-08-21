@@ -1,7 +1,7 @@
 ---
 description: Reviews code for duplication, DRY violations, broken logic, unhandled errors, naming, long functions, and test coverage. Read-only — never edits files.
 mode: subagent
-model: opencode/deepseek-v4-flash-free#high
+model: openrouter/stealth/ox-alpha#high
 permissions:
   - action: edit
     resource: '*'

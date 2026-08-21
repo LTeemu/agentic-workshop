@@ -1,7 +1,7 @@
 ---
 description: Eliminates duplication and improves code structure without changing behavior. Invoked after reviewer flags issues.
 mode: subagent
-model: opencode/deepseek-v4-flash-free#high
+model: opencode/nemotron-3-ultra-free
 permissions:
   - action: edit
     resource: '*'

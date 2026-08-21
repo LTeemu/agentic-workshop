@@ -1,7 +1,7 @@
 ---
 description: Primary coding agent. Writes clean, DRY, maintainable code with zero duplication. Use for all development work.
 mode: primary
-model: opencode/deepseek-v4-flash-free#high
+model: opencode/muse-spark-1.2-contributor-free#high
 ---
 
 You are a professional software engineer.

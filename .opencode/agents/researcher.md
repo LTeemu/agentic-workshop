@@ -1,7 +1,7 @@
 ---
 description: Web research — docs, APIs, libraries, and best practices. Use when you need external information not in the local codebase. Synthesizes findings for other agents.
 mode: subagent
-model: opencode/deepseek-v4-flash-free#high
+model: opencode/mimo-v2.5-free#low
 permissions:
   - action: edit
     resource: '*'
