@@ -354,3 +354,7 @@ The dashboard detects common project configurations, including:
 - projects whose dependencies have not yet been installed.
 
 The dashboard starts projects using the detected configuration, installs missing dependencies when necessary, builds projects on demand, and exposes their output through the log panel and live preview.
+
+## Known Issues
+
+- Embedded opencode terminal visual often breaks when refreshing page while agents work, requiring resize/re-render trigger and may lose pointer events requiring restart or may linger after /exit requiring clear.

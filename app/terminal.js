@@ -21,9 +21,18 @@ try {
   pty = null;
 }
 
+const {
+  TERMINAL_MAX_COLS: MAX_COLS,
+  TERMINAL_MAX_ROWS: MAX_ROWS,
+  TERMINAL_BUFFER_MAX: BUFFER_MAX,
+  TERMINAL_RESPAWN_WINDOW_MS: RESPAWN_WINDOW_MS,
+  TERMINAL_RESPAWN_LIMIT: RESPAWN_LIMIT,
+  TERMINAL_IDLE_TTL_MS: IDLE_TTL_MS,
+  TERMINAL_OPENCODE_POLL_MS: OPENCODE_POLL_MS,
+  TERMINAL_OPENCODE_PROBE_TIMEOUT_MS: OPENCODE_PROBE_TIMEOUT_MS,
+} = require('./constants');
+
 const ID_RE = /^[a-zA-Z0-9_-]+$/;
-const MAX_COLS = 500;
-const MAX_ROWS = 300;
 
 /**
  * Device-Attributes responses xterm.js generates when the shell queries
@@ -38,13 +47,6 @@ const MAX_ROWS = 300;
  * resurrecting the artifact.
  */
 const DA_RESPONSES = new Set(['\x1b[?1;2c', '\x1b[>0;276;0c']);
-
-/**
- * How much pty output to keep per session for replay. Late-attaching clients
- * (e.g. after a page refresh) get this buffer replayed so the screen isn't
- * blank. Trimmed at line boundaries so escape sequences survive the cut.
- */
-const BUFFER_MAX = 256 * 1024;
 
 /** id → { id, pty, cols, rows, clients: Set<res>, exited } */
 const terminals = new Map();
@@ -90,17 +92,9 @@ function shellCommand() {
   return { file: process.env.SHELL || '/bin/bash', args: [] };
 }
 
-/** Restart throttling: at most RESPAWN_LIMIT respawns per window, so a broken
- * shell (e.g. a crashing profile) can't loop forever. */
-const RESPAWN_WINDOW_MS = 10_000;
-const RESPAWN_LIMIT = 5;
-
-/**
- * How long a session survives with no attached viewers. Long enough to outlive
- * a page refresh (the new page re-attaches within a second or two), short
- * enough that a forgotten tab can't pin a shell and the opencode poller forever.
- */
-const IDLE_TTL_MS = 10 * 60 * 1000;
+/** Restart throttling: at most RESPAWN_LIMIT respawns per RESPAWN_WINDOW_MS, so a broken
+ * shell (e.g. a crashing profile) can't loop forever. How long a session survives
+ * with no attached viewers is IDLE_TTL_MS — long enough to outlive a page refresh. */
 
 /** Drop restart timestamps outside the rate-limit window (mutates term). */
 function pruneRestartTimes(term, now) {
@@ -152,10 +146,6 @@ function appendBuffer(term, data) {
   term.buffer += data;
   if (term.buffer.length <= BUFFER_MAX) return;
   const excess = term.buffer.length - BUFFER_MAX;
-  // Cut at the first safe boundary past the excess: an ESC (start of an ANSI
-  // sequence — the reliable boundary for TUI/alt-screen output, which mostly
-  // redraws with cursor moves), else a newline (keeps whole lines), else the
-  // hard cut so a single unbroken run can't wipe the whole history.
   const atEsc = term.buffer.indexOf('\x1b', excess);
   const atNl = term.buffer.indexOf('\n', excess);
   const esc = atEsc >= 0 ? atEsc : Infinity;
@@ -190,10 +180,7 @@ function openCodeLaunchCommand() {
 // poller lists processes once per tick and updates every attached terminal,
 // so N sessions cost one process query per tick instead of N.
 
-/** How often to poll the process tree for a running opencode2 TUI. */
-const OPENCODE_POLL_MS = 1000;
-/** Timeout for a single process-list query. */
-const OPENCODE_PROBE_TIMEOUT_MS = 3000;
+/** OPENCODE_POLL_MS / OPENCODE_PROBE_TIMEOUT_MS control TUI detection polling. */
 
 /** Command that lists every process as pid/ppid/name. */
 function processListCommand(platform = process.platform) {
@@ -383,8 +370,9 @@ function attachTerminal(term, cwd) {
       let next;
       try {
         next = spawnShell(cwd, term.cols, term.rows);
-      } catch {
-        next = null; // spawn failed — end the session
+      } catch (err) {
+        console.warn(`[terminal ${term.id}] respawn failed:`, err?.message || err);
+        next = null;
       }
       if (next) {
         term.pty = next;
@@ -434,11 +422,12 @@ function getTerminal(id) {
 function writeInput(id, data) {
   const term = getTerminal(id);
   if (!term || term.exited) return false;
-  if (DA_RESPONSES.has(data)) return true; // terminal handshake — echoing it prints `[?1;2c`
+  if (DA_RESPONSES.has(data)) return true;
   try {
     term.pty.write(data);
-  } catch {
-    return false; // pty may have just exited — the respawn path takes over
+  } catch (err) {
+    console.warn(`[terminal ${id}] pty write failed:`, err?.message || err);
+    return false;
   }
   return true;
 }
@@ -452,8 +441,8 @@ function resizeTerminal(id, cols, rows) {
     term.rows = size.rows;
     try {
       term.pty.resize(size.cols, size.rows);
-    } catch {
-      // pty may have just exited — the respawned shell picks up term.cols/rows
+    } catch (err) {
+      console.warn(`[terminal ${id}] pty resize failed:`, err?.message || err);
     }
   }
   return true;
@@ -462,13 +451,12 @@ function resizeTerminal(id, cols, rows) {
 function killTerminal(id) {
   const term = getTerminal(id);
   if (!term) return false;
-  term.closing = true; // explicit close — do not respawn a new shell
+  term.closing = true;
   try {
     term.pty.kill();
-  } catch {
-    // pty may already be gone; onExit normally handles cleanup
+  } catch (err) {
+    console.warn(`[terminal ${id}] pty kill failed:`, err?.message || err);
   }
-  // Fallback cleanup in case onExit never fires.
   teardownTerminal(term);
   return true;
 }
@@ -505,13 +493,23 @@ function attachStream(id, res, startSSE) {
   return true;
 }
 
-// Best-effort cleanup when the dashboard server shuts down.
-process.on('exit', () => {
+function cleanupTerminals() {
   for (const term of terminals.values()) {
     try {
       term.pty.kill();
-    } catch {}
+    } catch (err) {
+      console.warn(`[terminal ${term.id}] cleanup kill failed:`, err?.message || err);
+    }
   }
+}
+process.on('exit', cleanupTerminals);
+process.on('SIGINT', () => {
+  cleanupTerminals();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  cleanupTerminals();
+  process.exit(0);
 });
 
 /** Test seam: swap the pty implementation (returns the previous one for restore). */
