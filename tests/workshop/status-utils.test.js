@@ -4,7 +4,7 @@ const {
   normalizeProjectStatus,
   exitCodeToStatus,
   reconcileStatus,
-} = require('../../app/public/status-utils');
+} = require('../../app/public/browser-utils/status-utils');
 
 describe('normalizeProjectStatus', () => {
   it('passes through starting and running', () => {

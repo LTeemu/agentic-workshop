@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 
-const { paint, colorizeUrls } = require('../../app/colors');
+const { paint, colorizeUrls } = require('../../app/server-utils/color-utils');
 
 describe('colorizeUrls', () => {
   it('wraps URLs with ANSI when enabled', () => {

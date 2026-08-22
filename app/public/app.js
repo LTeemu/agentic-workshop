@@ -15,6 +15,7 @@ const sidebarToggle = document.getElementById('sidebar-toggle');
 const sidebarCompact = document.getElementById('sidebar-compact');
 const sidebarCompactProjects = document.getElementById('sidebar-compact-projects');
 const { normalizeProjectStatus, exitCodeToStatus, reconcileStatus } = window.StatusUtils;
+const { stripAnsi, escapeHtml } = window.FormatUtils;
 
 // Details panel
 const detailsPanel = document.getElementById('details-panel');
@@ -54,7 +55,8 @@ const logPanelHeader = document.getElementById('log-panel-header');
 
 let projects = [];
 let projectStatuses = {}; // { projectName: 'stopped' | 'starting' | 'running' | 'error' }
-let activeProject = null; // { name, url, runType }
+var activeProject = null;
+window.activeProject = activeProject; // { name, url, runType }
 let autoStop = true;
 let logBuffers = {}; // { projectName: [{ ts, stream, line }] }
 let logVisible = false;
@@ -137,6 +139,7 @@ function clearPreviewFrame() {
 /** Clear the preview pane for a stopped/failed active project. */
 function clearActivePreview(label, noticeText) {
   activeProject.url = null;
+  window.activeProject = activeProject;
   openTabBtn.disabled = true;
   setStatus('stopped', label);
   projectUrlEl.textContent = '';
@@ -158,16 +161,16 @@ function toggleProjectDetails(name) {
   const panelHidden = detailsPanel.classList.contains('hidden');
   const sameProject = detailsTitle.dataset.project === name;
   if (!panelHidden && sameProject) {
-    closeDetails();
+    window.DetailsPanel.closeDetails();
   } else {
-    showDetails(name);
+    window.DetailsPanel.showDetails(name);
   }
 }
 
 async function loadActive() {
   const data = await api('/api/active');
   if (data.active) {
-    activeProject = data.active;
+    activeProject = window.activeProject = data.active;
     selectProject(activeProject.name, false);
   } else if (data.file) {
     const projectName = data.file.replace('projects/', '');
@@ -199,7 +202,7 @@ function renderProjectList() {
     });
     item.querySelector('.details-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleProjectDetails(p.name);
+      window.DetailsPanel.toggleProjectDetails(p.name);
     });
     projectList.appendChild(item);
   });
@@ -219,7 +222,7 @@ function renderProjectList() {
     });
     el.querySelector('.compact-details').addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleProjectDetails(p.name);
+      window.DetailsPanel.toggleProjectDetails(p.name);
     });
     sidebarCompactProjects.appendChild(el);
   });
@@ -229,305 +232,42 @@ function renderProjectList() {
   compactTestAll.disabled = testAllBtn.disabled;
 }
 
-// ── Details Panel ──
-
-async function showDetails(name) {
-  // Cancel any pending close
-  if (closeTimer) {
-    clearTimeout(closeTimer);
-    closeTimer = null;
-  }
-  detailsPanel.classList.remove('slide-out');
-
-  const data = await api(`/api/projects/${name}/details`);
-  detailsTitle.textContent = data.name;
-  detailsTitle.dataset.project = name;
-
-  // Description
-  if (data.description) {
-    detailsDescription.textContent = data.description;
-    detailsDescription.classList.remove('hidden');
-  } else {
-    detailsDescription.classList.add('hidden');
-  }
-
-  // Scripts
-  const scriptEntries = Object.entries(data.scripts);
-  if (scriptEntries.length > 0) {
-    detailsScriptsList.innerHTML = '';
-    for (const [scriptName, scriptCmd] of scriptEntries) {
-      const row = document.createElement('div');
-      row.className = 'detail-script-row';
-      row.innerHTML = `<span class="detail-script-name">${scriptName}</span><code class="detail-script-cmd">${escapeHtml(scriptCmd)}</code><button class="copy-btn" data-cmd="${escapeHtml(scriptCmd)}" title="Copy command"></button>`;
-      row.querySelector('.copy-btn').addEventListener('click', () => {
-        navigator.clipboard.writeText(scriptCmd).catch(() => {});
-      });
-      detailsScriptsList.appendChild(row);
-    }
-  } else {
-    detailsScriptsList.innerHTML = '<p class="detail-empty">No scripts</p>';
-  }
-
-  // Dependencies
-  renderDepList(detailsDepsList, data.dependencies);
-  renderDepList(detailsDevdepsList, data.devDependencies);
-
-  detailsPanel.classList.remove('hidden');
-}
-
-function renderDepList(container, deps) {
-  const entries = Object.entries(deps);
-  if (entries.length > 0) {
-    container.innerHTML = '';
-    for (const [depName, depVer] of entries) {
-      const row = document.createElement('div');
-      row.className = 'detail-dep-row';
-      row.innerHTML = `<span class="detail-dep-name">${depName}</span><span class="detail-dep-ver">${depVer}</span>`;
-      container.appendChild(row);
-    }
-    container.closest('section').classList.remove('hidden');
-  } else {
-    container.closest('section').classList.add('hidden');
-  }
-}
-
-let closeTimer = null;
-
-function closeDetails() {
-  if (detailsPanel.classList.contains('hidden') || closeTimer) return;
-  detailsPanel.classList.add('slide-out');
-  closeTimer = setTimeout(() => {
-    detailsPanel.classList.remove('slide-out');
-    detailsPanel.classList.add('hidden');
-    closeTimer = null;
-  }, PANEL_ANIMATION_MS);
-}
-
-detailsClose.addEventListener('click', closeDetails);
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeDetails();
-});
-detailsPanel.addEventListener('click', (e) => {
-  if (e.target === detailsPanel) closeDetails();
-});
-
-// ── Log Panel ──
-
-function renderLogs() {
-  if (!activeProject) return;
-  const buffer = logBuffers[activeProject.name] || [];
-  const filterText = logFilter.value.toLowerCase();
-  let html = '';
-  for (const entry of buffer) {
-    if (filterText && !entry.line.toLowerCase().includes(filterText)) continue;
-    const cls =
-      entry.stream === 'stderr' ? 'log-stderr' : entry.stream === 'system' ? 'log-system' : '';
-    html += `<span class="log-line ${cls}">${escapeHtml(stripAnsi(entry.line))}\n</span>`;
-  }
-  logOutput.innerHTML = html;
-  if (logAutoScroll.checked) {
-    logOutput.scrollTop = logOutput.scrollHeight;
-  }
-}
-
-function appendLogLines(project, stream, lines) {
-  if (!logBuffers[project]) logBuffers[project] = [];
-  for (const line of lines) {
-    logBuffers[project].push({ ts: Date.now(), stream, line });
-  }
-  // Keep last 1000 lines
-  if (logBuffers[project].length > 1000) {
-    logBuffers[project] = logBuffers[project].slice(-1000);
-  }
-  if (activeProject && activeProject.name === project) {
-    renderLogs();
-  }
-}
-
-function savedLogHeight() {
-  const savedH = parseInt(localStorage.getItem(LOG_HEIGHT_KEY), 10);
-  return Number.isFinite(savedH) ? Math.max(LOG_MIN_HEIGHT, savedH) : 200;
-}
-
-function restoreLogHeight() {
-  logPanel.style.height = savedLogHeight() + 'px';
-}
-
-let logCollapseTimer = null;
-
-function setLogPanelOpen(open) {
-  logVisible = open;
-  logToggle.textContent = open ? '▼' : '▲';
-}
-
-function cancelLogCollapse() {
-  if (logCollapseTimer) {
-    clearTimeout(logCollapseTimer);
-    logCollapseTimer = null;
-  }
-}
-
-// Height of the panel when collapsed: header + 1px top border (resize handle
-// is hidden by .collapsed). offsetHeight excludes the panel's top border.
-function collapsedLogHeight() {
-  return logPanelHeader.offsetHeight + 1;
-}
-
-// Pin the panel's current height as an explicit pixel value. While collapsed
-// the value is overridden by `height: auto !important`, but it becomes the
-// transition's from-value once `.collapsed` is removed (`auto` itself cannot
-// be interpolated by a CSS transition).
-function commitLogPanelHeight() {
-  logPanel.style.height = logPanel.getBoundingClientRect().height + 'px';
-}
-
-// Set the transition target. The caller must have pinned an explicit start
-// height first; forcing layout here commits that start state so the browser
-// sees a px→px change instead of px→auto.
-function animateLogPanelHeightTo(targetPx) {
-  void logPanel.offsetHeight;
-  logPanel.style.height = targetPx + 'px';
-}
-
-function showLogPanel() {
-  // Cancel a pending close so a reopen mid-animation keeps the panel open.
-  cancelLogCollapse();
-  commitLogPanelHeight();
-  logPanel.classList.remove('collapsed');
-  animateLogPanelHeightTo(savedLogHeight());
-  setLogPanelOpen(true);
-  if (activeProject) {
-    renderLogs();
-  }
-}
-
-function hideLogPanel() {
-  if (logPanel.classList.contains('collapsed') || logCollapseTimer) {
-    setLogPanelOpen(false);
-    return;
-  }
-  commitLogPanelHeight();
-  animateLogPanelHeightTo(collapsedLogHeight());
-  setLogPanelOpen(false);
-  logCollapseTimer = setTimeout(() => {
-    logPanel.classList.add('collapsed');
-    logCollapseTimer = null;
-  }, PANEL_ANIMATION_MS);
-}
-
-logToggle.addEventListener('click', () => {
-  if (logVisible) {
-    hideLogPanel();
-    localStorage.setItem(LOG_VISIBLE_KEY, '0');
-  } else {
-    showLogPanel();
-    localStorage.setItem(LOG_VISIBLE_KEY, '1');
-  }
-});
-
-logFilter.addEventListener('input', () => {
-  if (activeProject) renderLogs();
-});
-
-logClear.addEventListener('click', () => {
-  if (activeProject && logBuffers[activeProject.name]) {
-    logBuffers[activeProject.name] = [];
-    logOutput.innerHTML = '';
-  }
-});
-
-// ── Log Panel Resize ──
-
-// Restore saved height
-restoreLogHeight();
-
-let isResizing = false;
-let resizeStartY = 0;
-let resizeStartHeight = 0;
-
-resizeHandle.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  resizeHandle.setPointerCapture(e.pointerId);
-  isResizing = true;
-  logPanel.classList.add('no-transition');
-  if (logCollapseTimer) {
-    // Keep the panel open: restore the saved height so a no-move release (click)
-    // doesn't persist the mid-collapse height, and the drag starts at full height.
-    cancelLogCollapse();
-    setLogPanelOpen(true);
-    restoreLogHeight();
-  }
-  resizeStartY = e.clientY;
-  resizeStartHeight = logPanel.getBoundingClientRect().height;
-  document.body.style.cursor = 'ns-resize';
-  document.body.style.userSelect = 'none';
-});
-
-document.addEventListener('pointermove', (e) => {
-  if (!isResizing) return;
-  const dy = resizeStartY - e.clientY; // positive = dragging up (taller)
-  const newHeight = resizeStartHeight + dy;
-  const clamped = Math.max(LOG_MIN_HEIGHT, newHeight);
-  logPanel.style.height = clamped + 'px';
-});
-
-function endLogPanelResize() {
-  if (!isResizing) return;
-  isResizing = false;
-  logPanel.classList.remove('no-transition');
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-  const h = logPanel.style.height;
-  if (h) {
-    localStorage.setItem(LOG_HEIGHT_KEY, parseInt(h, 10));
-  }
-}
-
-document.addEventListener('pointerup', endLogPanelResize);
-// A cancelled gesture (e.g. touch scroll takeover) must not leave `no-transition`
-// stuck on the panel, or future open/close animations would snap.
-document.addEventListener('pointercancel', endLogPanelResize);
-
 // ── Panel Tabs ──
-
-function bumpPanelHeight() {
-  const h = parseInt(logPanel.style.height, 10) || 0;
-  if (h < LOG_MIN_HEIGHT) {
-    logPanel.style.height = LOG_MIN_HEIGHT + 'px';
-    localStorage.setItem(LOG_HEIGHT_KEY, LOG_MIN_HEIGHT);
+// Delegated to panels/log-panel.js and panels/terminal.js.
+// Keep a thin shim for code that still calls setPanelTab directly
+// (e.g. restore of saved state). The canonical implementation lives
+// in window.LogPanel — this wrapper avoids a ReferenceError when
+// app.js is loaded after the panel modules.
+function setPanelTab(tab) {
+  if (window.LogPanel && typeof window.LogPanel.showLogPanel === 'function') {
+    // LogPanel.setPanelTab handles tab activation, panel expansion,
+    // persistence and terminal init via workshop:panel-tab event.
+    // Reuse it if available; fallback to manual activation below.
+    const hasPanelTab = typeof window.LogPanel.setPanelTab === 'function';
+    if (hasPanelTab) return window.LogPanel.setPanelTab(tab);
   }
-}
-
-function activatePanelTab(tab) {
-  for (const btn of panelTabs.querySelectorAll('.panel-tab')) {
+  // Fallback: minimal activation if LogPanel not yet ready.
+  for (const btn of document.querySelectorAll('.panel-tab')) {
     const active = btn.dataset.tab === tab;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', String(active));
   }
-  logPanel.classList.toggle('terminal-active', tab === 'terminal');
-  terminalTab.classList.toggle('hidden', tab !== 'terminal');
-}
-
-function setPanelTab(tab) {
-  activatePanelTab(tab);
-  localStorage.setItem(LOG_TAB_KEY, tab);
-  // Clicking a tab on a collapsed panel expands it.
-  if (!logVisible) showLogPanel();
-  localStorage.setItem(LOG_VISIBLE_KEY, '1');
-  bumpPanelHeight();
-  if (tab === 'terminal') {
-    if (!termInstance) initTerminal();
-    else {
-      if (!terminalId) startTerminalSession(); // TUI exited earlier — restart
-      requestAnimationFrame(fitTerminal); // re-fit after switching back
-    }
+  const lp = document.getElementById('log-panel');
+  const tt = document.getElementById('terminal-tab');
+  if (lp) lp.classList.toggle('terminal-active', tab === 'terminal');
+  if (tt) tt.classList.toggle('hidden', tab !== 'terminal');
+  try {
+    localStorage.setItem(LOG_TAB_KEY, tab);
+    localStorage.setItem(LOG_VISIBLE_KEY, '1');
+  } catch {}
+  if (window.LogPanel && typeof window.LogPanel.showLogPanel === 'function') {
+    try {
+      window.LogPanel.showLogPanel();
+    } catch {}
   }
+  if (tab === 'terminal')
+    window.dispatchEvent(new CustomEvent('workshop:panel-tab', { detail: 'terminal' }));
 }
-
-panelTabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.panel-tab');
-  if (btn) setPanelTab(btn.dataset.tab);
-});
 
 // ── Terminal Tab (real shell, opencode2 shortcut) ──
 
@@ -870,7 +610,7 @@ async function selectProject(name, start = true) {
   }
 
   const prevActiveName = activeProject ? activeProject.name : null;
-  activeProject = { name, url: null, runType: null };
+  activeProject = window.activeProject = { name, url: null, runType: null };
   renderProjectList();
   openTabBtn.disabled = true;
 
@@ -917,6 +657,7 @@ async function selectProject(name, start = true) {
     if (status.running) {
       setDotStatus(name, 'running'); // green dot
       activeProject.url = status.url;
+      window.activeProject = activeProject;
       activeProject.runType = status.runType;
       projectUrlEl.textContent = status.url;
       projectTypeEl.textContent = status.runType || '';
@@ -971,6 +712,7 @@ function applySelectResult(name, result) {
     // project-exit / project-status SSE events that always follow a yellow.
     setDotStatus(name, result.neverStarted ? 'stopped' : 'error');
     activeProject.url = null;
+    window.activeProject = activeProject;
     openTabBtn.disabled = true;
     clearPreviewFrame();
     showNotice(result.error || 'This project cannot be started');
@@ -1109,20 +851,6 @@ function hideNotice() {
   previewFrame.classList.remove('hidden');
 }
 
-function stripAnsi(str) {
-  if (!str) return '';
-  return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function showPlaceholder() {
   placeholder.classList.remove('hidden');
   preview.classList.add('hidden');
@@ -1207,7 +935,7 @@ evtSource.onmessage = (e) => {
 
     case 'log':
       // Buffer all log types for the log panel
-      appendLogLines(data.project, data.stream, data.lines);
+      window.LogPanel.appendLogLines(data.project, data.stream, data.lines);
 
       // Show system log lines as real-time progress during startup.
       // Display them prominently in the notice area (large centered overlay)

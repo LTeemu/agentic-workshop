@@ -14,6 +14,7 @@
       document.documentElement.classList.add('startup');
     </script>
   </head>
+
   <body>
     <div id="app">
       <aside id="sidebar">
@@ -76,7 +77,7 @@
                 <iframe
                   id="preview-frame"
                   title="Project preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                 ></iframe>
                 <div id="device-handles" class="hidden">
                   <div class="device-handle" data-edge="e" aria-hidden="true"></div>
@@ -246,9 +247,14 @@
     </div>
     <script src="/vendor/xterm/xterm.js"></script>
     <script src="/vendor/xterm/xterm-addon-fit.js"></script>
-    <script src="/status-utils.js"></script>
-    <script src="/resize-utils.js"></script>
-    <script src="/device-utils.js"></script>
+    <script src="/browser-utils/status-utils.js"></script>
+    <script src="/browser-utils/resize-utils.js"></script>
+    <script src="/browser-utils/device-utils.js"></script>
+    <script src="/browser-utils/format-utils.js"></script>
+    <script src="/panels/details-panel.js"></script>
+    <script src="/panels/log-panel.js"></script>
+    <script src="/panels/terminal.js"></script>
+    <script src="/panels/device-view.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

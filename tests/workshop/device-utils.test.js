@@ -14,7 +14,7 @@ const {
   rotateState,
   paddedSize,
   ratioLabel,
-} = require('../../app/public/device-utils');
+} = require('../../app/public/browser-utils/device-utils');
 
 const phone = DEVICE_PRESETS.phone;
 const tablet = DEVICE_PRESETS.tablet;

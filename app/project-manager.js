@@ -14,7 +14,7 @@ const { broadcastSSE } = require('./services/sse');
 const { waitForLiveness, watchLateLiveness } = require('./services/liveness');
 const { killPortOwner, killProcessTree } = require('./services/platform');
 const { closeActiveWatcher } = require('./services/watcher');
-const { paint, colorizeUrls } = require('./colors');
+const { paint, colorizeUrls } = require('./server-utils/color-utils');
 
 let active = null;
 let runningProjects = {};

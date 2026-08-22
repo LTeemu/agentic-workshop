@@ -26,5 +26,15 @@ local.properties
 *.jar
 *.aar
 
+# Python
+.pytest_cache
+__pycache__/
+*.pyc
+*.pyo
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
 # OS
 $RECYCLE.BIN/

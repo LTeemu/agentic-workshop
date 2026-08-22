@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { PROJECTS_DIR } = require('./project-utils');
+const { PROJECTS_DIR } = require('./server-utils/project-utils');
 const { detectTest, runTest } = require('./test-runner');
 const { detectRun, describeProject, buildProject, projectPort } = require('./execution/detect');
 const {
@@ -20,7 +20,7 @@ const { projectLogs, getLogs, pushLog, clearLogs, MAX_LOG_LINES } = require('./s
 const { broadcastSSE, startSSE, addSSEClient, removeSSEClient } = require('./services/sse');
 const { watchProject } = require('./services/watcher');
 const { backupProject } = require('./services/platform');
-const { getProjects } = require('./project-utils');
+const { getProjects } = require('./server-utils/project-utils');
 const term = require('./terminal');
 
 const MAX_BODY_BYTES = 1024 * 1024;

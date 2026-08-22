@@ -1,4 +1,4 @@
-const { getProjects } = require('../../app/project-utils');
+const { getProjects } = require('../../app/server-utils/project-utils');
 const { runTest, detectTest } = require('../../app/test-runner');
 const path = require('path');
 

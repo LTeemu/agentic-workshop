@@ -90,10 +90,25 @@ function describeProject(projectPath) {
 
 function startStaticServer(projectPath, port) {
   const server = http.createServer((req, res) => {
-    let filePath = path.join(
-      projectPath,
-      req.url === '/' ? 'index.html' : decodeURIComponent(req.url).split('?')[0],
-    );
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    let filePath;
+    try {
+      filePath = path.join(
+        projectPath,
+        req.url === '/' ? 'index.html' : decodeURIComponent(req.url).split('?')[0],
+      );
+    } catch {
+      res.writeHead(400);
+      res.end('Bad Request');
+      return;
+    }
     const rel = path.relative(projectPath, filePath);
     if (rel.startsWith('..') || path.isAbsolute(rel)) {
       res.writeHead(403);

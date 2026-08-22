@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { PORT, PUBLIC_DIR, PROJECTS_DIR } = require('./constants');
 const { MIME } = require('./constants');
-const { getProjects } = require('./project-utils');
+const { getProjects } = require('./server-utils/project-utils');
 const { detectRun } = require('./execution/detect');
 const {
   getActive,
@@ -13,7 +13,7 @@ const {
 } = require('./project-manager');
 const { watchProjectsDir, watchProject } = require('./services/watcher');
 const { handleAPI, json } = require('./api-handler');
-const { paint } = require('./colors');
+const { paint } = require('./server-utils/color-utils');
 
 const startTime = Date.now();
 

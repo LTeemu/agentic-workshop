@@ -5,7 +5,7 @@ const {
   hasBuildOutput,
   runNpmBuild,
   ensureDependencies,
-} = require('../project-utils');
+} = require('../server-utils/project-utils');
 
 /**
  * Prepare npm execution: install deps + handle missing build output.

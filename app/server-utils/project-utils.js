@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { ROOT, PROJECTS_DIR } = require('./constants');
+const { ROOT, PROJECTS_DIR } = require('../constants');
 
 /**
  * Returns the list of project directories under PROJECTS_DIR.

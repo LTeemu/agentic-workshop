@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { watchResize } = require('../../app/public/resize-utils');
+const { watchResize } = require('../../app/public/browser-utils/resize-utils');
 
 const flushTimers = () => new Promise((resolve) => setTimeout(resolve, 5));
 

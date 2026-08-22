@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const { ensureDependencies, tryResolveBin, PROJECTS_DIR } = require('./project-utils');
+const { ensureDependencies, tryResolveBin, PROJECTS_DIR } = require('./server-utils/project-utils');
 
 /**
  * Determine whether a project has a detectable test runner.
