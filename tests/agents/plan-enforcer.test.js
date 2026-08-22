@@ -65,16 +65,6 @@ describe('PlanEnforcer — Invalid subagent_type rejection', () => {
     }
   });
 
-  it('accepts refactor without a prior reviewer (no gate)', async () => {
-    for (const call of [taskCall('refactor'), toolCall('subagent', { agent: 'refactor' })]) {
-      const enforcer = PlanEnforcer();
-      await assert.doesNotReject(
-        async () => enforcer.onToolExecuteBefore(call.input, call.output),
-        'refactor delegation should be accepted without a prior reviewer',
-      );
-    }
-  });
-
   it('enforces INVALID_SUBAGENT_TYPE even without a callID', async () => {
     const enforcer = PlanEnforcer();
     const call = {

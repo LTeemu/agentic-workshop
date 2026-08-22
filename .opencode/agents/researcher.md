@@ -1,7 +1,7 @@
 ---
 description: Web research — docs, APIs, libraries, and best practices. Use when you need external information not in the local codebase. Synthesizes findings for other agents.
 mode: subagent
-model: opencode/mimo-v2.5-free#low
+model: opencode/mimo-v2.5-free
 permissions:
   - action: edit
     resource: '*'

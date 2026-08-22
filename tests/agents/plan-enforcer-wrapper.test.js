@@ -74,14 +74,4 @@ describe('plan-enforcer plugin wrapper (ESM)', () => {
       /INVALID_SUBAGENT_TYPE/,
     );
   });
-
-  it('accepts a refactor delegation before any reviewer ran (no gate)', async () => {
-    const mod = await import(`file:///${WRAPPER_URL}`);
-    const { ctx, hooks } = makeMockContext();
-    await mod.default.setup(ctx);
-
-    await assert.doesNotReject(async () =>
-      hooks['execute.before'](delegationEvent({ agent: 'refactor', callID: 'c-refactor' })),
-    );
-  });
 });

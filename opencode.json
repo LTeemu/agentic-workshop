@@ -24,16 +24,6 @@
   "skills": [".opencode/skills"],
   "permissions": [
     {
-      "action": "edit",
-      "resource": "*",
-      "effect": "allow"
-    },
-    {
-      "action": "shell",
-      "resource": "*",
-      "effect": "allow"
-    },
-    {
       "action": "shell",
       "resource": "Remove-Item *",
       "effect": "ask"

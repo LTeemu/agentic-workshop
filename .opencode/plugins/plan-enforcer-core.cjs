@@ -4,13 +4,7 @@
  * Pure logic, no opencode API dependency. The plugin wrapper (plan-enforcer.js)
  * wires this to the V2 tool hook.
  *
- * V2 reality: OpenCode has no `todowrite`/`todo` tool and no `todo.updated`
- * event, so plan/scope/convention discipline is not mechanically enforceable;
- * that formatting stays an instruction convention (see coder.md). What V2 *can*
- * gate at a tool-call boundary is enforced here.
- *
- * Mechanically enforced (authoritative gate list — keep plan-enforcer.js and
- * README in sync with this):
+ * Mechanically enforced:
  *   - INVALID_SUBAGENT_TYPE: subagent/task tools must use a valid agent name
  *     (an agent file with mode: subagent, not disabled)
  */

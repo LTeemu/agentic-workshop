@@ -1,14 +1,13 @@
 /**
  * Plan Enforcer Plugin — OpenCode V2 API (ESM, Promise-based)
  *
- * Wires the PlanEnforcer state machine to the V2 tool hooks. The authoritative
- * gate list lives in plan-enforcer-core.cjs — keep this header and README in
- * sync with it.
+ * Wires the PlanEnforcer state machine to the V2 tool hooks (`execute.before`).
  *
- * Enforced at tool-call boundaries (abort via ctx.tool.hook("execute.before")):
- *   - INVALID_SUBAGENT_TYPE
+ * Mechanically enforced:
+ *   - INVALID_SUBAGENT_TYPE: subagent/task tools must use a valid agent name
+ *     (an agent file with mode: subagent, not disabled)
  *
- * Derives the valid subagent types from .opencode/agents/ so new agent files
+ * Derives valid subagent types from .opencode/agents/ so new agent files
  * take effect without editing the plugin.
  *
  * Config reference:
